@@ -83,4 +83,5 @@ namespace clad {
   private:
     bool isInInterval(clang::SourceLocation Loc) const;
   };
+  clang::DeclRefExpr* getArgFunction(clang::CallExpr* E);
 }
