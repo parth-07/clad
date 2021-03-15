@@ -142,7 +142,7 @@ namespace clad {
   CladFunction<ExtractDerivedFnTraits_t<F>> __attribute__((annotate("G")))
   gradient(F f, ArgSpec args = "", const char* code = "") {
     assert(f && "Must pass in a non-0 argument");
-    return CladFunction<ExtractDerivedFnTraits_t<F>>(
+    return CladFunction<F>(
       reinterpret_cast<ExtractDerivedFnTraits_t<F>>(f) /* will be replaced by gradient*/,
       code);
   }

@@ -149,6 +149,30 @@ namespace clad {
                                   CK_ArrayToPointerDecay).get();
       call->setArg(codeArgIdx, newArg);
     }
+    // llvm::errs()<<"FD info"<<"\n";
+    // auto FDQualType = cast<CXXMethodDecl>(FD)->getThisObjectType();
+    // llvm::errs()<<"type = "<<FDQualType.getAsString()<<"\n";
+    // FDQualType.dump();
+    // call->setType(FD->getType());
+    // llvm::errs()<<"directCalle info\n";
+    // auto directCallee = call->getDirectCallee();
+    // auto returnType = directCallee->getReturnType();
+    // llvm::errs()<<"name = "<<directCallee->getName()<<"\n";
+    // llvm::errs()<<"type = "<<returnType.getAsString()<<"\n";
+    // llvm::errs()<<"callExpr type = "<<call->getType().getAsString()<<"\n";
+    // llvm::errs()<<"callReturnType = "<<call->getCallReturnType(C).getAsString()<<"\n";
+
+    // llvm::errs()<<"call->getType() info\n";
+    // auto callQualType = call->getType();
+    // llvm::errs()<<"type = "<< callQualType.getAsString()<<"\n";
+    // callQualType.dump();
+
+    auto memPtrType = SemaRef.BuildMemberPointerType(FD->getType(),dyn_cast<CXXMethodDecl>(FD)->getThisObjectType(),
+                                                     noLoc,DeclarationName());
+      call->setType(memPtrType);
+      llvm::errs()<<"memPtrType name = "<<memPtrType.getAsString()<<"\n";
+    
+    
 
     // Replace old specialization of clad::gradient with a new one that matches
     // the type of new argument.
@@ -187,6 +211,87 @@ namespace clad {
 
     // Replace the old clad::gradient by the new one.
     call->setCallee(CladGradientExprNew);
+
+    llvm::errs()<<"call return type info\n";
+    auto ReturnType = call->getCallReturnType(C);
+    llvm::errs()<<ReturnType.getAsString()<<"\n";
+    if(call->getType() != ReturnType) {
+      call->setType(ReturnType);
+      llvm::errs()<<"Here we are = "<<call->getType().getAsString()<<"\n";
+      auto start = C.getParents(*call).begin();
+      auto e = C.getParents(*call).end();
+      auto it = start;
+      size_t counter = 0;
+      size_t sz = C.getParents(*call).size();
+      size_t temp_sz;
+      bool b_flag=0;
+      while(1) {
+        llvm::errs()<<"sz = "<<sz<<"\n";
+        while(1) {
+          if(auto node = start->get<Expr>()) {
+            llvm::errs()<<"node name = "<<"some expr\n";
+            const_cast<Expr*>(node)->setType(ReturnType);
+            it = C.getParents(*node).begin();
+            temp_sz = C.getParents(*node).size();
+            // if(auto cnode = dyn_cast<CXXConstructExpr>(node)) {
+            //   auto cladFunctionSpecializedClass = ReturnType->getAsCXXRecordDecl();
+              
+            //   auto cexpr = CXXConstructExpr::Create(
+            //     C,
+            //     ReturnType,
+            //     noLoc,
+            //     *(cladFunctionSpecializedClass->ctor_begin()),
+            //     cnode->isElidable(),
+            //     ArrayRef<Expr*>(const_cast<cnode->getArgs()),
+            //     cnode->hadMultipleCandidates(),
+            //     cnode->isListInitialization(),
+            //     cnode->isStdInitListInitialization(),
+            //     cnode->requiresZeroInitialization(),
+            //     cnode->getConstructionKind(),
+            //     cnode->getSourceRange()
+            //   )
+            // }
+          }
+          else if(auto node = start->get<ValueDecl>()) {
+            llvm::errs()<<"node name = "<<node->getName()<<"\n";
+            const_cast<ValueDecl*>(node)->setType(ReturnType);
+            it = C.getParents(*node).begin();
+            temp_sz = C.getParents(*node).size();
+          }
+          else if(auto node = start->get<Stmt>()){
+            llvm::errs()<<"in stmt"<<"\n";
+            it = C.getParents(*node).begin();
+            temp_sz = C.getParents(*node).size();
+            b_flag=1;
+            break;
+          }
+          else {
+            llvm::errs()<<"Not Breaking here\n";
+            // break;
+          }
+
+          if(auto node = start->get<VarDecl>()) {
+            SemaRef.AddInitializerToDecl(const_cast<VarDecl*>(node),call,true);
+            // const_cast<VarDecl*>(node)->setInit(call);
+            // const_cast<VarDecl*>(node)->setType(ReturnType);
+            b_flag=1;
+            break;
+          }
+          start = start + 1;
+          ++counter;
+          llvm::errs()<<"Reached here, incrementing start\n";
+          if(counter == sz) {
+            break;
+          }
+        }
+        if(b_flag)
+          break;
+        start = it;
+        sz = temp_sz;
+        counter=0;
+      }
+    }
+
   }
 
   DiffCollector::DiffCollector(DeclGroupRef DGR, DiffInterval& Interval,
