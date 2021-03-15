@@ -194,7 +194,14 @@ namespace clad {
     if (Expr* E = dyn_cast<Expr>(S)) {
       if (isUnusedResult(E))
         return false;
+      if(DeclRefExpr* DRE = dyn_cast<DeclRefExpr>(E)) {
+        llvm::errs()<<"Reaching here\n";
+        if(VarDecl* VD = dyn_cast<VarDecl>(DRE->getDecl())) {
+          llvm::errs()<<VD->getName()<<": "<<VD->getType().getAsString()<<"\n";
+        }
+      }
     }
+   
     block.push_back(S);
     return true;
   }
