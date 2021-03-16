@@ -14,17 +14,24 @@ using namespace clang;
 namespace clad {
   static SourceLocation noLoc;
 
-  // returns pointer to parent of first DeclRefExpr descendant 
-  // of Expr pointed by E in AST.
-  // returns nullptr, if node E is itself of type DeclRefExpr
-  // returns nullptr, if node of type other than ImplicitCastExpr
-  // or UnaryOperator comes before DeclRefExpr
-  Expr* getParentOfFirstDreDescendant(Expr* E) {
+  // Returns address of parent of Expr node obtained 
+  // by skipping past any parantheses, implicit casts
+  // and UnaryOperators from Expr pointed by `E`.
+  // If considerParanAsParent is false,then returns last non-parantheses
+  // ancestor of Expr node obtained by skipping.
+  // Returns nullptr, if there is no skipping of nodes
+  // from given Expr
+  Expr* getParentOfSkipPastParImpCastUnOp(Expr* E,bool considerParanAsParent = true) {
     Expr* last_E = nullptr;
     while(1) {
       if(auto ICE = dyn_cast<ImplicitCastExpr>(E)) {
         last_E = E;
         E = cast<Expr>(ICE->getSubExpr());
+      }
+      else if(auto pExp = dyn_cast<ParenExpr>(E)) {
+        if(considerParanAsParent)
+          last_E = E;
+        E = cast<Expr>(pExp->getSubExpr());
       }
       else if(auto UnOp = dyn_cast<UnaryOperator>(E)) {
         last_E = E;
@@ -34,29 +41,24 @@ namespace clad {
         break;
       }
     }
-    if(isa<DeclRefExpr>(E))
-      return last_E;
-    else 
-      return nullptr;
+    return last_E;
   }
 
-  // Returns pointer to first DeclRefExpr descendant of Expr 
-  // pointed by E in AST.
-  // returns E if Expr pointed by E is itself of type DeclRefExpr
-  // return nullptr, if node of type other than ImplicitCastExpr
-  // or UnaryOperator comes before DeclRefExpr
-  DeclRefExpr* getFirstDreDescendant(Expr* E) {
-    if(isa<DeclRefExpr>(E))
-      return dyn_cast<DeclRefExpr>(E);
-    Expr* lastNonDreExp = getParentOfFirstDreDescendant(E);
-    
-    if(auto ICE = dyn_cast<ImplicitCastExpr>(lastNonDreExp)) {
-      lastNonDreExp = cast<Expr>(ICE->getSubExpr());
+  // Returns address of Expr node obtained by Skipping 
+  // past any parantheses, implicit casts and
+  // UnaryOperator expressions from Expr pointed by `E`
+  Expr* skipPastParImpCastUnOp(Expr* E) {
+    Expr* lastE=nullptr;
+    while(1) {
+      lastE = E;
+      E = E->IgnoreParenImpCasts();
+      if(auto UnOp = dyn_cast<UnaryOperator>(E)) {
+        E = UnOp->getSubExpr();
+      }
+      if(E == lastE)
+        break;
     }
-    else if(auto UnOp = dyn_cast<UnaryOperator>(lastNonDreExp)) {
-      lastNonDreExp = cast<Expr>(UnOp->getSubExpr());
-    }
-    return dyn_cast<DeclRefExpr>(lastNonDreExp);
+    return E;
   }
 
   void DiffRequest::updateCall(FunctionDecl* FD, Sema& SemaRef) {
@@ -67,11 +69,33 @@ namespace clad {
     assert(FD && "Trying to update with null FunctionDecl");
 
     DeclRefExpr* oldDRE = nullptr;
-    oldDRE = getArgFunction(call);
+    // obtain parent of DeclRefExpr of function 
+    // to be differentiated
+    Expr* oldArgDREParent = call->getArg(0);
+    while(1) {
+      if(auto skippedToDRE = dyn_cast<DeclRefExpr>(skipPastParImpCastUnOp(oldArgDREParent)))
+      {
+        if(auto VD = dyn_cast<VarDecl>(skippedToDRE->getDecl())) {
+          oldArgDREParent = VD->getInit();
+        }
+        else {
+          break;
+        }
+      }
+      else {
+        // Program should not reach here
+        llvm_unreachable("Trying to differentiate something unsupported");
+        break;
+      }
+    }
+    oldArgDREParent = getParentOfSkipPastParImpCastUnOp(oldArgDREParent,false);
+    oldDRE = dyn_cast<DeclRefExpr>(skipPastParImpCastUnOp(oldArgDREParent));
+
     if(!oldDRE)
       llvm_unreachable("Trying to differentiate something unsupported");
 
     ASTContext& C = SemaRef.getASTContext();
+    
     // Create ref to generated FD.
     Expr* DRE = DeclRefExpr::Create(C, oldDRE->getQualifierLoc(), noLoc,
                                     FD, false, FD->getNameInfo(), FD->getType(),
@@ -80,17 +104,7 @@ namespace clad {
     // using call->setArg(0, DRE) seems to be sufficient,
     // though the real AST allways contains the ImplicitCastExpr (function ->
     // function ptr cast) or UnaryOp (method ptr call).
-    Expr* argFnParent = call->getArg(0);
-    while(1) {
-      if(auto VD = dyn_cast<VarDecl>(getFirstDreDescendant(argFnParent)->getDecl())) {
-        argFnParent = VD->getInit();
-      }
-      else {
-        break;
-      }
-    }
-    argFnParent=getParentOfFirstDreDescendant(argFnParent);
-    if (auto oldCast = dyn_cast<ImplicitCastExpr>(argFnParent)) {
+    if (auto oldCast = dyn_cast<ImplicitCastExpr>(oldArgDREParent)) {
       // Cast function to function pointer.
       auto newCast = ImplicitCastExpr::Create(C,
                                               C.getPointerType(FD->getType()),
@@ -100,7 +114,7 @@ namespace clad {
                                               oldCast->getValueKind());
       call->setArg(0, newCast);
     }
-    else if (auto oldUnOp = dyn_cast<UnaryOperator>(argFnParent)) {
+    else if (auto oldUnOp = dyn_cast<UnaryOperator>(oldArgDREParent)) {
       // Add the "&" operator
       auto newUnOp = SemaRef.BuildUnaryOp(nullptr,
                                           noLoc,
@@ -212,7 +226,7 @@ namespace clad {
       return nullptr;
     Expr* arg = E->getArg(0);
     while(1) {
-      arg = getFirstDreDescendant(arg);
+      arg = skipPastParImpCastUnOp(arg);
       if(auto VD = dyn_cast<VarDecl>(cast<DeclRefExpr>(arg)->getDecl())) {
         arg = VD->getInit();
       }
