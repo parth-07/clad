@@ -14,30 +14,27 @@ using namespace clang;
 namespace clad {
   static SourceLocation noLoc;
 
-  // Returns address of parent of Expr node obtained 
-  // by skipping past any parantheses, implicit casts
-  // and UnaryOperators from Expr pointed by `E`.
+  // Returns address of parent of Expr node obtained by skipping 
+  // past any parantheses, implicit casts and UnaryOperators 
+  // from Expr pointed by `E`.
   // If considerParanAsParent is false,then returns last non-parantheses
   // ancestor of Expr node obtained by skipping.
-  // Returns nullptr, if there is no skipping of nodes
-  // from given Expr
-  Expr* getParentOfSkipPastParImpCastUnOp(Expr* E,bool considerParanAsParent = true) {
+  // Returns nullptr, if there is no skipping of nodes from given Expr
+  Expr* getParentOfSkipPastParImpCastUnOp(Expr* E,
+                                          bool considerParanAsParent = true) {
     Expr* last_E = nullptr;
-    while(1) {
-      if(auto ICE = dyn_cast<ImplicitCastExpr>(E)) {
+    while (1) {
+      if (auto ICE = dyn_cast<ImplicitCastExpr>(E)) {
         last_E = E;
         E = cast<Expr>(ICE->getSubExpr());
-      }
-      else if(auto pExp = dyn_cast<ParenExpr>(E)) {
-        if(considerParanAsParent)
+      } else if (auto pExp = dyn_cast<ParenExpr>(E)) {
+        if (considerParanAsParent)
           last_E = E;
         E = cast<Expr>(pExp->getSubExpr());
-      }
-      else if(auto UnOp = dyn_cast<UnaryOperator>(E)) {
+      } else if (auto UnOp = dyn_cast<UnaryOperator>(E)) {
         last_E = E;
         E = cast<Expr>(UnOp->getSubExpr());
-      }
-      else {
+      } else {
         break;
       }
     }
@@ -49,13 +46,13 @@ namespace clad {
   // UnaryOperator expressions from Expr pointed by `E`
   Expr* skipPastParImpCastUnOp(Expr* E) {
     Expr* lastE=nullptr;
-    while(1) {
+    while (1) {
       lastE = E;
       E = E->IgnoreParenImpCasts();
-      if(auto UnOp = dyn_cast<UnaryOperator>(E)) {
+      if (auto UnOp = dyn_cast<UnaryOperator>(E)) {
         E = UnOp->getSubExpr();
       }
-      if(E == lastE)
+      if (E == lastE)
         break;
     }
     return E;
@@ -69,29 +66,22 @@ namespace clad {
     assert(FD && "Trying to update with null FunctionDecl");
 
     DeclRefExpr* oldDRE = nullptr;
-    // obtain parent of DeclRefExpr of function 
-    // to be differentiated
+    // obtain parent of DeclRefExpr of function to be differentiated
     Expr* oldArgDREParent = call->getArg(0);
-    while(1) {
-      if(auto skippedToDRE = dyn_cast<DeclRefExpr>(skipPastParImpCastUnOp(oldArgDREParent)))
-      {
-        if(auto VD = dyn_cast<VarDecl>(skippedToDRE->getDecl())) {
+    while (1) {
+      if (auto skippedToDRE 
+          = dyn_cast<DeclRefExpr>(skipPastParImpCastUnOp(oldArgDREParent))) {
+        if (auto VD = dyn_cast<VarDecl>(skippedToDRE->getDecl())) {
           oldArgDREParent = VD->getInit();
-        }
-        else {
+        } else {
           break;
         }
-      }
-      else {
-        // Program should not reach here
-        llvm_unreachable("Trying to differentiate something unsupported");
-        break;
       }
     }
     oldArgDREParent = getParentOfSkipPastParImpCastUnOp(oldArgDREParent,false);
     oldDRE = dyn_cast<DeclRefExpr>(skipPastParImpCastUnOp(oldArgDREParent));
 
-    if(!oldDRE)
+    if (!oldDRE)
       llvm_unreachable("Trying to differentiate something unsupported");
 
     ASTContext& C = SemaRef.getASTContext();
@@ -225,12 +215,11 @@ namespace clad {
     if (E->getNumArgs() == 0)
       return nullptr;
     Expr* arg = E->getArg(0);
-    while(1) {
+    while (1) {
       arg = skipPastParImpCastUnOp(arg);
-      if(auto VD = dyn_cast<VarDecl>(cast<DeclRefExpr>(arg)->getDecl())) {
+      if (auto VD = dyn_cast<VarDecl>(cast<DeclRefExpr>(arg)->getDecl())) {
         arg = VD->getInit();
-      }
-      else {
+      } else {
         break;
       }
     }
