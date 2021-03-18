@@ -1,10 +1,13 @@
 #include "clad/Differentiator/DiffPlanner.h"
 
 #include "clang/AST/ASTContext.h"
+#include "clang/AST/StmtVisitor.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Sema/Sema.h"
 #include "clang/Sema/TemplateDeduction.h"
 
+#include "llvm/ADT/APInt.h"
+#include "llvm/ADT/SmallSet.h"
 #include "llvm/Support/SaveAndRestore.h"
 
 #include "clad/Differentiator/Compatibility.h"
@@ -13,6 +16,150 @@ using namespace clang;
 
 namespace clad {
   static SourceLocation noLoc;
+
+  // 
+  class DeclRefVisitor 
+    : public ConstStmtVisitor<DeclRefVisitor,const Expr*> {
+  private:
+    using StmtClassSet = llvm::SmallSet<Stmt::StmtClass,16U>;
+  public:
+    DeclRefVisitor(const llvm::ArrayRef<Stmt::StmtClass>& pStmtTypesToSkip,
+                  const llvm::ArrayRef<Stmt::StmtClass>& pStmtTypesToConsiderForAnc) {
+      stmtTypesToSkip.insert(pStmtTypesToSkip.begin(),pStmtTypesToSkip.end());
+      stmtTypesToConsiderForAnc.insert(pStmtTypesToConsiderForAnc.begin(),
+                                      pStmtTypesToConsiderForAnc.end()); 
+    }
+    
+    // Returns nearest DeclRefExpr descendant of expression 
+    // pointed by `E` by skipping past 0 or more statements.
+    // Only stmts specified to be skipped can be skipped.
+    // Returns nullptr, if DeclRefExpr cannot be reached by 
+    // skipping past the specified stmts.
+    const DeclRefExpr* skipToDeclRef(const Expr* E) {
+      relevantAncestor = nullptr;
+      return dyn_cast_or_null<const DeclRefExpr>(Visit(E));
+    }
+
+    // Returns nearest function declaration DeclRefExpr descendant of
+    // expression pointed by `E` by skipping past 0 or more statments
+    // and declarations.
+    // Only stmts specified to be skipped can be skipped.
+    // Returns nullptr, if function declaration DeclRefExpr cannot be 
+    // reached by skipping past the declarations and specified stmts.
+    const DeclRefExpr* skipToFunctionDeclRef(const Expr* E) {
+      relevantAncestor = nullptr;
+      const DeclRefExpr* DRE = nullptr;
+      
+      while (DRE = dyn_cast_or_null<const DeclRefExpr>(skipToDeclRef(E))) {
+        if (auto VD = dyn_cast<const VarDecl>(DRE->getDecl())) {
+          E = VD->getInit();
+        } else {
+          break;
+        }
+      }
+
+      return DRE;
+    }
+
+    // Returns relevant ancestor of nearest DeclRefExpr descendant of
+    // expression pointed by `E`.
+    // Relevant ancestor is the nearest stmt ancestor allowed to 
+    // be considered to be ancestor 
+    const Expr* skipToDeclRefrelevantAncestor(const Expr* E) {
+      skipToDeclRef(E);
+      return relevantAncestor;
+    }
+
+    // Returns relevant ancestor of nearest function declaration
+    // DeclRefExpr descendant of expression pointed by `E`.
+    // Relevant ancestor is the nearest stmt ancestor allowed to 
+    // be considered to be ancestor 
+    const Expr* skipToFunctionDeclRefrelevantAncestor(const Expr* E) {
+      skipToFunctionDeclRef(E);
+      return relevantAncestor;
+    }
+
+    const Expr* getrelevantAncestor() const {
+      return relevantAncestor;
+    }
+
+    const Expr* VisitImplicitCastExpr(const ImplicitCastExpr* ICE) {
+      if (!isSkippable(ICE)) {
+        return nullptr;
+      }
+      updaterelevantAncestor(ICE);
+      return Visit(ICE->getSubExpr());
+    }
+    const Expr* VisitParenExpr(const ParenExpr* PE) {
+      if (!isSkippable(PE)) {
+        return nullptr;
+      }
+      updaterelevantAncestor(PE);
+      return Visit(PE->getSubExpr());
+    }
+    const Expr* VisitUnaryOperator(const UnaryOperator* UnOp) {
+      if(!isSkippable(UnOp)) {
+        return nullptr;
+      }
+      updaterelevantAncestor(UnOp);
+      return Visit(UnOp->getSubExpr());
+    }
+    const Expr* VisitDeclRefExpr(const DeclRefExpr* DRE) {
+      return DRE;
+    }
+  private:
+    
+    // if stmtTypesToSkip is empty, then all stmt types other
+    // than DeclRefExpr will be skipped
+    StmtClassSet stmtTypesToSkip;
+    
+    // if stmtTypesToConsiderForAnc is empty, then all stmt types
+    // will be considered for ancestor 
+    StmtClassSet stmtTypesToConsiderForAnc;
+    
+    const Expr* relevantAncestor = nullptr;
+    void updaterelevantAncestor(const Expr* E) {
+      if ( stmtTypesToConsiderForAnc.empty() || 
+          stmtTypesToConsiderForAnc.count(E->getStmtClass())) {
+        relevantAncestor = E;
+      }
+    }
+
+    bool isSkippable(const Expr* E) {
+      return stmtTypesToSkip.empty() || stmtTypesToSkip.count(E->getStmtClass());
+    }
+  };
+
+  class DummyVisitor : public ConstStmtVisitor<DummyVisitor,const Expr*> {
+    private:
+    const Expr* parent = nullptr;
+    public:
+    const Expr* getDRENonParanParent(const Expr* E) {
+      return Visit(E);
+    }
+    const Expr* VisitImplicitCastExpr(const ImplicitCastExpr* ICE) {
+      llvm::errs()<<"ICE: "<<ICE->getStmtClassName()<<"\n";
+      parent = ICE;
+      if (auto dre = dyn_cast<DeclRefExpr>(ICE->getSubExpr())){
+        return parent;
+      }
+      return Visit(ICE->getSubExpr());
+    }
+    const Expr* VisitParenExpr(const ParenExpr* PE) {
+      if (auto dre = dyn_cast<DeclRefExpr>(PE->getSubExpr())) {
+        return parent;
+      }
+      return PE->getSubExpr();
+    }
+    const Expr* VisitUnaryOperator(const UnaryOperator* UnOp) {
+      parent = UnOp;
+      if (auto dre = dyn_cast<DeclRefExpr>(UnOp->getSubExpr())) {
+        return parent;
+      }
+      return UnOp->getSubExpr();
+    }
+  } dummyVisitor;
+
 
   // Returns address of parent of Expr node obtained by skipping 
   // past any parantheses, implicit casts and UnaryOperators 
@@ -44,12 +191,12 @@ namespace clad {
   // Returns address of Expr node obtained by Skipping 
   // past any parantheses, implicit casts and
   // UnaryOperator expressions from Expr pointed by `E`
-  Expr* skipPastParImpCastUnOp(Expr* E) {
-    Expr* lastE=nullptr;
+  const Expr* skipPastParImpCastUnOp(const Expr* E) {
+    const Expr* lastE=nullptr;
     while (1) {
       lastE = E;
       E = E->IgnoreParenImpCasts();
-      if (auto UnOp = dyn_cast<UnaryOperator>(E)) {
+      if (auto UnOp = dyn_cast<const UnaryOperator>(E)) {
         E = UnOp->getSubExpr();
       }
       if (E == lastE)
@@ -65,21 +212,37 @@ namespace clad {
     assert(call && "Must be set");
     assert(FD && "Trying to update with null FunctionDecl");
 
-    DeclRefExpr* oldDRE = nullptr;
+    const DeclRefExpr* oldDRE = nullptr;
     // obtain parent of DeclRefExpr of function to be differentiated
-    Expr* oldArgDREParent = call->getArg(0);
-    while (1) {
-      if (auto skippedToDRE 
-          = dyn_cast<DeclRefExpr>(skipPastParImpCastUnOp(oldArgDREParent))) {
-        if (auto VD = dyn_cast<VarDecl>(skippedToDRE->getDecl())) {
-          oldArgDREParent = VD->getInit();
-        } else {
-          break;
-        }
-      }
-    }
-    oldArgDREParent = getParentOfSkipPastParImpCastUnOp(oldArgDREParent,false);
-    oldDRE = dyn_cast<DeclRefExpr>(skipPastParImpCastUnOp(oldArgDREParent));
+    const Expr* oldArgDREParent = call->getArg(0);
+    // while (1) {
+    //   if (auto skippedToDRE 
+    //       = dyn_cast<const DeclRefExpr>(skipPastParImpCastUnOp(oldArgDREParent))) {
+    //     if (auto VD = dyn_cast<const VarDecl>(skippedToDRE->getDecl())) {
+    //       oldArgDREParent = VD->getInit();
+    //     } else {
+    //       break;
+    //     }
+    //   }
+    // }
+    DeclRefVisitor dreVisitor({
+      Stmt::StmtClass::ImplicitCastExprClass,
+      Stmt::StmtClass::UnaryOperatorClass,
+      Stmt::StmtClass::ParenExprClass
+    },  {
+      Stmt::StmtClass::ImplicitCastExprClass,
+      Stmt::StmtClass::UnaryOperatorClass
+    });
+    oldArgDREParent = dreVisitor.skipToFunctionDeclRefrelevantAncestor(call->getArg(0));
+    oldDRE = dreVisitor.skipToFunctionDeclRef(oldArgDREParent);
+
+    // auto tempDre = dummyVisitor.getDRENonParanParent(call->getArg(0));
+    // if(tempDre == oldArgDREParent) {
+    //   llvm::errs()<<"Tada, both are same"<<"\n";
+    // }
+    // else {
+    //   llvm::errs()<<"Alas\n";
+    // }
 
     if (!oldDRE)
       llvm_unreachable("Trying to differentiate something unsupported");
@@ -216,7 +379,7 @@ namespace clad {
       return nullptr;
     Expr* arg = E->getArg(0);
     while (1) {
-      arg = skipPastParImpCastUnOp(arg);
+      arg = const_cast<Expr*>(skipPastParImpCastUnOp(arg));
       if (auto VD = dyn_cast<VarDecl>(cast<DeclRefExpr>(arg)->getDecl())) {
         arg = VD->getInit();
       } else {
@@ -257,7 +420,11 @@ namespace clad {
     if (A && (A->getAnnotation().equals("D") || A->getAnnotation().equals("G") 
         || A->getAnnotation().equals("H") || A->getAnnotation().equals("J"))) {
       // A call to clad::differentiate or clad::gradient was found.
-      DeclRefExpr* DRE = getArgFunction(E);
+      DeclRefExpr* DRE = nullptr;
+      DeclRefVisitor dreVisitor({},{});
+      if(E->getNumArgs() > 0)
+        DRE = const_cast<DeclRefExpr*>(dreVisitor.skipToFunctionDeclRef(E->getArg(0)));
+      
       if (!DRE)
         return true;
       DiffRequest request{};
