@@ -42,6 +42,7 @@ namespace clad {
   /// A pair of FunctionDecl and potential enclosing context, e.g. a function
   // in nested namespaces
   using DeclWithContext = std::pair<clang::FunctionDecl*, clang::Decl*>;
+  using IdInfoWithContext = std::pair<const clang::IdentifierInfo*,const clang::DeclContext*>;
   using DiffParams = llvm::SmallVector<const clang::VarDecl*, 16>;
 
   using VectorOutputs = std::vector<std::unordered_map<const clang::VarDecl*, clang::Expr*>>;
@@ -86,6 +87,7 @@ namespace clad {
       for (auto arg : args)
         stream << arg;
     }
+    DiffParams parseDiffArgs(const clang::Expr* diffArgs, const clang::FunctionDecl* FD);
   public:
     DerivativeBuilder(clang::Sema& S, plugin::CladPlugin& P);
     ~DerivativeBuilder();
@@ -100,6 +102,8 @@ namespace clad {
     ///
     DeclWithContext Derive(const clang::FunctionDecl* FD,
                            const DiffRequest & request);
+    clang::IdentifierInfo* getDerivedFnName(const DiffRequest& request);
+    std::map<IdInfoWithContext, clang::FunctionDecl*> DerivedFns;
   };
 
   /// A base class for all common functionality for visitors

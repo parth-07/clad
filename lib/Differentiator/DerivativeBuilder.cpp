@@ -137,8 +137,10 @@ namespace clad {
       result = J.Derive(FD, request);
     }
 
-    if (result.first)
+    if (result.first) {
+      DerivedFns[{result.first->getIdentifier(), result.first->getDeclContext()}] = result.first;
       registerDerivative(result.first, m_Sema);
+    }
     return result;
   }
 
@@ -3211,4 +3213,76 @@ namespace clad {
 
     return result;
   }
+
+  DiffParams DerivativeBuilder::parseDiffArgs(const clang::Expr* diffArgs, 
+                                              const clang::FunctionDecl* FD) {
+    VisitorBase VB(*this);
+    return VB.parseDiffArgs(diffArgs, FD)                                                ;
+  }
+
+  clang::IdentifierInfo* DerivativeBuilder::getDerivedFnName(const DiffRequest& request) {
+    const FunctionDecl* FD = request.Function;
+    assert(FD && "Must not be null.");
+    if (!FD->getDefinition()) {
+      if (request.VerboseDiags)
+        diag(DiagnosticsEngine::Error,
+             request.CallContext ? request.CallContext->getBeginLoc() : noLoc,
+             "attempted differentiation of function '%0', which does not have a "
+             "definition", { FD->getNameAsString() });
+      return {};
+    }
+    FD = FD->getDefinition();
+    switch(request.Mode) {
+    case DiffMode::forward:
+      DiffParams args{};
+      if (request.Args)
+      args = parseDiffArgs(request.Args, FD);
+      else {
+        //FIXME: implement gradient-vector products to fix the issue.
+        assert((FD->getNumParams() <= 1) &&
+                "nested forward mode differentiation for several args is broken");
+        std::copy(FD->param_begin(), FD->param_end(), std::back_inserter(args));
+      }
+      if (args.empty())
+        return nullptr;
+      if (args.size() > 1) {
+        diag(DiagnosticsEngine::Error, request.Args->getEndLoc(),
+              "Forward mode differentiation w.r.t. several parameters at once is not "
+              "supported, call 'clad::differentiate' for each parameter separately");
+      return nullptr;
+      }
+
+      const clang::VarDecl* m_IndependentVar = args.back();
+      // If param is not real (i.e. floating point or integral), we cannot
+      // differentiate it.
+      // FIXME: we should support custom numeric types in the future.
+      if (!m_IndependentVar->getType()->isRealType()) {
+        diag(DiagnosticsEngine::Error, m_IndependentVar->getEndLoc(),
+              "attempted differentiation w.r.t. a parameter ('%0') which is not "
+              "of a real type", { m_IndependentVar->getNameAsString() });
+        return {};
+      }
+      unsigned int m_DerivativeOrder = request.CurrentDerivativeOrder;
+      std::string s = std::to_string(m_DerivativeOrder);
+      std::string derivativeBaseName;
+      if (m_DerivativeOrder == 1)
+        s = "";
+      switch (FD->getOverloadedOperator()) {
+      default:
+        derivativeBaseName = request.BaseFunctionName;
+        break;
+      case OO_Call:
+        derivativeBaseName = "operator_call";
+        break;
+      }
+
+      unsigned m_ArgIndex = std::distance(FD->param_begin(),
+        std::find(FD->param_begin(), FD->param_end(), m_IndependentVar));
+      IdentifierInfo* II = &m_Context.Idents.get(
+        derivativeBaseName + "_d" + s + "arg" + std::to_string(m_ArgIndex));
+      return II;
+      break;
+    } 
+  }
+
 }// end namespace clad
