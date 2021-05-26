@@ -45,6 +45,7 @@ namespace clad {
     unsigned outputArrayCursor = 0;
     unsigned numParams = 0;
     bool isVectorValued = false;
+    unsigned arrLen = 10;
 
     const char* funcPostfix() const {
       if (isVectorValued)
@@ -54,10 +55,9 @@ namespace clad {
     }
 
     const char* resultArg() const {
-      if (isVectorValued)
-        return "jacobianMatrix";
-      else
-        return "_result";
+      assert(isVectorValued &&
+             "function resultArg() only be called for Jacobian Mode");
+      return "jacobianMatrix";
     }
 
     /// Removes the local as well as non-local const qualifiers from a QualType
