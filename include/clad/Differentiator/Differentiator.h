@@ -71,11 +71,11 @@ namespace clad {
   template <typename F> class CladFunction {
   public:
     using CladFunctionType = F;
-
+    using FunctorType = ExtractFunctorTraits_t<F>;
   private:
     CladFunctionType m_Function;
     char* m_Code;
-
+    FunctorType* functor = nullptr;
   public:
     CladFunction(CladFunctionType f, const char* code) {
       assert(f && "Must pass a non-0 argument.");
@@ -95,6 +95,7 @@ namespace clad {
       }
     }
 
+    CladFunction(FunctorType* f, const char* code) : CladFunction(&FunctorType::operator(), code) {}
     // Intentionally leak m_Code, otherwise we have to link against c++ runtime,
     // i.e -lstdc++.
     //~CladFunction() { /*free(m_Code);*/ }
@@ -134,10 +135,10 @@ namespace clad {
   ///\brief N is the derivative order.
   ///
   template<unsigned N = 1, typename ArgSpec = const char *, typename F>
-  CladFunction <F> __attribute__((annotate("D")))
+  CladFunction <ExtractDerivedFnTraitsForwMode_t<F>> __attribute__((annotate("D")))
   differentiate(F f, ArgSpec args = "", const char* code = "") {
     assert(f && "Must pass in a non-0 argument");
-    return CladFunction<F>(f, code);
+    return CladFunction<ExtractDerivedFnTraitsForwMode_t<F>>(f, code);
   }
 
   /// A function for gradient computation.
