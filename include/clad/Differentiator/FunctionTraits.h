@@ -1,6 +1,8 @@
 #ifndef FUNCTION_TRAITS
 #define FUNCTION_TRAITS
 
+#include <type_traits>
+
 namespace clad {
 
   // Trait class to deduce return type of function(both member and non-member) at commpile time
@@ -344,6 +346,82 @@ namespace clad {
     using type = void (C::*)(Args..., ReturnType*); 
   };
   #endif
+
+  template<class F, class = void>
+  struct is_function_pointer : std::false_type {};
+
+  template<class F>
+  struct is_function_pointer<F*, 
+      typename std::enable_if<std::is_function<F>::value>::type> : std::true_type {};
+
+  /**
+   * \brief Compute type of derived function in forward differentiation mode 
+   * using function, method or functor to be differentiated.
+   * 
+   */
+  template<class F, class = void>
+  struct ExtractDerivedFnTraitsForwMode {};
+
+  /**
+   * \brief Helper type for ExtractDerivedFnTraitsForwMode
+   * 
+   */
+  template<class F>
+  using ExtractDerivedFnTraitsForwMode_t = 
+      typename ExtractDerivedFnTraitsForwMode<F>::type;
+
+  template <class F>
+  struct ExtractDerivedFnTraitsForwMode<
+      F*,
+      typename std::enable_if<std::is_class<F>::value>::type> {
+    using type = decltype(&F::operator());
+  };
+
+  template <class F>
+  struct ExtractDerivedFnTraitsForwMode<
+      F,
+      typename std::enable_if<is_function_pointer<F>::value>::type> {
+    using type = F;
+  };
+
+  template <class F>
+  struct ExtractDerivedFnTraitsForwMode<
+      F,
+      typename std::enable_if<std::is_member_function_pointer<F>::value>::type> {
+    using type = F;
+  };
+  
+  /**
+   * \brief Compute class type from member function type, deduced type is 
+   * void if free function type is provided. If class type is provided, 
+   * then dedeuced type is same as that of provided class type.
+   * 
+   */
+  template<class F, class = void>
+  struct ExtractFunctorTraits {};
+
+  template<class F>
+  struct ExtractFunctorTraits<F*, 
+      typename std::enable_if<std::is_class<F>::value>::type> {
+    using type = F;
+  };
+
+  template<class F>
+  struct ExtractFunctorTraits<F,
+      typename std::enable_if<is_function_pointer<F>::value>::type> {
+    using type = void;
+  };
+
+  template<class T, class C>
+  struct ExtractFunctorTraits<T C::*> {
+    using type = C;
+  };
+  /**
+   * \brief Helper type for ExtractFunctorTraits
+   */
+  template<class F>
+  using ExtractFunctorTraits_t = typename ExtractFunctorTraits<F>::type;
+
 } // namespace clad
 
 #endif // FUNCTION_TRAITS
