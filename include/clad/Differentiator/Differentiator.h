@@ -54,15 +54,21 @@ namespace clad {
   }
 
   // for executing non-member functions
-  template<class F, class... Args> 
-  return_type_t<F> execute_helper(F f, Args&&... args) {
+  template<class F, class ReduntantType, class... Args> 
+  return_type_t<F> execute_helper(F f, ReduntantType functor, Args&&... args) {
       return f(static_cast<Args>(args)... );
   }
 
   // for executing member-functions
-  template<class ReturnType, class C, class Obj, class... Args> 
-  auto execute_helper( ReturnType C::* f, Obj&& obj, Args&&... args) -> return_type_t<decltype(f)>  {
+  template<class ReturnType, class C, class Obj, 
+    class = typename std::enable_if<std::is_class<typename std::decay<Obj>::type>::value>::type, class... Args> 
+  auto execute_helper( ReturnType C::* f, C* functorPtr,  Obj&& obj, Args&&... args) -> return_type_t<decltype(f)>  {
       return (static_cast<Obj>(obj).*f)(static_cast<Args>(args)... );
+  }
+
+  template<class ReturnType, class C, class... Args> 
+  auto execute_helper( ReturnType C::* f, C* functorPtr, Args&&... args) -> return_type_t<decltype(f)>  {
+      return (functorPtr->*f)(static_cast<Args>(args)... );
   }
 
   // Using std::function and std::mem_fn introduces a lot of overhead, which we
@@ -73,11 +79,13 @@ namespace clad {
     using CladFunctionType = F;
     using FunctorType = ExtractFunctorTraits_t<F>;
   private:
+    FunctorType* m_Functor = nullptr;
+    const bool isMemFn = !(std::is_same<FunctorType, void>::value);
     CladFunctionType m_Function;
     char* m_Code;
-    FunctorType* functor = nullptr;
   public:
-    CladFunction(CladFunctionType f, const char* code) {
+    CladFunction(CladFunctionType f, const char* code, 
+                 FunctorType* functor=nullptr) : m_Functor(functor) {
       assert(f && "Must pass a non-0 argument.");
       if (size_t length = strlen(code)) {
         m_Function = f;
@@ -95,7 +103,8 @@ namespace clad {
       }
     }
 
-    CladFunction(FunctorType* f, const char* code) : CladFunction(&FunctorType::operator(), code) {}
+    CladFunction(FunctorType* f, const char* code, FunctorType* functor=nullptr) : 
+      CladFunction(&FunctorType::operator(), code, functor) {}
     // Intentionally leak m_Code, otherwise we have to link against c++ runtime,
     // i.e -lstdc++.
     //~CladFunction() { /*free(m_Code);*/ }
@@ -109,7 +118,7 @@ namespace clad {
         return static_cast<return_type_t<F>>(0);
       }
 
-      return execute_helper(m_Function,static_cast<Args>(args)...);
+      return execute_helper(m_Function, m_Functor, static_cast<Args>(args)...);
     }
 
     /// Return the string representation for the generated derivative.
@@ -136,9 +145,10 @@ namespace clad {
   ///
   template<unsigned N = 1, typename ArgSpec = const char *, typename F>
   CladFunction <ExtractDerivedFnTraitsForwMode_t<F>> __attribute__((annotate("D")))
-  differentiate(F f, ArgSpec args = "", const char* code = "") {
+  differentiate(F f, ArgSpec args = "", ExtractFunctorTraits_t<F>* functor = nullptr, const char* code = "") {
     assert(f && "Must pass in a non-0 argument");
-    return CladFunction<ExtractDerivedFnTraitsForwMode_t<F>>(f, code);
+    auto CF = CladFunction<ExtractDerivedFnTraitsForwMode_t<F>>(f, code, functor);
+    return CF;
   }
 
   /// A function for gradient computation.

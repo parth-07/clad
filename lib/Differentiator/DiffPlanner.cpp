@@ -3,6 +3,7 @@
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Basic/SourceManager.h"
+#include "clang/Sema/Lookup.h"
 #include "clang/Sema/Sema.h"
 #include "clang/Sema/TemplateDeduction.h"
 
@@ -22,14 +23,12 @@ namespace clad {
   // Here relevant ancestor is nearest ancestor of ImplicitCastExpr or 
   // UnaryOperator type.
   DeclRefExpr* getArgFunction(CallExpr* call,
-                              Sema& SemaRef,
                               Expr** relevantAncestor = nullptr) {
     struct Finder :
       RecursiveASTVisitor<Finder> {
         DeclRefExpr* m_FnDRE = nullptr;
         Expr** m_RelevantAncestor = nullptr;
-        Sema& m_SemaRef;
-        Finder(Sema& SemaRef, Expr** relevantAncestor=nullptr) : m_SemaRef(SemaRef), m_RelevantAncestor(relevantAncestor) {}
+        Finder(Expr** relevantAncestor=nullptr) : m_RelevantAncestor(relevantAncestor) {}
         bool VisitExpr(Expr* E) {
           if (m_RelevantAncestor) {
             switch (E->getStmtClass()) {
@@ -40,29 +39,8 @@ namespace clad {
             }
           }
           if (auto DRE = dyn_cast<DeclRefExpr>(E)) {
-            if (auto VD = dyn_cast<VarDecl>(DRE->getDecl())) {
-              auto varType = VD->getType().getTypePtr();
-              if (varType->isStructureOrClassType()) {
-                auto RD = varType->getAsCXXRecordDecl();
-                // TODO: Use namelookup instead to find operator() method
-                for (auto methodIter = RD->method_begin(), E = RD->method_end(); 
-                     methodIter != E; 
-                     ++methodIter) {
-                  if (methodIter->getNameAsString() == "operator()") {
-                    CXXScopeSpec CSS;
-                    CSS.Extend(m_SemaRef.getASTContext(), RD->getIdentifier(), 
-                               noLoc, noLoc);
-                    m_FnDRE = m_SemaRef.BuildDeclRefExpr(*methodIter,
-                                  methodIter->getType(), 
-                                  ExprValueKind::VK_RValue,
-                                  noLoc, &CSS);
-                    break;                                  
-                  }
-                }
-              }
-              else {
+            if (auto VD = dyn_cast<VarDecl>(DRE->getDecl())) { 
                 TraverseStmt(VD->getInit());
-              }
             }
             else if (auto FD = dyn_cast<FunctionDecl>(DRE->getDecl()))
               m_FnDRE = DRE;
@@ -70,7 +48,7 @@ namespace clad {
           }
           return true; 
         }
-      } finder(SemaRef, relevantAncestor);
+      } finder(relevantAncestor);
 
       assert(cast<NamespaceDecl>(call->getDirectCallee()->
              getDeclContext())->getName() == "clad" &&
@@ -86,9 +64,9 @@ namespace clad {
     auto codeArgIdx = static_cast<int>(call->getNumArgs()) - 1;
     assert(call && "Must be set");
     assert(FD && "Trying to update with null FunctionDecl");
-
+  
     Expr* oldArgDREParent = nullptr;
-    DeclRefExpr* oldDRE = getArgFunction(call, SemaRef, &oldArgDREParent);
+    DeclRefExpr* oldDRE = getArgFunction(call, &oldArgDREParent);
     if (!oldDRE)
       llvm_unreachable("Trying to differentiate something unsupported");
 
@@ -235,6 +213,71 @@ namespace clad {
     return false;
   }
 
+  bool updateArgsToSuitableForm(CallExpr* call, Sema& SemaRef) {
+    struct Finder : RecursiveASTVisitor<Finder> {
+      bool m_IsFunctor = false;
+      VarDecl* m_FunctorDecl = nullptr;
+      DeclRefExpr* m_FunctorDRE = nullptr;
+      CXXRecordDecl* m_RD = nullptr;
+
+      bool VisitExpr(Expr* E) {
+        if (auto DRE = dyn_cast<DeclRefExpr>(E)) {
+          if (auto VD = dyn_cast<VarDecl>(DRE->getDecl())) {
+            auto varType = VD->getType().getTypePtr();
+            if (varType->isStructureOrClassType()) {
+              m_IsFunctor = true;
+              m_FunctorDRE = DRE;
+              m_FunctorDecl = VD;
+              m_RD = varType->getAsCXXRecordDecl();
+              return false;
+            }
+          }
+        }
+        return true;
+      }
+    } finder;
+    finder.TraverseStmt(call->getArg(0));
+    if (finder.m_IsFunctor) {
+      unsigned functorAddressArgIndex = 2;
+      // TODO: Not sure if this is necessary, call->setArg(functorAddressArgIndex, call->getArg(0))
+      // should work as well.
+      auto functorDecl = finder.m_FunctorDecl;
+      auto oldFunctorDRE = finder.m_FunctorDRE;
+      auto newFunctorDRE = DeclRefExpr::Create(SemaRef.getASTContext(), 
+                                               oldFunctorDRE->getQualifierLoc(),
+                                               noLoc, functorDecl,
+                                               false, 
+                                               oldFunctorDRE->getNameInfo(),
+                                               functorDecl->getType(),
+                                               oldFunctorDRE->getValueKind());
+      auto newFunctorDREUnOp = SemaRef.BuildUnaryOp(nullptr, noLoc,
+                                                    UnaryOperatorKind::UO_AddrOf,
+                                                    newFunctorDRE).get();
+      call->setArg(functorAddressArgIndex, newFunctorDREUnOp);
+      auto RD = finder.m_RD;
+      for (auto methodIter = RD->method_begin(), E = RD->method_end();
+           methodIter != E;
+           ++methodIter) {
+        if (methodIter->getNameAsString() == "operator()") {
+          CXXScopeSpec CSS;
+          CSS.Extend(
+              SemaRef.getASTContext(), RD->getIdentifier(), noLoc, noLoc);
+          auto newFnDRE = SemaRef.BuildDeclRefExpr(*methodIter,
+                                               methodIter->getType(),
+                                               ExprValueKind::VK_RValue,
+                                               noLoc,
+                                               &CSS);
+          auto newFnDREUnOp = SemaRef.BuildUnaryOp(nullptr, noLoc, 
+                                                   UnaryOperatorKind::UO_AddrOf,
+                                                   newFnDRE).get();
+          call->setArg(0, newFnDREUnOp);
+          break;
+        }
+      }
+    }
+    return 1;
+  }
+
   bool DiffCollector::VisitCallExpr(CallExpr* E) {
     // Check if we should look into this.
     if (!isInInterval(E->getEndLoc()))
@@ -250,7 +293,8 @@ namespace clad {
     if (A && (A->getAnnotation().equals("D") || A->getAnnotation().equals("G") 
         || A->getAnnotation().equals("H") || A->getAnnotation().equals("J"))) {
       // A call to clad::differentiate or clad::gradient was found.
-      DeclRefExpr* DRE = getArgFunction(E, m_Sema);
+      updateArgsToSuitableForm(E, m_Sema);
+      DeclRefExpr* DRE = getArgFunction(E);
       if (!DRE)
         return true;
       DiffRequest request{};
