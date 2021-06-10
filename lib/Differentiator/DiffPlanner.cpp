@@ -239,11 +239,11 @@ namespace clad {
     finder.TraverseStmt(call->getArg(0));
     if (finder.m_IsFunctor) {
       unsigned functorAddressArgIndex = 2;
-      // TODO: Not sure if this is necessary, call->setArg(functorAddressArgIndex, call->getArg(0))
+      // TODO: Not sure if cloning is necessary here, call->setArg(functorAddressArgIndex, call->getArg(0))
       // should work as well.
       auto functorDecl = finder.m_FunctorDecl;
       auto oldFunctorDRE = finder.m_FunctorDRE;
-      auto newFunctorDRE = DeclRefExpr::Create(SemaRef.getASTContext(), 
+      Expr* newFunctorDRE = DeclRefExpr::Create(SemaRef.getASTContext(), 
                                                oldFunctorDRE->getQualifierLoc(),
                                                noLoc, functorDecl,
                                                false, 
@@ -262,11 +262,13 @@ namespace clad {
           CXXScopeSpec CSS;
           CSS.Extend(
               SemaRef.getASTContext(), RD->getIdentifier(), noLoc, noLoc);
-          auto newFnDRE = SemaRef.BuildDeclRefExpr(*methodIter,
+
+          Expr* newFnDRE = clad_compat::GetResult<Expr*>(SemaRef.BuildDeclRefExpr(*methodIter,
                                                methodIter->getType(),
                                                ExprValueKind::VK_RValue,
                                                noLoc,
-                                               &CSS);
+                                               &CSS));
+
           auto newFnDREUnOp = SemaRef.BuildUnaryOp(nullptr, noLoc, 
                                                    UnaryOperatorKind::UO_AddrOf,
                                                    newFnDRE).get();
@@ -293,7 +295,7 @@ namespace clad {
     if (A && (A->getAnnotation().equals("D") || A->getAnnotation().equals("G") 
         || A->getAnnotation().equals("H") || A->getAnnotation().equals("J"))) {
       // A call to clad::differentiate or clad::gradient was found.
-      updateArgsToSuitableForm(E, m_Sema);
+      // updateArgsToSuitableForm(E, m_Sema);
       DeclRefExpr* DRE = getArgFunction(E);
       if (!DRE)
         return true;

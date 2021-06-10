@@ -414,7 +414,7 @@ namespace clad {
 
   template<class T, class C>
   struct ExtractFunctorTraits<T C::*> {
-    using type = C;
+    using type = typename std::decay<C>::type;
   };
   /**
    * \brief Helper type for ExtractFunctorTraits
