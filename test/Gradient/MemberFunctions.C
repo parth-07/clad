@@ -742,6 +742,7 @@ int main() {
 
   auto d_fn = clad::gradient(fn);
   double result[2];
+  result[0]=result[1]=0;
   d_fn.execute(4,5,result);
   for(unsigned i=0;i<2;++i) {
     printf("%.2f ",result[i]);  //CHECK-EXEC: 40.00 16.00
