@@ -80,31 +80,39 @@ namespace clad {
     // using call->setArg(0, DRE) seems to be sufficient,
     // though the real AST allways contains the ImplicitCastExpr (function ->
     // function ptr cast) or UnaryOp (method ptr call).
-    if (auto oldCast = dyn_cast_or_null<ImplicitCastExpr>(oldArgDREParent)) {
-      // Cast function to function pointer.
-      auto newCast = ImplicitCastExpr::Create(C,
-                                              C.getPointerType(FD->getType()),
-                                              oldCast->getCastKind(),
-                                              DRE,
-                                              nullptr,
-                                              oldCast->getValueKind()
-                                              CLAD_COMPAT_CLANG12_CastExpr_GetFPO(oldCast));
-      call->setArg(0, newCast);
-    }
-    else if (auto oldUnOp = dyn_cast_or_null<UnaryOperator>(oldArgDREParent)) {
-      // Add the "&" operator
-      auto newUnOp = SemaRef.BuildUnaryOp(nullptr,
-                                          noLoc,
-                                          oldUnOp->getOpcode(),
-                                          DRE).get();
-      call->setArg(0, newUnOp);
-    }
-    else {
+    // if (auto oldCast = dyn_cast_or_null<ImplicitCastExpr>(oldArgDREParent)) {
+    //   // Cast function to function pointer.
+    //   auto newCast = ImplicitCastExpr::Create(C,
+    //                                           C.getPointerType(FD->getType()),
+    //                                           oldCast->getCastKind(),
+    //                                           DRE,
+    //                                           nullptr,
+    //                                           oldCast->getValueKind()
+    //                                           CLAD_COMPAT_CLANG12_CastExpr_GetFPO(oldCast));
+    //   call->setArg(0, newCast);
+    // }
+    // else if (auto oldUnOp = dyn_cast_or_null<UnaryOperator>(oldArgDREParent)) {
+    //   // Add the "&" operator
+    //   auto newUnOp = SemaRef.BuildUnaryOp(nullptr,
+    //                                       noLoc,
+    //                                       oldUnOp->getOpcode(),
+    //                                       DRE).get();
+    //   call->setArg(0, newUnOp);
+    // }
+    if (dyn_cast<CXXRecordDecl>(FD)) {
       auto newUnOp = SemaRef.BuildUnaryOp(nullptr,
                                           noLoc,
                                           UnaryOperatorKind::UO_AddrOf,
                                           DRE).get();
-      call->setArg(0, newUnOp);
+      auto tempExpr = SemaRef.CreateMaterializeTemporaryExpr(FD->getType(), newUnOp, false);
+      call->setArg(0, tempExpr);
+    }
+    else if (dyn_cast<FunctionDecl>(FD)) {
+      // auto newUnOp = SemaRef.BuildUnaryOp(nullptr,
+      //                                     noLoc,
+      //                                     UnaryOperatorKind::UO_AddrOf,
+      //                                     DRE).get();
+      call->setArg(0, DRE);
     }
       
 
