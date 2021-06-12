@@ -66,15 +66,18 @@ template<class F, class... Args>
 
   // for executing member-functions
   template<class ReturnType, class C, class Obj, 
+    // class = typename std::enable_if<std::is_same<typename std::decay<FunctorType>::type, C>::value>::type,
     class = typename std::enable_if<std::is_class<typename std::decay<Obj>::type>::value>::type, class... Args> 
-  auto execute_helper( ReturnType C::* f, C* functorPtr,  Obj&& obj, Args&&... args) -> return_type_t<decltype(f)>  {
+  auto execute_helper( ReturnType C::* f, Obj&& obj, Args&&... args) -> return_type_t<decltype(f)>  {
       return (static_cast<Obj>(obj).*f)(static_cast<Args>(args)... );
   }
 
-  template<class ReturnType, class C, class... Args> 
-  auto execute_helper( ReturnType C::* f, C* functorPtr, Args&&... args) -> return_type_t<decltype(f)>  {
-      return (functorPtr->*f)(static_cast<Args>(args)... );
-  }
+  // template<class ReturnType, class C, class FunctorType, 
+  //     class = typename std::enable_if<std::is_same<typename std::decay<FunctorType>::type, C>::value>::type,
+  //     class... Args> 
+  // auto execute_helper( ReturnType C::* f, C* functorPtr, Args&&... args) -> return_type_t<decltype(f)>  {
+  //     return (functorPtr->*f)(static_cast<Args>(args)... );
+  // }
 
   // Using std::function and std::mem_fn introduces a lot of overhead, which we
   // do not need. Another disadvantage is that it is difficult to distinguish a

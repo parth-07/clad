@@ -99,7 +99,7 @@ namespace clad {
     //                                       DRE).get();
     //   call->setArg(0, newUnOp);
     // }
-    if (dyn_cast<CXXRecordDecl>(FD)) {
+    if (dyn_cast<CXXMethodDecl>(FD)) {
       auto newUnOp = SemaRef.BuildUnaryOp(nullptr,
                                           noLoc,
                                           UnaryOperatorKind::UO_AddrOf,
