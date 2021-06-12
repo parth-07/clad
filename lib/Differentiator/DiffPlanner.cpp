@@ -60,6 +60,7 @@ namespace clad {
 
   void DiffRequest::updateCall(FunctionDecl* FD, Sema& SemaRef) {
     CallExpr* call = this->CallContext;
+    call->dump();
     // Index of "code" parameter:
     auto codeArgIdx = static_cast<int>(call->getNumArgs()) - 1;
     assert(call && "Must be set");
@@ -79,7 +80,7 @@ namespace clad {
     // using call->setArg(0, DRE) seems to be sufficient,
     // though the real AST allways contains the ImplicitCastExpr (function ->
     // function ptr cast) or UnaryOp (method ptr call).
-    if (auto oldCast = dyn_cast<ImplicitCastExpr>(oldArgDREParent)) {
+    if (auto oldCast = dyn_cast_or_null<ImplicitCastExpr>(oldArgDREParent)) {
       // Cast function to function pointer.
       auto newCast = ImplicitCastExpr::Create(C,
                                               C.getPointerType(FD->getType()),
@@ -90,7 +91,7 @@ namespace clad {
                                               CLAD_COMPAT_CLANG12_CastExpr_GetFPO(oldCast));
       call->setArg(0, newCast);
     }
-    else if (auto oldUnOp = dyn_cast<UnaryOperator>(oldArgDREParent)) {
+    else if (auto oldUnOp = dyn_cast_or_null<UnaryOperator>(oldArgDREParent)) {
       // Add the "&" operator
       auto newUnOp = SemaRef.BuildUnaryOp(nullptr,
                                           noLoc,
@@ -98,8 +99,14 @@ namespace clad {
                                           DRE).get();
       call->setArg(0, newUnOp);
     }
-    else
-      llvm_unreachable("Trying to differentiate something unsupported");
+    else {
+      auto newUnOp = SemaRef.BuildUnaryOp(nullptr,
+                                          noLoc,
+                                          UnaryOperatorKind::UO_AddrOf,
+                                          DRE).get();
+      call->setArg(0, newUnOp);
+    }
+      
 
     // Update the code parameter.
     if (CXXDefaultArgExpr* Arg
@@ -177,6 +184,8 @@ namespace clad {
 
     // Replace the old clad::gradient by the new one.
     call->setCallee(CladGradientExprNew);
+    llvm::errs()<<"\n\n";
+    call->dump();
   }
 
   DiffCollector::DiffCollector(DeclGroupRef DGR, DiffInterval& Interval,
@@ -295,7 +304,7 @@ namespace clad {
     if (A && (A->getAnnotation().equals("D") || A->getAnnotation().equals("G") 
         || A->getAnnotation().equals("H") || A->getAnnotation().equals("J"))) {
       // A call to clad::differentiate or clad::gradient was found.
-      // updateArgsToSuitableForm(E, m_Sema);
+      updateArgsToSuitableForm(E, m_Sema);
       DeclRefExpr* DRE = getArgFunction(E);
       if (!DRE)
         return true;

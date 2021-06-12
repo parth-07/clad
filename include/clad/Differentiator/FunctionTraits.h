@@ -347,6 +347,14 @@ namespace clad {
   };
   #endif
 
+  template<class F>
+  struct ExtractClassHelper {};
+
+  template<class T, class C> 
+  struct ExtractClassHelper<T C::*> {
+    using type = C;
+  };
+
   template<class F, class = void>
   struct is_function_pointer : std::false_type {};
 
@@ -372,23 +380,24 @@ namespace clad {
 
   template <class F>
   struct ExtractDerivedFnTraitsForwMode<
-      F*,
-      typename std::enable_if<std::is_class<F>::value>::type> {
-    using type = decltype(&F::operator());
+      F,
+      typename std::enable_if<std::is_class<typename std::remove_pointer<typename std::remove_reference<F>::type>::type>::value>::type> {
+    using ClassType = typename std::decay<typename std::remove_pointer<typename std::remove_reference<F>::type>::type>::type;
+    using type = decltype(&ClassType::operator());
   };
 
   template <class F>
   struct ExtractDerivedFnTraitsForwMode<
       F,
-      typename std::enable_if<is_function_pointer<F>::value>::type> {
-    using type = F;
+      typename std::enable_if<std::is_function<typename std::remove_pointer<typename std::remove_reference<F>::type>::type>::value>::type> {
+    using type = typename std::remove_pointer<typename std::remove_reference<F>::type>::type*;
   };
 
   template <class F>
   struct ExtractDerivedFnTraitsForwMode<
       F,
-      typename std::enable_if<std::is_member_function_pointer<F>::value>::type> {
-    using type = F;
+      typename std::enable_if<std::is_member_function_pointer<typename std::remove_reference<F>::type>::value>::type> {
+    using type = typename std::decay<F>::type;
   };
   
   /**
@@ -401,21 +410,31 @@ namespace clad {
   struct ExtractFunctorTraits {};
 
   template<class F>
-  struct ExtractFunctorTraits<F*, 
-      typename std::enable_if<std::is_class<F>::value>::type> {
-    using type = F;
+  struct ExtractFunctorTraits<F, 
+      typename std::enable_if<std::is_class<typename std::remove_pointer<typename std::remove_reference<F>::type>::type>::value>::type> {
+    using type = typename std::remove_pointer<typename std::remove_reference<F>::type>::type;
   };
+
 
   template<class F>
   struct ExtractFunctorTraits<F,
-      typename std::enable_if<is_function_pointer<F>::value>::type> {
+      typename std::enable_if<std::is_function<typename std::remove_pointer<typename std::remove_reference<F>::type>::type>::value>::type> {
     using type = void;
   };
 
-  template<class T, class C>
-  struct ExtractFunctorTraits<T C::*> {
-    using type = typename std::decay<C>::type;
-  };
+  template<class F>
+  struct ExtractFunctorTraits<
+      F,
+      typename std::enable_if<std::is_member_function_pointer<typename std::decay<F>::type>::value>::type> 
+      : ExtractClassHelper<typename std::decay<F>::type> {};  
+
+  
+
+
+  // template<class T, class C>
+  // struct ExtractFunctorTraits<T C::*> {
+  //   using type = C;
+  // };
   /**
    * \brief Helper type for ExtractFunctorTraits
    */
