@@ -60,7 +60,7 @@ namespace clad {
 
   void DiffRequest::updateCall(FunctionDecl* FD, Sema& SemaRef) {
     CallExpr* call = this->CallContext;
-    call->dump();
+    // call->dump();
     // Index of "code" parameter:
     auto codeArgIdx = static_cast<int>(call->getNumArgs()) - 1;
     assert(call && "Must be set");
@@ -104,7 +104,9 @@ namespace clad {
                                           noLoc,
                                           UnaryOperatorKind::UO_AddrOf,
                                           DRE).get();
-      auto tempExpr = SemaRef.CreateMaterializeTemporaryExpr(FD->getType(), newUnOp, false);
+      auto type = FD->getType();
+      auto RDType = dyn_cast<CXXRecordDecl>(FD->getParent())->getTypeForDecl();
+      auto tempExpr = SemaRef.CreateMaterializeTemporaryExpr(SemaRef.getASTContext().getMemberPointerType(type, RDType) ,newUnOp, false);
       call->setArg(0, tempExpr);
     }
     else if (dyn_cast<FunctionDecl>(FD)) {
@@ -192,8 +194,7 @@ namespace clad {
 
     // Replace the old clad::gradient by the new one.
     call->setCallee(CladGradientExprNew);
-    llvm::errs()<<"\n\n";
-    call->dump();
+    // call->dump();
   }
 
   DiffCollector::DiffCollector(DeclGroupRef DGR, DiffInterval& Interval,
