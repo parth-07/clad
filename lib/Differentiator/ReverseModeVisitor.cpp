@@ -116,7 +116,9 @@ namespace clad {
 
     // A vector of types of the gradient function parameters.
     llvm::SmallVector<QualType, 16> paramTypes;
+    llvm::SmallVector<QualType, 16> outputParamTypes;
     paramTypes.reserve(m_Function->getNumParams() + args.size());
+    outputParamTypes.reserve(args.size());
     for (auto* PVD : m_Function->parameters()) {
       paramTypes.emplace_back(PVD->getType());
 
@@ -124,10 +126,10 @@ namespace clad {
         auto it = std::find(std::begin(args), std::end(args), PVD);
         if (it != std::end(args)) {
           if (isArrayOrPointerType(PVD->getType())) {
-            paramTypes.emplace_back(
+            outputParamTypes.emplace_back(
                 m_Context.getPointerType(m_Function->getReturnType()));
           } else {
-            paramTypes.emplace_back(
+            outputParamTypes.emplace_back(
                 m_Context.getLValueReferenceType(m_Function->getReturnType()));
           }
         }
@@ -136,6 +138,10 @@ namespace clad {
     if (isVectorValued) {
       unsigned lastArgN = m_Function->getNumParams() - 1;
       paramTypes.emplace_back(m_Function->getParamDecl(lastArgN)->getType());
+    } else {
+      paramTypes.insert(paramTypes.end(),
+                        outputParamTypes.begin(),
+                        outputParamTypes.end());
     }
 
     auto originalFnType = dyn_cast<FunctionProtoType>(m_Function->getType());
@@ -171,6 +177,7 @@ namespace clad {
 
     // Create parameter declarations.
     llvm::SmallVector<ParmVarDecl*, 4> params;
+    llvm::SmallVector<ParmVarDecl*, 4> outputParams;
     params.reserve(paramTypes.size());
     for (auto* PVD : m_Function->parameters()) {
       auto VD = ParmVarDecl::Create(
@@ -219,7 +226,7 @@ namespace clad {
             m_Sema.PushOnScopeChains(DVD,
                                      getCurrentScope(),
                                      /*AddToContext*/ false);
-          params.emplace_back(DVD);
+          outputParams.emplace_back(DVD);
           m_Variables[*it] = (Expr*)BuildDeclRef(DVD);
         }
       }
@@ -242,6 +249,7 @@ namespace clad {
                                  getCurrentScope(),
                                  /*AddToContext*/ false);
     } else {
+      params.insert(params.end(), outputParams.begin(), outputParams.end());
       m_IndependentVars.insert(m_IndependentVars.end(),
                                args.begin(),
                                args.end());
@@ -959,7 +967,6 @@ namespace clad {
 
     llvm::SmallVector<Expr*, 16> CallArgs{};
     llvm::SmallVector<Expr*, 16> DerivedCallArgs{};
-    llvm::SmallVector<Expr*, 16> ReverseDerivedCallArgs{};
     // If the result does not depend on the result of the call, just clone
     // the call and visit arguments (since they may contain side-effects like
     // f(x = y))
@@ -1070,10 +1077,10 @@ namespace clad {
       } else {
         int idx = 0;
 
+        llvm::SmallVector<Expr*, 16> DerivedCallOutputArgs{};
         for (auto arg : DerivedCallArgs) {
           ResultDecl = nullptr;
           Result = nullptr;
-          ReverseDerivedCallArgs.push_back(arg);
 
           auto argType = FD->parameters()[idx]->getType();
           if (isArrayOrPointerType(argType)) {
@@ -1096,7 +1103,7 @@ namespace clad {
                 BuildVarDecl(CEType, CreateUniqueIdentifier(funcPostfix()));
             Result = BuildDeclRef(ResultDecl);
           }
-          ReverseDerivedCallArgs.push_back(Result);
+          DerivedCallOutputArgs.push_back(Result);
           ArgDeclStmts.push_back(BuildDeclStmt(ResultDecl));
           // Visit each arg with df/dargi = df/dxi * Result.
           PerformImplicitConversionAndAssign(ArgResultDecls[idx],
@@ -1104,9 +1111,13 @@ namespace clad {
           idx++;
         }
 
+        DerivedCallArgs.insert(DerivedCallArgs.end(),
+                               DerivedCallOutputArgs.begin(),
+                               DerivedCallOutputArgs.end());
+
         // Try to find it in builtin derivatives
         OverloadedDerivedFn =
-            m_Builder.findOverloadedDefinition(DNInfo, ReverseDerivedCallArgs);
+            m_Builder.findOverloadedDefinition(DNInfo, DerivedCallOutputArgs);
       }
     }
     // Derivative was not found, check if it is a recursive call
@@ -1125,9 +1136,7 @@ namespace clad {
                 .ActOnCallExpr(getCurrentScope(),
                                selfRef,
                                noLoc,
-                               llvm::MutableArrayRef<Expr*>(
-                                   isVectorValued ? DerivedCallArgs
-                                                  : ReverseDerivedCallArgs),
+                               llvm::MutableArrayRef<Expr*>(DerivedCallArgs),
                                noLoc)
                 .get();
       } else {
@@ -1159,9 +1168,7 @@ namespace clad {
                 .ActOnCallExpr(getCurrentScope(),
                                BuildDeclRef(derivedFD),
                                noLoc,
-                               llvm::MutableArrayRef<Expr*>(
-                                   isVectorValued ? DerivedCallArgs
-                                                  : ReverseDerivedCallArgs),
+                               llvm::MutableArrayRef<Expr*>(DerivedCallArgs),
                                noLoc)
                 .get();
       }
