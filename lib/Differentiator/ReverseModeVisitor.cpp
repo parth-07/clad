@@ -125,13 +125,8 @@ namespace clad {
       if (!isVectorValued) {
         auto it = std::find(std::begin(args), std::end(args), PVD);
         if (it != std::end(args)) {
-          if (isArrayOrPointerType(PVD->getType())) {
-            outputParamTypes.emplace_back(
-                m_Context.getPointerType(m_Function->getReturnType()));
-          } else {
-            outputParamTypes.emplace_back(
-                m_Context.getLValueReferenceType(m_Function->getReturnType()));
-          }
+          outputParamTypes.emplace_back(
+              m_Context.getPointerType(m_Function->getReturnType()));
         }
       }
     }
@@ -206,11 +201,9 @@ namespace clad {
         if (!isVectorValued) {
           IdentifierInfo* DVDII =
               &m_Context.Idents.get("_d_" + PVD->getNameAsString());
+
           QualType DVDType =
-              (isArrayOrPointerType(PVD->getType()))
-                  ? m_Context.getPointerType(m_Function->getReturnType())
-                  : m_Context.getLValueReferenceType(
-                        m_Function->getReturnType());
+              m_Context.getPointerType(m_Function->getReturnType());
           auto DVD = ParmVarDecl::Create(
               m_Context,
               gradientFD,
@@ -227,7 +220,11 @@ namespace clad {
                                      getCurrentScope(),
                                      /*AddToContext*/ false);
           outputParams.emplace_back(DVD);
-          m_Variables[*it] = (Expr*)BuildDeclRef(DVD);
+          if (isArrayOrPointerType(PVD->getType())) {
+            m_Variables[*it] = (Expr*)BuildDeclRef(DVD);
+          } else {
+            m_Variables[*it] = BuildOp(UO_Deref, BuildDeclRef(DVD));
+          }
         }
       }
     }
@@ -965,7 +962,9 @@ namespace clad {
     if (!NArgs)
       return StmtDiff(Clone(CE));
 
+    // Stores the call arguments for the function to be derived
     llvm::SmallVector<Expr*, 16> CallArgs{};
+    // Stores the call arguments for the derived function
     llvm::SmallVector<Expr*, 16> DerivedCallArgs{};
     // If the result does not depend on the result of the call, just clone
     // the call and visit arguments (since they may contain side-effects like
@@ -1093,15 +1092,19 @@ namespace clad {
                 0);
             // Create {} array initializer to fill it with zeroes.
             auto ZeroInitBraces = m_Sema.ActOnInitList(noLoc, {}, noLoc).get();
-            // Declare: Type _gradX[Nargs] = {};
+            // Declare: diffArgType _gradX[Nargs] = {};
             ResultDecl = BuildVarDecl(diffArgType,
                                       CreateUniqueIdentifier(funcPostfix()),
                                       ZeroInitBraces);
             Result = BuildDeclRef(ResultDecl);
           } else {
-            ResultDecl =
-                BuildVarDecl(CEType, CreateUniqueIdentifier(funcPostfix()));
-            Result = BuildDeclRef(ResultDecl);
+            // Declare: diffArgType _grad = 0;
+            ResultDecl = BuildVarDecl(
+                CEType,
+                CreateUniqueIdentifier(funcPostfix()),
+                ConstantFolder::synthesizeLiteral(CEType, m_Context, 0));
+            // Pass the address of the declared variable
+            Result = BuildOp(UO_AddrOf, BuildDeclRef(ResultDecl));
           }
           DerivedCallOutputArgs.push_back(Result);
           ArgDeclStmts.push_back(BuildDeclStmt(ResultDecl));
