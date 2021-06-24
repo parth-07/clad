@@ -105,8 +105,9 @@ namespace clad {
     return { returnedFD, enclosingNS };
   }
 
-  DeclWithContext DerivativeBuilder::Derive(const FunctionDecl* FD,
-                                            const DiffRequest& request) {
+  OverloadedDeclWithContext
+  DerivativeBuilder::Derive(const FunctionDecl* FD,
+                            const DiffRequest& request) {
     //m_Sema.CurContext = m_Context.getTranslationUnitDecl();
     assert(FD && "Must not be null.");
     // If FD is only a declaration, try to find its definition.
@@ -119,7 +120,7 @@ namespace clad {
       return {};
     }
     FD = FD->getDefinition();
-    DeclWithContext result{};
+    OverloadedDeclWithContext result{};
     if (request.Mode == DiffMode::forward) {
       ForwardModeVisitor V(*this);
       result = V.Derive(FD, request);
@@ -135,8 +136,8 @@ namespace clad {
       result = J.Derive(FD, request);
     }
 
-    if (result.first)
-      registerDerivative(result.first, m_Sema);
+    if (std::get<0>(result))
+      registerDerivative(std::get<0>(result), m_Sema);
     return result;
   }
 }// end namespace clad

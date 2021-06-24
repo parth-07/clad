@@ -79,8 +79,9 @@ namespace clad {
 
   ReverseModeVisitor::~ReverseModeVisitor() {}
 
-  DeclWithContext ReverseModeVisitor::Derive(const FunctionDecl* FD,
-                                             const DiffRequest& request) {
+  OverloadedDeclWithContext
+  ReverseModeVisitor::Derive(const FunctionDecl* FD,
+                             const DiffRequest& request) {
     silenceDiags = !request.VerboseDiags;
     m_Function = FD;
     assert(m_Function && "Must not be null.");
@@ -338,7 +339,7 @@ namespace clad {
     m_Sema.PopDeclContext();
     endScope(); // Function decl scope
 
-    return result;
+    return {result.first, result.second, nullptr};
   }
 
   StmtDiff ReverseModeVisitor::VisitStmt(const Stmt* S) {
