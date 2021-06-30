@@ -50,7 +50,7 @@ namespace clad {
   ReverseModeVisitor::MakeCladTapeFor(Expr* E) {
     assert(E && "must be provided");
     QualType TapeType =
-        GetCladTapeOfType(getNonConstType(E->getType(), m_Context, m_Sema));
+        GetCladTapeOfType(getNonConstType(E->getType().getNonReferenceType(), m_Context, m_Sema));
     LookupResult& Push = GetCladTapePush();
     LookupResult& Pop = GetCladTapePop();
     Expr* TapeRef = BuildDeclRef(GlobalStoreImpl(TapeType, "_t"));
@@ -938,7 +938,7 @@ namespace clad {
     std::size_t insertionPoint = getCurrentBlock(reverse).size();
     // Store the type to reduce call overhead that would occur if used in the
     // loop
-    auto CEType = getNonConstType(CE->getType(), m_Context, m_Sema);
+    auto CEType = getNonConstType(CE->getType().getNonReferenceType(), m_Context, m_Sema);
     for (const Expr* Arg : CE->arguments()) {
       // Create temporary variables corresponding to derivative of each
       // argument, so that they can be referred to when arguments is visited.
@@ -1467,7 +1467,7 @@ namespace clad {
   VarDeclDiff ReverseModeVisitor::DifferentiateVarDecl(const VarDecl* VD) {
     auto zero = getZeroInit(VD->getType());
     VarDecl* VDDerived =
-        BuildVarDecl(getNonConstType(VD->getType(), m_Context, m_Sema),
+        BuildVarDecl(getNonConstType(VD->getType().getNonReferenceType(), m_Context, m_Sema),
                      "_d_" + VD->getNameAsString(),
                      zero);
     StmtDiff initDiff = VD->getInit()
