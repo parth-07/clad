@@ -659,6 +659,30 @@ public:
   // CHECK-NEXT:     }
   // CHECK-NEXT: }
 
+  double partial_mem_fn(double i, double j) { return (x + y) * i + i * j; }
+
+  // CHECK: void partial_mem_fn_grad_0(double i, double j, double *_d_i) {
+  // CHECK-NEXT:     double _t0;
+  // CHECK-NEXT:     double _t1;
+  // CHECK-NEXT:     double _t2;
+  // CHECK-NEXT:     double _t3;
+  // CHECK-NEXT:     _t1 = (this->x + this->y);
+  // CHECK-NEXT:     _t0 = i;
+  // CHECK-NEXT:     _t3 = i;
+  // CHECK-NEXT:     _t2 = j;
+  // CHECK-NEXT:     double partial_mem_fn_return = _t1 * _t0 + _t3 * _t2;
+  // CHECK-NEXT:     goto _label0;
+  // CHECK-NEXT:   _label0:
+  // CHECK-NEXT:     {
+  // CHECK-NEXT:         double _r0 = 1 * _t0;
+  // CHECK-NEXT:         double _r1 = _t1 * 1;
+  // CHECK-NEXT:         *_d_i += _r1;
+  // CHECK-NEXT:         double _r2 = 1 * _t2;
+  // CHECK-NEXT:         *_d_i += _r2;
+  // CHECK-NEXT:         double _r3 = _t3 * 1;
+  // CHECK-NEXT:     }
+  // CHECK-NEXT: }
+
   void mem_fn_grad(double i, double j, double* _d_i, double* _d_j);
   void const_mem_fn_grad(double i, double j, double* _d_i, double* _d_j);
   void volatile_mem_fn_grad(double i, double j, double* _d_i, double* _d_j);
@@ -719,6 +743,7 @@ public:
                                                     double j,
                                                     double* _d_i,
                                                     double* _d_j);
+  void partial_mem_fn_grad(double i, double j, double* _d_i);
 };
 
 double fn(double i,double j) {
@@ -773,6 +798,7 @@ int main() {
   auto d_const_rval_ref_noexcept_mem_fn = clad::gradient(&SimpleFunctions::const_rval_ref_noexcept_mem_fn);
   auto d_volatile_rval_ref_noexcept_mem_fn = clad::gradient(&SimpleFunctions::volatile_rval_ref_noexcept_mem_fn);
   auto d_const_volatile_rval_ref_noexcept_mem_fn = clad::gradient(&SimpleFunctions::const_volatile_rval_ref_noexcept_mem_fn);
+  auto d_partial_mem_fn = clad::gradient(&SimpleFunctions::partial_mem_fn, "i");
 
   auto d_fn = clad::gradient(fn);
   double result[2];
