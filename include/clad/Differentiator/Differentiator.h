@@ -10,6 +10,8 @@
 #include "BuiltinDerivatives.h"
 #include "FunctionTraits.h"
 #include "Tape.h"
+#include "Array.h"
+#include "ArrayRef.h"
 
 #include <assert.h>
 #include <stddef.h>
