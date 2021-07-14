@@ -18,6 +18,7 @@
 namespace custom_derivatives{}
 
 #include <math.h>
+#include "clad/Differentiator/ArrayRef.h"
 
 namespace custom_derivatives {
   // define functions' derivatives from std
@@ -99,10 +100,10 @@ namespace custom_derivatives {
   template <typename T1, typename T2>
   CUDA_HOST_DEVICE void pow_grad(T1 x,
                                  T2 exponent,
-                                 decltype(pow(T1(), T2()))* _d_x,
-                                 decltype(pow(T1(), T2()))* _d_y) {
-    *_d_x += pow_darg0(x, exponent);
-    *_d_y += pow_darg1(x, exponent);
+                                 clad::array_ref<decltype(pow(T1(), T2()))> _d_x,
+                                 clad::array_ref<decltype(pow(T1(), T2()))> _d_y) {
+    * _d_x += pow_darg0(x, exponent);
+    * _d_y += pow_darg1(x, exponent);
   }
 
   template <typename T>

@@ -1,6 +1,8 @@
 #ifndef FUNCTION_TRAITS
 #define FUNCTION_TRAITS
 
+#include "ArrayRef.h"
+
 namespace clad {
 
   // Trait class to deduce return type of function(both member and non-member) at commpile time
@@ -321,9 +323,9 @@ namespace clad {
   DropArgs_AddCON(())
       DropArgs_AddCON((, ...)) // Declares all the specializations
 
-      template <class T, class R>
-      struct OutputParamType {
-    using type = R*;
+  template <class T, class R>
+  struct OutputParamType {
+    using type = array_ref<R>;
   };
 
   template <class T, class R>

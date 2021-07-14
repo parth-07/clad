@@ -94,11 +94,18 @@ namespace clad {
     if (args.empty())
       return {};
 
+    // Save the type of the output parameter(s) that is add by clad to the
+    // derived function
+    clang::QualType DerivedOutputParamType;
     if (request.Mode == DiffMode::jacobian) {
       isVectorValued = true;
       args.pop_back();
       unsigned lastArgN = m_Function->getNumParams() - 1;
       outputArrayStr = m_Function->getParamDecl(lastArgN)->getNameAsString();
+      DerivedOutputParamType = m_Function->getParamDecl(lastArgN)->getType();
+    } else {
+      DerivedOutputParamType =
+          GetCladArrayRefOfType(m_Function->getReturnType());
     }
 
     auto derivativeBaseName = m_Function->getNameAsString();
@@ -126,14 +133,13 @@ namespace clad {
       if (!isVectorValued) {
         auto it = std::find(std::begin(args), std::end(args), PVD);
         if (it != std::end(args)) {
-          outputParamTypes.emplace_back(
-              m_Context.getPointerType(m_Function->getReturnType()));
+          outputParamTypes.emplace_back(DerivedOutputParamType);
         }
       }
     }
     if (isVectorValued) {
       unsigned lastArgN = m_Function->getNumParams() - 1;
-      paramTypes.emplace_back(m_Function->getParamDecl(lastArgN)->getType());
+      paramTypes.emplace_back(DerivedOutputParamType);
     } else {
       paramTypes.insert(paramTypes.end(),
                         outputParamTypes.begin(),
@@ -210,16 +216,14 @@ namespace clad {
           IdentifierInfo* DVDII =
               &m_Context.Idents.get("_d_" + PVD->getNameAsString());
 
-          QualType DVDType =
-              m_Context.getPointerType(m_Function->getReturnType());
           auto DVD = ParmVarDecl::Create(
               m_Context,
               gradientFD,
               noLoc,
               noLoc,
               DVDII,
-              DVDType,
-              m_Context.getTrivialTypeSourceInfo(DVDType, noLoc),
+              DerivedOutputParamType,
+              m_Context.getTrivialTypeSourceInfo(DerivedOutputParamType, noLoc),
               PVD->getStorageClass(),
               // Clone default arg if present.
               nullptr);
@@ -231,7 +235,8 @@ namespace clad {
           if (isArrayOrPointerType(PVD->getType())) {
             m_Variables[*it] = (Expr*)BuildDeclRef(DVD);
           } else {
-            m_Variables[*it] = BuildOp(UO_Deref, BuildDeclRef(DVD));
+            m_Variables[*it] =
+                BuildOp(UO_Deref, BuildDeclRef(DVD), m_Function->getLocation());
           }
         }
       }
@@ -245,8 +250,8 @@ namespace clad {
           noLoc,
           noLoc,
           &m_Context.Idents.get(resultArg()),
-          paramTypes.back(),
-          m_Context.getTrivialTypeSourceInfo(paramTypes.back(), noLoc),
+          DerivedOutputParamType,
+          m_Context.getTrivialTypeSourceInfo(DerivedOutputParamType, noLoc),
           params.front()->getStorageClass(),
           /* No default value */ nullptr));
       if (params.back()->getIdentifier())
@@ -351,8 +356,7 @@ namespace clad {
       int remainingArgs = m_Function->getNumParams() - args.size();
 
       for (int i = 0; i < remainingArgs; i++) {
-        paramTypes.emplace_back(
-            m_Context.getPointerType(m_Function->getReturnType()));
+        paramTypes.emplace_back(DerivedOutputParamType);
       }
 
       QualType gradientFunctionOverloadType = m_Context.getFunctionType(
@@ -406,8 +410,6 @@ namespace clad {
         callArgs.emplace_back((Expr*)BuildDeclRef(VD));
       }
 
-      QualType DVDType;
-      DVDType = m_Context.getPointerType(m_Function->getReturnType());
       for (int i = 0; i < remainingArgs; i++) {
         IdentifierInfo* DVDII =
             &m_Context.Idents.get("_d_" + std::to_string(i));
@@ -418,8 +420,8 @@ namespace clad {
             noLoc,
             noLoc,
             DVDII,
-            DVDType,
-            m_Context.getTrivialTypeSourceInfo(DVDType, noLoc),
+            DerivedOutputParamType,
+            m_Context.getTrivialTypeSourceInfo(DerivedOutputParamType, noLoc),
             StorageClass::SC_None,
             // Clone default arg if present.
             nullptr);
@@ -1019,11 +1021,19 @@ namespace clad {
     if (!target)
       return cloned;
     Expr* result = nullptr;
-    if (!isArrayOrPointerType(target->getType()))
-      result = target;
-    else
+    if (isArrayOrPointerType(target->getType()))
       // Create the _result[idx] expression.
       result = BuildArraySubscript(target, reverseIndices);
+    else if (isArrayRefType(target->getType())) {
+      result = m_Sema
+                   .ActOnArraySubscriptExpr(getCurrentScope(),
+                                            target,
+                                            ASE->getExprLoc(),
+                                            reverseIndices.back(),
+                                            noLoc)
+                   .get();
+    } else
+      result = target;
     // Create the (target += dfdx) statement.
     if (dfdx()) {
       auto add_assign = BuildOp(BO_AddAssign, result, dfdx());
@@ -1080,17 +1090,9 @@ namespace clad {
         }
         // Create the (_d_param[idx] += dfdx) statement.
         if (dfdx()) {
-          Expr* assign;
-          if (isArrayOrPointerType(it->second->getType())) {
-            assign =
-                BuildOp(BO_Assign,
-                        it->second,
-                        dfdx()); // TODO: This might not be the correct solution
-          } else {
-            assign = BuildOp(BO_AddAssign, it->second, dfdx());
-          }
+          Expr* add_assign = BuildOp(BO_AddAssign, it->second, dfdx());
           // Add it to the body statements.
-          addToCurrentBlock(assign, reverse);
+          addToCurrentBlock(add_assign, reverse);
           ;
         }
         return StmtDiff(clonedDRE, it->second);
@@ -1125,6 +1127,8 @@ namespace clad {
 
     // Stores the call arguments for the function to be derived
     llvm::SmallVector<Expr*, 16> CallArgs{};
+    // Stores the dx of the call arguments for the function to be derived
+    llvm::SmallVector<Expr*, 16> CallArgDx{};
     // Stores the call arguments for the derived function
     llvm::SmallVector<Expr*, 16> DerivedCallArgs{};
     // If the result does not depend on the result of the call, just clone
@@ -1162,16 +1166,22 @@ namespace clad {
       // as the call expression as it is the type used to declare the _gradX
       // array
       Expr* dArg;
-      if (isVectorValued)
+      if (isVectorValued) {
         dArg = StoreAndRef(nullptr, CEType, reverse, "_r", /*force*/ true);
-      else
+      } else if (isArrayOrPointerType(Arg->getType())) {
+        dArg = StoreAndRef(m_Sema.ActOnCXXNullPtrLiteral(noLoc).get(),
+                           GetCladArrayRefOfType(CEType),
+                           reverse,
+                           "_r",
+                           /*force*/ true,
+                           VarDecl::InitializationStyle::CallInit);
+      } else {
         dArg = StoreAndRef(nullptr,
-                           (isArrayOrPointerType(Arg->getType()))
-                               ? m_Context.getPointerType(CEType)
-                               : CEType,
+                           CEType,
                            reverse,
                            "_r",
                            /*force*/ true);
+      }
       ArgResultDecls.push_back(
           cast<VarDecl>(cast<DeclRefExpr>(dArg)->getDecl()));
       // Visit using uninitialized reference.
@@ -1179,6 +1189,7 @@ namespace clad {
 
       // Save cloned arg in a "global" variable, so that it is accessible from
       // the reverse pass.
+      CallArgDx.push_back(ArgDiff.getExpr_dx());
       ArgDiff = GlobalStoreAndRef(ArgDiff.getExpr());
       CallArgs.push_back(ArgDiff.getExpr());
       DerivedCallArgs.push_back(ArgDiff.getExpr_dx());
@@ -1238,27 +1249,38 @@ namespace clad {
         int idx = 0;
 
         llvm::SmallVector<Expr*, 16> DerivedCallOutputArgs{};
-        for (auto arg : DerivedCallArgs) {
+        auto ArrayDiffArgType = GetCladArrayOfType(CEType.getCanonicalType());
+        for (auto arg : CallArgDx) {
           ResultDecl = nullptr;
           Result = nullptr;
+          if (arg && (isArrayRefType(arg->getType()) ||
+              isArrayOrPointerType(arg->getType()))) {
+            Expr* SizeE;
+            if (auto CAT = dyn_cast<ConstantArrayType>(arg->getType())) {
+              SizeE = ConstantFolder::synthesizeLiteral(
+                  m_Context.getSizeType(),
+                  m_Context,
+                  CAT->getSize().getZExtValue());
+            } else {
+              assert(isArrayRefType(arg->getType()) &&
+                     "Size couldn't be determined. Please make sure the diff "
+                     "variables are either constant sized arrays or of type "
+                     "clad::array_ref");
+              SizeE = GetArrayRefSizeExpr(arg);
+            }
 
-          auto argType = FD->parameters()[idx]->getType();
-          if (isArrayOrPointerType(argType)) {
-            auto diffArgType = clad_compat::getConstantArrayType(
-                m_Context,
-                CEType,
-                llvm::APInt(size_type_bits, arrLen),
-                nullptr,
-                ArrayType::ArraySizeModifier::Normal,
-                0);
-            // Create {} array initializer to fill it with zeroes.
-            auto ZeroInitBraces = m_Sema.ActOnInitList(noLoc, {}, noLoc).get();
-            // Declare: diffArgType _gradX[Nargs] = {};
-            ResultDecl = BuildVarDecl(diffArgType,
+            // Declare: clad::array_ref<ArrayDiffArgType> _gradX(arrLen);
+            ResultDecl = BuildVarDecl(ArrayDiffArgType,
                                       CreateUniqueIdentifier(funcPostfix()),
-                                      ZeroInitBraces);
+                                      SizeE,
+                                      false,
+                                      nullptr,
+                                      VarDecl::InitializationStyle::CallInit);
             Result = BuildDeclRef(ResultDecl);
             DerivedCallOutputArgs.push_back(Result);
+            auto E = BuildOp(BO_MulAssign, Result, dfdx());
+            // Visit each arg with df/dargi = df/dxi * Result.
+            PerformImplicitConversionAndAssign(ArgResultDecls[idx], E);
           } else {
             // Declare: diffArgType _grad = 0;
             ResultDecl = BuildVarDecl(
@@ -1267,12 +1289,12 @@ namespace clad {
                 ConstantFolder::synthesizeLiteral(CEType, m_Context, 0));
             // Pass the address of the declared variable
             Result = BuildDeclRef(ResultDecl);
-            DerivedCallOutputArgs.push_back(BuildOp(UO_AddrOf, Result));
+            DerivedCallOutputArgs.push_back(BuildOp(UO_AddrOf, Result, m_Function->getLocation()));
+            // Visit each arg with df/dargi = df/dxi * Result.
+            PerformImplicitConversionAndAssign(ArgResultDecls[idx],
+                                               BuildOp(BO_Mul, dfdx(), Result));
           }
           ArgDeclStmts.push_back(BuildDeclStmt(ResultDecl));
-          // Visit each arg with df/dargi = df/dxi * Result.
-          PerformImplicitConversionAndAssign(ArgResultDecls[idx],
-                                             BuildOp(BO_Mul, dfdx(), Result));
           idx++;
         }
 
@@ -1354,8 +1376,6 @@ namespace clad {
         // Insert Result array declaration and gradient call to the block at
         // the saved point.
         if (isVectorValued) {
-          ResultDecl->dumpColor();
-          OverloadedDerivedFn->dumpColor();
           block.insert(it, {BuildDeclStmt(ResultDecl), OverloadedDerivedFn});
           // Visit each arg with df/dargi = df/dxi * Result[i].
           for (unsigned i = 0; i < CE->getNumArgs(); i++) {
@@ -1675,8 +1695,7 @@ namespace clad {
           //   _t0 = _ref0;
           //   double r = _ref0 *= z;
           if (LCloned->HasSideEffects(m_Context)) {
-            QualType RefType = m_Context.getLValueReferenceType(
-                getNonConstType(L->getType(), m_Context, m_Sema));
+            QualType RefType = getNonConstType(L->getType(), m_Context, m_Sema);
             LRef =
                 StoreAndRef(LCloned, RefType, forward, "_ref", /*force*/ true);
           }

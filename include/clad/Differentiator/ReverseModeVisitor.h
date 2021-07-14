@@ -45,7 +45,6 @@ namespace clad {
     unsigned outputArrayCursor = 0;
     unsigned numParams = 0;
     bool isVectorValued = false;
-    unsigned arrLen = 10;
 
     const char* funcPostfix() const {
       if (isVectorValued)
@@ -140,13 +139,16 @@ namespace clad {
     clang::Expr* StoreAndRef(clang::Expr* E,
                              direction d = forward,
                              llvm::StringRef prefix = "_t",
-                             bool forceDeclCreation = false) {
+                             bool forceDeclCreation = false,
+                             clang::VarDecl::InitializationStyle IS =
+                                 clang::VarDecl::InitializationStyle::CInit) {
       assert(E && "cannot infer type from null expression");
       return StoreAndRef(E,
                          getNonConstType(E->getType(), m_Context, m_Sema),
                          d,
                          prefix,
-                         forceDeclCreation);
+                         forceDeclCreation,
+                         IS);
     }
 
     /// An overload allowing to specify the type for the variable.
@@ -154,12 +156,14 @@ namespace clad {
                              clang::QualType Type,
                              direction d = forward,
                              llvm::StringRef prefix = "_t",
-                             bool forceDeclCreation = false) {
+                             bool forceDeclCreation = false,
+                             clang::VarDecl::InitializationStyle IS =
+                                 clang::VarDecl::InitializationStyle::CInit) {
       // Name reverse temporaries as "_r" instead of "_t".
       if ((d == reverse) && (prefix == "_t"))
         prefix = "_r";
       return VisitorBase::StoreAndRef(
-          E, Type, getCurrentBlock(d), prefix, forceDeclCreation);
+          E, Type, getCurrentBlock(d), prefix, forceDeclCreation, IS);
     }
 
     /// For an expr E, decides if it is useful to store it in a global temporary

@@ -7,7 +7,7 @@
 #define CUDA_HOST_DEVICE
 #endif
 
-#include "Array.h"
+#include "clad/Differentiator/Array.h"
 #include <assert.h>
 #include <type_traits>
 

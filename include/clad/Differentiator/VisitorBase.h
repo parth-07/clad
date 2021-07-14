@@ -184,25 +184,35 @@ namespace clad {
 
     /// A shorthand to simplify syntax for creation of new expressions.
     /// Uses m_Sema.BuildUnOp internally.
-    clang::Expr* BuildOp(clang::UnaryOperatorKind OpCode, clang::Expr* E);
+    clang::Expr* BuildOp(clang::UnaryOperatorKind OpCode,
+                         clang::Expr* E,
+                         clang::SourceLocation OpLoc = noLoc);
     /// Uses m_Sema.BuildBin internally.
-    clang::Expr* BuildOp(clang::BinaryOperatorKind OpCode, clang::Expr* L,
-                         clang::Expr* R);
+    clang::Expr* BuildOp(clang::BinaryOperatorKind OpCode,
+                         clang::Expr* L,
+                         clang::Expr* R,
+                         clang::SourceLocation OpLoc = noLoc);
 
     clang::Expr* BuildParens(clang::Expr* E);
 
     /// Builds variable declaration to be used inside the derivative body
-    clang::VarDecl* BuildVarDecl(clang::QualType Type,
-                                 clang::IdentifierInfo* Identifier,
-                                 clang::Expr* Init = nullptr,
-                                 bool DirectInit = false,
-                                 clang::TypeSourceInfo* TSI = nullptr);
+    clang::VarDecl*
+    BuildVarDecl(clang::QualType Type,
+                 clang::IdentifierInfo* Identifier,
+                 clang::Expr* Init = nullptr,
+                 bool DirectInit = false,
+                 clang::TypeSourceInfo* TSI = nullptr,
+                 clang::VarDecl::InitializationStyle IS =
+                     clang::VarDecl::InitializationStyle::CInit);
 
-    clang::VarDecl* BuildVarDecl(clang::QualType Type,
-                                 llvm::StringRef prefix = "_t",
-                                 clang::Expr* Init = nullptr,
-                                 bool DirectInit = false,
-                                 clang::TypeSourceInfo* TSI = nullptr);
+    clang::VarDecl*
+    BuildVarDecl(clang::QualType Type,
+                 llvm::StringRef prefix = "_t",
+                 clang::Expr* Init = nullptr,
+                 bool DirectInit = false,
+                 clang::TypeSourceInfo* TSI = nullptr,
+                 clang::VarDecl::InitializationStyle IS =
+                     clang::VarDecl::InitializationStyle::CInit);
     /// Creates a namespace declaration and enters its context. All subsequent
     /// Stmts are built inside that namespace, until
     /// m_Sema.PopDeclContextIsUsed.
@@ -223,16 +233,26 @@ namespace clad {
     /// variable declaration. Otherwise, temporary variable is created only
     /// if E requires evaluation (e.g. there is no point to store literals or
     /// direct references in intermediate variables)
-    clang::Expr* StoreAndRef(clang::Expr* E, Stmts& block,
+    clang::Expr* StoreAndRef(clang::Expr* E,
+                             Stmts& block,
                              llvm::StringRef prefix = "_t",
-                             bool forceDeclCreation = false);
+                             bool forceDeclCreation = false,
+                             clang::VarDecl::InitializationStyle IS =
+                                 clang::VarDecl::InitializationStyle::CInit);
     /// A shorthand to store directly to the current block.
-    clang::Expr* StoreAndRef(clang::Expr* E, llvm::StringRef prefix = "_t",
-                             bool forceDeclCreation = false);
-    /// An overload allowing to specify the type for the variable.
-    clang::Expr* StoreAndRef(clang::Expr* E, clang::QualType Type, Stmts& block,
+    clang::Expr* StoreAndRef(clang::Expr* E,
                              llvm::StringRef prefix = "_t",
-                             bool forceDeclCreation = false);
+                             bool forceDeclCreation = false,
+                             clang::VarDecl::InitializationStyle IS =
+                                 clang::VarDecl::InitializationStyle::CInit);
+    /// An overload allowing to specify the type for the variable.
+    clang::Expr* StoreAndRef(clang::Expr* E,
+                             clang::QualType Type,
+                             Stmts& block,
+                             llvm::StringRef prefix = "_t",
+                             bool forceDeclCreation = false,
+                             clang::VarDecl::InitializationStyle IS =
+                                 clang::VarDecl::InitializationStyle::CInit);
     /// A flag for silencing warnings/errors output by diag function.
     bool silenceDiags = false;
     /// Shorthand to issues a warning or error.
@@ -333,9 +353,26 @@ namespace clad {
     /// \param[in] FD callee function
     /// \param[in] argExprs function arguments expressions
     /// \returns Built call expression
-    clang::Expr* 
+    clang::Expr*
     BuildCallExprToFunction(clang::FunctionDecl* FD,
-        llvm::MutableArrayRef<clang::Expr*> argExprs);
+                            llvm::MutableArrayRef<clang::Expr*> argExprs);
+    /// Find declaration of clad::array_ref templated type.
+    clang::TemplateDecl* GetCladArrayRefDecl();
+    /// Instantiate clad::array_ref<T> type.
+    clang::QualType GetCladArrayRefOfType(clang::QualType T);
+
+    clang::LookupResult LookupCladArrayRefMethod(clang::QualType ArrayRefType,
+                                                 llvm::StringRef name);
+
+    clang::Expr* GetArrayRefSizeDRE(clang::QualType ArrayRefType);
+    clang::Expr* GetArrayRefSubscriptOpDRE(clang::QualType ArrayRefType);
+    clang::VarDecl* BuildArrayRefVarDecl(clang::QualType ArrayRefType,
+                                         clang::MultiExprArg Args,
+                                         clang::IdentifierInfo* II);
+    bool isArrayRefType(clang::QualType QT);
+    clang::Expr* GetArrayRefSizeExpr(clang::Expr* Base);
+    clang::TemplateDecl* GetCladArrayDecl();
+    clang::QualType GetCladArrayOfType(clang::QualType T);
   };
 } // end namespace clad
 
