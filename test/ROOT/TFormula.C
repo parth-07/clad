@@ -26,7 +26,7 @@ Double_t TFormula_example(Double_t* x, Double_t* p) {
 // _grad = { x[0] + (-1) * Exp_darg0(-p[0]), x[0] + Abs_darg0(p[1]), x[0] }
 
 void TFormula_example_grad_1(Double_t* x, Double_t* p, Double_t* _d_p);
-// CHECK:   void TFormula_example_grad_1(Double_t *x, Double_t *p, Double_t *_d_p) {
+// CHECK:   void TFormula_example_grad_1(Double_t *x, Double_t *p, clad::array_ref<Double_t> _d_p) {
 // CHECK-NEXT:       double _t0;
 // CHECK-NEXT:       Double_t _t1;
 // CHECK-NEXT:       Double_t _t2;

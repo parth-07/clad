@@ -1,8 +1,8 @@
-// RUN: %cladclang %s -lm -I%S/../../include -oMemberFunctions.out 2>&1 | FileCheck %s
+// RUN: %cladclang %s -lm -fno-exceptions -I%S/../../include -oMemberFunctions.out 2>&1 | FileCheck %s
 // RUN: ./MemberFunctions.out | FileCheck -check-prefix=CHECK-EXEC %s
-// RUN: %cladclang -std=c++14 %s -lm -I%S/../../include -oMemberFunctions-cpp14.out 2>&1 | FileCheck %s
+// RUN: %cladclang -std=c++14 %s -lm -fno-exceptions -I%S/../../include -oMemberFunctions-cpp14.out 2>&1 | FileCheck %s
 // RUN: ./MemberFunctions-cpp14.out | FileCheck -check-prefix=CHECK-EXEC %s
-// RUN: %cladclang -std=c++17 %s -lm -I%S/../../include -oMemberFunctions-cpp17.out 2>&1 | FileCheck %s
+// RUN: %cladclang -std=c++17 %s -lm -fno-exceptions -I%S/../../include -oMemberFunctions-cpp17.out 2>&1 | FileCheck %s
 // RUN: ./MemberFunctions-cpp17.out | FileCheck -check-prefix=CHECK-EXEC %s
 
 //CHECK-NOT: {{.*error|warning|note:.*}}
@@ -14,7 +14,7 @@ public:
   double x, y;
   double mem_fn(double i, double j) { return (x + y) * i + i * j; }
 
-  // CHECK: void mem_fn_grad(double i, double j, double *_d_i, double *_d_j) {
+  // CHECK: void mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j) {
   // CHECK-NEXT:     double _t0;
   // CHECK-NEXT:     double _t1;
   // CHECK-NEXT:     double _t2;
@@ -29,17 +29,17 @@ public:
   // CHECK-NEXT:     {
   // CHECK-NEXT:         double _r0 = 1 * _t0;
   // CHECK-NEXT:         double _r1 = _t1 * 1;
-  // CHECK-NEXT:         *_d_i += _r1;
+  // CHECK-NEXT:         * _d_i += _r1;
   // CHECK-NEXT:         double _r2 = 1 * _t2;
-  // CHECK-NEXT:         *_d_i += _r2;
+  // CHECK-NEXT:         * _d_i += _r2;
   // CHECK-NEXT:         double _r3 = _t3 * 1;
-  // CHECK-NEXT:         *_d_j += _r3;
+  // CHECK-NEXT:         * _d_j += _r3;
   // CHECK-NEXT:     }
   // CHECK-NEXT: }
 
   double const_mem_fn(double i, double j) const { return (x + y) * i + i * j; }
 
-  // CHECK: void const_mem_fn_grad(double i, double j, double *_d_i, double *_d_j) const {
+  // CHECK: void const_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j) const {
   // CHECK-NEXT:     double _t0;
   // CHECK-NEXT:     double _t1;
   // CHECK-NEXT:     double _t2;
@@ -54,11 +54,11 @@ public:
   // CHECK-NEXT:     {
   // CHECK-NEXT:         double _r0 = 1 * _t0;
   // CHECK-NEXT:         double _r1 = _t1 * 1;
-  // CHECK-NEXT:         *_d_i += _r1;
+  // CHECK-NEXT:         * _d_i += _r1;
   // CHECK-NEXT:         double _r2 = 1 * _t2;
-  // CHECK-NEXT:         *_d_i += _r2;
+  // CHECK-NEXT:         * _d_i += _r2;
   // CHECK-NEXT:         double _r3 = _t3 * 1;
-  // CHECK-NEXT:         *_d_j += _r3;
+  // CHECK-NEXT:         * _d_j += _r3;
   // CHECK-NEXT:     }
   // CHECK-NEXT: }
 
@@ -66,7 +66,7 @@ public:
     return (x + y) * i + i * j;
   }
 
-  // CHECK: void volatile_mem_fn_grad(double i, double j, double *_d_i, double *_d_j) volatile {
+  // CHECK: void volatile_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j) volatile {
   // CHECK-NEXT:     double _t0;
   // CHECK-NEXT:     double _t1;
   // CHECK-NEXT:     double _t2;
@@ -81,11 +81,11 @@ public:
   // CHECK-NEXT:     {
   // CHECK-NEXT:         double _r0 = 1 * _t0;
   // CHECK-NEXT:         double _r1 = _t1 * 1;
-  // CHECK-NEXT:         *_d_i += _r1;
+  // CHECK-NEXT:         * _d_i += _r1;
   // CHECK-NEXT:         double _r2 = 1 * _t2;
-  // CHECK-NEXT:         *_d_i += _r2;
+  // CHECK-NEXT:         * _d_i += _r2;
   // CHECK-NEXT:         double _r3 = _t3 * 1;
-  // CHECK-NEXT:         *_d_j += _r3;
+  // CHECK-NEXT:         * _d_j += _r3;
   // CHECK-NEXT:     }
   // CHECK-NEXT: }
 
@@ -93,7 +93,7 @@ public:
     return (x + y) * i + i * j;
   }
 
-  // CHECK: void const_volatile_mem_fn_grad(double i, double j, double *_d_i, double *_d_j) const volatile {
+  // CHECK: void const_volatile_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j) const volatile {
   // CHECK-NEXT:     double _t0;
   // CHECK-NEXT:     double _t1;
   // CHECK-NEXT:     double _t2;
@@ -108,17 +108,17 @@ public:
   // CHECK-NEXT:     {
   // CHECK-NEXT:         double _r0 = 1 * _t0;
   // CHECK-NEXT:         double _r1 = _t1 * 1;
-  // CHECK-NEXT:         *_d_i += _r1;
+  // CHECK-NEXT:         * _d_i += _r1;
   // CHECK-NEXT:         double _r2 = 1 * _t2;
-  // CHECK-NEXT:         *_d_i += _r2;
+  // CHECK-NEXT:         * _d_i += _r2;
   // CHECK-NEXT:         double _r3 = _t3 * 1;
-  // CHECK-NEXT:         *_d_j += _r3;
+  // CHECK-NEXT:         * _d_j += _r3;
   // CHECK-NEXT:     }
   // CHECK-NEXT: }
 
   double lval_ref_mem_fn(double i, double j) & { return (x + y) * i + i * j; }
 
-  // CHECK: void lval_ref_mem_fn_grad(double i, double j, double *_d_i, double *_d_j) & {
+  // CHECK: void lval_ref_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j) & {
   // CHECK-NEXT:     double _t0;
   // CHECK-NEXT:     double _t1;
   // CHECK-NEXT:     double _t2;
@@ -133,11 +133,11 @@ public:
   // CHECK-NEXT:     {
   // CHECK-NEXT:         double _r0 = 1 * _t0;
   // CHECK-NEXT:         double _r1 = _t1 * 1;
-  // CHECK-NEXT:         *_d_i += _r1;
+  // CHECK-NEXT:         * _d_i += _r1;
   // CHECK-NEXT:         double _r2 = 1 * _t2;
-  // CHECK-NEXT:         *_d_i += _r2;
+  // CHECK-NEXT:         * _d_i += _r2;
   // CHECK-NEXT:         double _r3 = _t3 * 1;
-  // CHECK-NEXT:         *_d_j += _r3;
+  // CHECK-NEXT:         * _d_j += _r3;
   // CHECK-NEXT:     }
   // CHECK-NEXT: }
 
@@ -145,7 +145,7 @@ public:
     return (x + y) * i + i * j;
   }
 
-  // CHECK: void const_lval_ref_mem_fn_grad(double i, double j, double *_d_i, double *_d_j) const & {
+  // CHECK: void const_lval_ref_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j) const & {
   // CHECK-NEXT:     double _t0;
   // CHECK-NEXT:     double _t1;
   // CHECK-NEXT:     double _t2;
@@ -160,11 +160,11 @@ public:
   // CHECK-NEXT:     {
   // CHECK-NEXT:         double _r0 = 1 * _t0;
   // CHECK-NEXT:         double _r1 = _t1 * 1;
-  // CHECK-NEXT:         *_d_i += _r1;
+  // CHECK-NEXT:         * _d_i += _r1;
   // CHECK-NEXT:         double _r2 = 1 * _t2;
-  // CHECK-NEXT:         *_d_i += _r2;
+  // CHECK-NEXT:         * _d_i += _r2;
   // CHECK-NEXT:         double _r3 = _t3 * 1;
-  // CHECK-NEXT:         *_d_j += _r3;
+  // CHECK-NEXT:         * _d_j += _r3;
   // CHECK-NEXT:     }
   // CHECK-NEXT: }
 
@@ -172,7 +172,7 @@ public:
     return (x + y) * i + i * j;
   }
 
-  // CHECK: void volatile_lval_ref_mem_fn_grad(double i, double j, double *_d_i, double *_d_j) volatile & {
+  // CHECK: void volatile_lval_ref_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j) volatile & {
   // CHECK-NEXT:     double _t0;
   // CHECK-NEXT:     double _t1;
   // CHECK-NEXT:     double _t2;
@@ -187,11 +187,11 @@ public:
   // CHECK-NEXT:     {
   // CHECK-NEXT:         double _r0 = 1 * _t0;
   // CHECK-NEXT:         double _r1 = _t1 * 1;
-  // CHECK-NEXT:         *_d_i += _r1;
+  // CHECK-NEXT:         * _d_i += _r1;
   // CHECK-NEXT:         double _r2 = 1 * _t2;
-  // CHECK-NEXT:         *_d_i += _r2;
+  // CHECK-NEXT:         * _d_i += _r2;
   // CHECK-NEXT:         double _r3 = _t3 * 1;
-  // CHECK-NEXT:         *_d_j += _r3;
+  // CHECK-NEXT:         * _d_j += _r3;
   // CHECK-NEXT:     }
   // CHECK-NEXT: }
 
@@ -199,7 +199,7 @@ public:
     return (x + y) * i + i * j;
   }
 
-  // CHECK: void const_volatile_lval_ref_mem_fn_grad(double i, double j, double *_d_i, double *_d_j) const volatile & {
+  // CHECK: void const_volatile_lval_ref_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j) const volatile & {
   // CHECK-NEXT:     double _t0;
   // CHECK-NEXT:     double _t1;
   // CHECK-NEXT:     double _t2;
@@ -214,17 +214,17 @@ public:
   // CHECK-NEXT:      {
   // CHECK-NEXT:         double _r0 = 1 * _t0;
   // CHECK-NEXT:         double _r1 = _t1 * 1;
-  // CHECK-NEXT:         *_d_i += _r1;
+  // CHECK-NEXT:         * _d_i += _r1;
   // CHECK-NEXT:         double _r2 = 1 * _t2;
-  // CHECK-NEXT:         *_d_i += _r2;
+  // CHECK-NEXT:         * _d_i += _r2;
   // CHECK-NEXT:         double _r3 = _t3 * 1;
-  // CHECK-NEXT:         *_d_j += _r3;
+  // CHECK-NEXT:         * _d_j += _r3;
   // CHECK-NEXT:     }
   // CHECK-NEXT: }
 
   double rval_ref_mem_fn(double i, double j) && { return (x + y) * i + i * j; }
 
-  // CHECK: void rval_ref_mem_fn_grad(double i, double j, double *_d_i, double *_d_j) && {
+  // CHECK: void rval_ref_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j) && {
   // CHECK-NEXT:     double _t0;
   // CHECK-NEXT:     double _t1;
   // CHECK-NEXT:     double _t2;
@@ -239,11 +239,11 @@ public:
   // CHECK-NEXT:     {
   // CHECK-NEXT:         double _r0 = 1 * _t0;
   // CHECK-NEXT:         double _r1 = _t1 * 1;
-  // CHECK-NEXT:         *_d_i += _r1;
+  // CHECK-NEXT:         * _d_i += _r1;
   // CHECK-NEXT:         double _r2 = 1 * _t2;
-  // CHECK-NEXT:         *_d_i += _r2;
+  // CHECK-NEXT:         * _d_i += _r2;
   // CHECK-NEXT:         double _r3 = _t3 * 1;
-  // CHECK-NEXT:         *_d_j += _r3;
+  // CHECK-NEXT:         * _d_j += _r3;
   // CHECK-NEXT:     }
   // CHECK-NEXT: }
 
@@ -251,8 +251,7 @@ public:
     return (x + y) * i + i * j;
   }
 
-  // CHECK: void const_rval_ref_mem_fn_grad(double i, double j, double *_d_i,
-  // double *_d_j) const && {
+  // CHECK: void const_rval_ref_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j) const && {
   // CHECK-NEXT:     double _t0;
   // CHECK-NEXT:     double _t1;
   // CHECK-NEXT:     double _t2;
@@ -267,11 +266,11 @@ public:
   // CHECK-NEXT:     {
   // CHECK-NEXT:         double _r0 = 1 * _t0;
   // CHECK-NEXT:         double _r1 = _t1 * 1;
-  // CHECK-NEXT:         *_d_i += _r1;
+  // CHECK-NEXT:         * _d_i += _r1;
   // CHECK-NEXT:         double _r2 = 1 * _t2;
-  // CHECK-NEXT:         *_d_i += _r2;
+  // CHECK-NEXT:         * _d_i += _r2;
   // CHECK-NEXT:         double _r3 = _t3 * 1;
-  // CHECK-NEXT:         *_d_j += _r3;
+  // CHECK-NEXT:         * _d_j += _r3;
   // CHECK-NEXT:     }
   // CHECK-NEXT: }
 
@@ -279,7 +278,7 @@ public:
     return (x + y) * i + i * j;
   }
 
-  // CHECK: void volatile_rval_ref_mem_fn_grad(double i, double j, double *_d_i, double *_d_j) volatile && {
+  // CHECK: void volatile_rval_ref_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j) volatile && {
   // CHECK-NEXT:     double _t0;
   // CHECK-NEXT:     double _t1;
   // CHECK-NEXT:     double _t2;
@@ -294,11 +293,11 @@ public:
   // CHECK-NEXT:     {
   // CHECK-NEXT:         double _r0 = 1 * _t0;
   // CHECK-NEXT:         double _r1 = _t1 * 1;
-  // CHECK-NEXT:         *_d_i += _r1;
+  // CHECK-NEXT:         * _d_i += _r1;
   // CHECK-NEXT:         double _r2 = 1 * _t2;
-  // CHECK-NEXT:         *_d_i += _r2;
+  // CHECK-NEXT:         * _d_i += _r2;
   // CHECK-NEXT:         double _r3 = _t3 * 1;
-  // CHECK-NEXT:         *_d_j += _r3;
+  // CHECK-NEXT:         * _d_j += _r3;
   // CHECK-NEXT:     }
   // CHECK-NEXT: }
 
@@ -306,7 +305,7 @@ public:
     return (x + y) * i + i * j;
   }
 
-  // CHECK: void const_volatile_rval_ref_mem_fn_grad(double i, double j, double *_d_i, double *_d_j) const volatile && {
+  // CHECK: void const_volatile_rval_ref_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j) const volatile && {
   // CHECK-NEXT:     double _t0;
   // CHECK-NEXT:     double _t1;
   // CHECK-NEXT:     double _t2;
@@ -321,11 +320,11 @@ public:
   // CHECK-NEXT:     {
   // CHECK-NEXT:         double _r0 = 1 * _t0;
   // CHECK-NEXT:         double _r1 = _t1 * 1;
-  // CHECK-NEXT:         *_d_i += _r1;
+  // CHECK-NEXT:         * _d_i += _r1;
   // CHECK-NEXT:         double _r2 = 1 * _t2;
-  // CHECK-NEXT:         *_d_i += _r2;
+  // CHECK-NEXT:         * _d_i += _r2;
   // CHECK-NEXT:         double _r3 = _t3 * 1;
-  // CHECK-NEXT:         *_d_j += _r3;
+  // CHECK-NEXT:         * _d_j += _r3;
   // CHECK-NEXT:     }
   // CHECK-NEXT:  }
 
@@ -333,7 +332,7 @@ public:
     return (x + y) * i + i * j;
   }
 
-  // CHECK: void noexcept_mem_fn_grad(double i, double j, double *_d_i, double *_d_j) noexcept {
+  // CHECK: void noexcept_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j) noexcept {
   // CHECK-NEXT:     double _t0;
   // CHECK-NEXT:     double _t1;
   // CHECK-NEXT:     double _t2;
@@ -348,11 +347,11 @@ public:
   // CHECK-NEXT:     {
   // CHECK-NEXT:         double _r0 = 1 * _t0;
   // CHECK-NEXT:         double _r1 = _t1 * 1;
-  // CHECK-NEXT:         *_d_i += _r1;
+  // CHECK-NEXT:         * _d_i += _r1;
   // CHECK-NEXT:         double _r2 = 1 * _t2;
-  // CHECK-NEXT:         *_d_i += _r2;
+  // CHECK-NEXT:         * _d_i += _r2;
   // CHECK-NEXT:         double _r3 = _t3 * 1;
-  // CHECK-NEXT:         *_d_j += _r3;
+  // CHECK-NEXT:         * _d_j += _r3;
   // CHECK-NEXT:     }
   // CHECK-NEXT: }
 
@@ -360,7 +359,7 @@ public:
     return (x + y) * i + i * j;
   }
 
-  // CHECK: void const_noexcept_mem_fn_grad(double i, double j, double *_d_i, double *_d_j) const noexcept {
+  // CHECK: void const_noexcept_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j) const noexcept {
   // CHECK-NEXT:     double _t0;
   // CHECK-NEXT:     double _t1;
   // CHECK-NEXT:     double _t2;
@@ -375,11 +374,11 @@ public:
   // CHECK-NEXT:     {
   // CHECK-NEXT:         double _r0 = 1 * _t0;
   // CHECK-NEXT:         double _r1 = _t1 * 1;
-  // CHECK-NEXT:         *_d_i += _r1;
+  // CHECK-NEXT:         * _d_i += _r1;
   // CHECK-NEXT:         double _r2 = 1 * _t2;
-  // CHECK-NEXT:         *_d_i += _r2;
+  // CHECK-NEXT:         * _d_i += _r2;
   // CHECK-NEXT:         double _r3 = _t3 * 1;
-  // CHECK-NEXT:         *_d_j += _r3;
+  // CHECK-NEXT:         * _d_j += _r3;
   // CHECK-NEXT:     }
   // CHECK-NEXT: }
 
@@ -387,7 +386,7 @@ public:
     return (x + y) * i + i * j;
   }
 
-  // CHECK: void volatile_noexcept_mem_fn_grad(double i, double j, double *_d_i, double *_d_j) volatile noexcept {
+  // CHECK: void volatile_noexcept_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j) volatile noexcept {
   // CHECK-NEXT:     double _t0;
   // CHECK-NEXT:     double _t1;
   // CHECK-NEXT:     double _t2;
@@ -402,11 +401,11 @@ public:
   // CHECK-NEXT:     {
   // CHECK-NEXT:         double _r0 = 1 * _t0;
   // CHECK-NEXT:         double _r1 = _t1 * 1;
-  // CHECK-NEXT:         *_d_i += _r1;
+  // CHECK-NEXT:         * _d_i += _r1;
   // CHECK-NEXT:         double _r2 = 1 * _t2;
-  // CHECK-NEXT:         *_d_i += _r2;
+  // CHECK-NEXT:         * _d_i += _r2;
   // CHECK-NEXT:         double _r3 = _t3 * 1;
-  // CHECK-NEXT:         *_d_j += _r3;
+  // CHECK-NEXT:         * _d_j += _r3;
   // CHECK-NEXT:     }
   // CHECK-NEXT: }
 
@@ -415,7 +414,7 @@ public:
     return (x + y) * i + i * j;
   }
 
-  // CHECK: void const_volatile_noexcept_mem_fn_grad(double i, double j, double *_d_i, double *_d_j) const volatile noexcept {
+  // CHECK: void const_volatile_noexcept_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j) const volatile noexcept {
   // CHECK-NEXT:     double _t0;
   // CHECK-NEXT:     double _t1;
   // CHECK-NEXT:     double _t2;
@@ -430,11 +429,11 @@ public:
   // CHECK-NEXT:      {
   // CHECK-NEXT:         double _r0 = 1 * _t0;
   // CHECK-NEXT:         double _r1 = _t1 * 1;
-  // CHECK-NEXT:         *_d_i += _r1;
+  // CHECK-NEXT:         * _d_i += _r1;
   // CHECK-NEXT:         double _r2 = 1 * _t2;
-  // CHECK-NEXT:         *_d_i += _r2;
+  // CHECK-NEXT:         * _d_i += _r2;
   // CHECK-NEXT:         double _r3 = _t3 * 1;
-  // CHECK-NEXT:         *_d_j += _r3;
+  // CHECK-NEXT:         * _d_j += _r3;
   // CHECK-NEXT:     }
   // CHECK-NEXT: }
 
@@ -442,7 +441,7 @@ public:
     return (x + y) * i + i * j;
   }
 
-  // CHECK: void lval_ref_noexcept_mem_fn_grad(double i, double j, double *_d_i, double *_d_j) & noexcept {
+  // CHECK: void lval_ref_noexcept_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j) & noexcept {
   // CHECK-NEXT:     double _t0;
   // CHECK-NEXT:     double _t1;
   // CHECK-NEXT:     double _t2;
@@ -457,11 +456,11 @@ public:
   // CHECK-NEXT:     {
   // CHECK-NEXT:         double _r0 = 1 * _t0;
   // CHECK-NEXT:         double _r1 = _t1 * 1;
-  // CHECK-NEXT:         *_d_i += _r1;
+  // CHECK-NEXT:         * _d_i += _r1;
   // CHECK-NEXT:         double _r2 = 1 * _t2;
-  // CHECK-NEXT:         *_d_i += _r2;
+  // CHECK-NEXT:         * _d_i += _r2;
   // CHECK-NEXT:         double _r3 = _t3 * 1;
-  // CHECK-NEXT:         *_d_j += _r3;
+  // CHECK-NEXT:         * _d_j += _r3;
   // CHECK-NEXT:     }
   // CHECK-NEXT: }
 
@@ -469,7 +468,7 @@ public:
     return (x + y) * i + i * j;
   }
 
-  // CHECK: void const_lval_ref_noexcept_mem_fn_grad(double i, double j, double *_d_i, double *_d_j) const & noexcept {
+  // CHECK: void const_lval_ref_noexcept_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j) const & noexcept {
   // CHECK-NEXT:     double _t0;
   // CHECK-NEXT:     double _t1;
   // CHECK-NEXT:     double _t2;
@@ -484,11 +483,11 @@ public:
   // CHECK-NEXT:     {
   // CHECK-NEXT:         double _r0 = 1 * _t0;
   // CHECK-NEXT:         double _r1 = _t1 * 1;
-  // CHECK-NEXT:         *_d_i += _r1;
+  // CHECK-NEXT:         * _d_i += _r1;
   // CHECK-NEXT:         double _r2 = 1 * _t2;
-  // CHECK-NEXT:         *_d_i += _r2;
+  // CHECK-NEXT:         * _d_i += _r2;
   // CHECK-NEXT:         double _r3 = _t3 * 1;
-  // CHECK-NEXT:         *_d_j += _r3;
+  // CHECK-NEXT:         * _d_j += _r3;
   // CHECK-NEXT:     }
   // CHECK-NEXT: }
 
@@ -497,7 +496,7 @@ public:
     return (x + y) * i + i * j;
   }
 
-  // CHECK: void volatile_lval_ref_noexcept_mem_fn_grad(double i, double j, double *_d_i, double *_d_j) volatile & noexcept {
+  // CHECK: void volatile_lval_ref_noexcept_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j) volatile & noexcept {
   // CHECK-NEXT:     double _t0;
   // CHECK-NEXT:     double _t1;
   // CHECK-NEXT:     double _t2;
@@ -512,11 +511,11 @@ public:
   // CHECK-NEXT:     {
   // CHECK-NEXT:         double _r0 = 1 * _t0;
   // CHECK-NEXT:         double _r1 = _t1 * 1;
-  // CHECK-NEXT:         *_d_i += _r1;
+  // CHECK-NEXT:         * _d_i += _r1;
   // CHECK-NEXT:         double _r2 = 1 * _t2;
-  // CHECK-NEXT:         *_d_i += _r2;
+  // CHECK-NEXT:         * _d_i += _r2;
   // CHECK-NEXT:         double _r3 = _t3 * 1;
-  // CHECK-NEXT:         *_d_j += _r3;
+  // CHECK-NEXT:         * _d_j += _r3;
   // CHECK-NEXT:     }
   // CHECK-NEXT: }
 
@@ -525,7 +524,7 @@ public:
     return (x + y) * i + i * j;
   }
 
-  // CHECK: void const_volatile_lval_ref_noexcept_mem_fn_grad(double i, double j, double *_d_i, double *_d_j) const volatile & noexcept {
+  // CHECK: void const_volatile_lval_ref_noexcept_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j) const volatile & noexcept {
   // CHECK-NEXT:     double _t0;
   // CHECK-NEXT:     double _t1;
   // CHECK-NEXT:     double _t2;
@@ -540,11 +539,11 @@ public:
   // CHECK-NEXT:     {
   // CHECK-NEXT:         double _r0 = 1 * _t0;
   // CHECK-NEXT:         double _r1 = _t1 * 1;
-  // CHECK-NEXT:         *_d_i += _r1;
+  // CHECK-NEXT:         * _d_i += _r1;
   // CHECK-NEXT:         double _r2 = 1 * _t2;
-  // CHECK-NEXT:         *_d_i += _r2;
+  // CHECK-NEXT:         * _d_i += _r2;
   // CHECK-NEXT:         double _r3 = _t3 * 1;
-  // CHECK-NEXT:         *_d_j += _r3;
+  // CHECK-NEXT:         * _d_j += _r3;
   // CHECK-NEXT:     }
   // CHECK-NEXT: }
 
@@ -552,7 +551,7 @@ public:
     return (x + y) * i + i * j;
   }
 
-  // CHECK: void rval_ref_noexcept_mem_fn_grad(double i, double j, double *_d_i, double *_d_j) && noexcept {
+  // CHECK: void rval_ref_noexcept_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j) && noexcept {
   // CHECK-NEXT:     double _t0;
   // CHECK-NEXT:     double _t1;
   // CHECK-NEXT:     double _t2;
@@ -568,11 +567,11 @@ public:
   // CHECK-NEXT:     {
   // CHECK-NEXT:         double _r0 = 1 * _t0;
   // CHECK-NEXT:         double _r1 = _t1 * 1;
-  // CHECK-NEXT:         *_d_i += _r1;
+  // CHECK-NEXT:         * _d_i += _r1;
   // CHECK-NEXT:         double _r2 = 1 * _t2;
-  // CHECK-NEXT:         *_d_i += _r2;
+  // CHECK-NEXT:         * _d_i += _r2;
   // CHECK-NEXT:         double _r3 = _t3 * 1;
-  // CHECK-NEXT:         *_d_j += _r3;
+  // CHECK-NEXT:         * _d_j += _r3;
   // CHECK-NEXT:     }
   // CHECK-NEXT: }
 
@@ -580,7 +579,7 @@ public:
     return (x + y) * i + i * j;
   }
 
-  // CHECK: void const_rval_ref_noexcept_mem_fn_grad(double i, double j, double *_d_i, double *_d_j) const && noexcept {
+  // CHECK: void const_rval_ref_noexcept_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j) const && noexcept {
   // CHECK-NEXT:     double _t0;
   // CHECK-NEXT:     double _t1;
   // CHECK-NEXT:     double _t2;
@@ -595,11 +594,11 @@ public:
   // CHECK-NEXT:      {
   // CHECK-NEXT:         double _r0 = 1 * _t0;
   // CHECK-NEXT:         double _r1 = _t1 * 1;
-  // CHECK-NEXT:         *_d_i += _r1;
+  // CHECK-NEXT:         * _d_i += _r1;
   // CHECK-NEXT:         double _r2 = 1 * _t2;
-  // CHECK-NEXT:         *_d_i += _r2;
+  // CHECK-NEXT:         * _d_i += _r2;
   // CHECK-NEXT:         double _r3 = _t3 * 1;
-  // CHECK-NEXT:         *_d_j += _r3;
+  // CHECK-NEXT:         * _d_j += _r3;
   // CHECK-NEXT:     }
   // CHECK-NEXT:  }
 
@@ -608,7 +607,7 @@ public:
     return (x + y) * i + i * j;
   }
 
-  // CHECK: void volatile_rval_ref_noexcept_mem_fn_grad(double i, double j, double *_d_i, double *_d_j) volatile && noexcept {
+  // CHECK: void volatile_rval_ref_noexcept_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j) volatile && noexcept {
   // CHECK-NEXT:     double _t0;
   // CHECK-NEXT:     double _t1;
   // CHECK-NEXT:     double _t2;
@@ -623,11 +622,11 @@ public:
   // CHECK-NEXT:     {
   // CHECK-NEXT:         double _r0 = 1 * _t0;
   // CHECK-NEXT:         double _r1 = _t1 * 1;
-  // CHECK-NEXT:         *_d_i += _r1;
+  // CHECK-NEXT:         * _d_i += _r1;
   // CHECK-NEXT:         double _r2 = 1 * _t2;
-  // CHECK-NEXT:         *_d_i += _r2;
+  // CHECK-NEXT:         * _d_i += _r2;
   // CHECK-NEXT:         double _r3 = _t3 * 1;
-  // CHECK-NEXT:         *_d_j += _r3;
+  // CHECK-NEXT:         * _d_j += _r3;
   // CHECK-NEXT:     }
   // CHECK-NEXT: }
 
@@ -636,7 +635,7 @@ public:
     return (x + y) * i + i * j;
   }
 
-  // CHECK: void const_volatile_rval_ref_noexcept_mem_fn_grad(double i, double j, double *_d_i, double *_d_j) const volatile && noexcept {
+  // CHECK: void const_volatile_rval_ref_noexcept_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j) const volatile && noexcept {
   // CHECK-NEXT:     double _t0;
   // CHECK-NEXT:     double _t1;
   // CHECK-NEXT:     double _t2;
@@ -651,17 +650,17 @@ public:
   // CHECK-NEXT:     {
   // CHECK-NEXT:         double _r0 = 1 * _t0;
   // CHECK-NEXT:         double _r1 = _t1 * 1;
-  // CHECK-NEXT:         *_d_i += _r1;
+  // CHECK-NEXT:         * _d_i += _r1;
   // CHECK-NEXT:         double _r2 = 1 * _t2;
-  // CHECK-NEXT:         *_d_i += _r2;
+  // CHECK-NEXT:         * _d_i += _r2;
   // CHECK-NEXT:         double _r3 = _t3 * 1;
-  // CHECK-NEXT:         *_d_j += _r3;
+  // CHECK-NEXT:         * _d_j += _r3;
   // CHECK-NEXT:     }
   // CHECK-NEXT: }
 
   double partial_mem_fn(double i, double j) { return (x + y) * i + i * j; }
 
-  // CHECK: void partial_mem_fn_grad_0(double i, double j, double *_d_i) {
+  // CHECK: void partial_mem_fn_grad_0(double i, double j, clad::array_ref<double> _d_i) {
   // CHECK-NEXT:     double _t0;
   // CHECK-NEXT:     double _t1;
   // CHECK-NEXT:     double _t2;
@@ -676,81 +675,45 @@ public:
   // CHECK-NEXT:     {
   // CHECK-NEXT:         double _r0 = 1 * _t0;
   // CHECK-NEXT:         double _r1 = _t1 * 1;
-  // CHECK-NEXT:         *_d_i += _r1;
+  // CHECK-NEXT:         * _d_i += _r1;
   // CHECK-NEXT:         double _r2 = 1 * _t2;
-  // CHECK-NEXT:         *_d_i += _r2;
+  // CHECK-NEXT:         * _d_i += _r2;
   // CHECK-NEXT:         double _r3 = _t3 * 1;
   // CHECK-NEXT:     }
   // CHECK-NEXT: }
 
-  void mem_fn_grad(double i, double j, double* _d_i, double* _d_j);
-  void const_mem_fn_grad(double i, double j, double* _d_i, double* _d_j);
-  void volatile_mem_fn_grad(double i, double j, double* _d_i, double* _d_j);
-  void
-  const_volatile_mem_fn_grad(double i, double j, double* _d_i, double* _d_j);
-  void lval_ref_mem_fn_grad(double i, double j, double* _d_i, double* _d_j);
-  void
-  const_lval_ref_mem_fn_grad(double i, double j, double* _d_i, double* _d_j);
-  void
-  volatile_lval_ref_mem_fn_grad(double i, double j, double* _d_i, double* _d_j);
-  void const_volatile_lval_ref_mem_fn_grad(double i,
-                                           double j,
-                                           double* _d_i,
-                                           double* _d_j);
-  void rval_ref_mem_fn_grad(double i, double j, double* _d_i, double* _d_j);
-  void
-  const_rval_ref_mem_fn_grad(double i, double j, double* _d_i, double* _d_j);
-  void
-  volatile_rval_ref_mem_fn_grad(double i, double j, double* _d_i, double* _d_j);
-  void const_volatile_rval_ref_mem_fn_grad(double i,
-                                           double j,
-                                           double* _d_i,
-                                           double* _d_j);
-  void noexcept_mem_fn_grad(double i, double j, double* _d_i, double* _d_j);
-  void
-  const_noexcept_mem_fn_grad(double i, double j, double* _d_i, double* _d_j);
-  void
-  volatile_noexcept_mem_fn_grad(double i, double j, double* _d_i, double* _d_j);
-  void const_volatile_noexcept_mem_fn_grad(double i,
-                                           double j,
-                                           double* _d_i,
-                                           double* _d_j);
-  void
-  lval_ref_noexcept_mem_fn_grad(double i, double j, double* _d_i, double* _d_j);
-  void const_lval_ref_noexcept_mem_fn_grad(double i,
-                                           double j,
-                                           double* _d_i,
-                                           double* _d_j);
-  void volatile_lval_ref_noexcept_mem_fn_grad(double i,
-                                              double j,
-                                              double* _d_i,
-                                              double* _d_j);
-  void const_volatile_lval_ref_noexcept_mem_fn_grad(double i,
-                                                    double j,
-                                                    double* _d_i,
-                                                    double* _d_j);
-  void
-  rval_ref_noexcept_mem_fn_grad(double i, double j, double* _d_i, double* _d_j);
-  void const_rval_ref_noexcept_mem_fn_grad(double i,
-                                           double j,
-                                           double* _d_i,
-                                           double* _d_j);
-  void volatile_rval_ref_noexcept_mem_fn_grad(double i,
-                                              double j,
-                                              double* _d_i,
-                                              double* _d_j);
-  void const_volatile_rval_ref_noexcept_mem_fn_grad(double i,
-                                                    double j,
-                                                    double* _d_i,
-                                                    double* _d_j);
-  void partial_mem_fn_grad(double i, double j, double* _d_i);
+  void mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j);
+  void const_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j);
+  void volatile_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j);
+  void const_volatile_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j);
+  void lval_ref_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j);
+  void const_lval_ref_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j);
+  void volatile_lval_ref_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j);
+  void const_volatile_lval_ref_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j);
+  void rval_ref_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j);
+  void const_rval_ref_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j);
+  void volatile_rval_ref_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j);
+  void const_volatile_rval_ref_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j);
+  void noexcept_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j);
+  void const_noexcept_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j);
+  void volatile_noexcept_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j);
+  void const_volatile_noexcept_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j);
+  void lval_ref_noexcept_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j);
+  void const_lval_ref_noexcept_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j);
+  void volatile_lval_ref_noexcept_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j);
+  void const_volatile_lval_ref_noexcept_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j);
+  void rval_ref_noexcept_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j);
+  void const_rval_ref_noexcept_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j);
+  void volatile_rval_ref_noexcept_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j);
+  void const_volatile_rval_ref_noexcept_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j);
+  void partial_mem_fn_grad(double i, double j, clad::array_ref<double> _d_i);
 };
 
 double fn(double i,double j) {
   return i*i*j;
 }
 
-// CHECK: void fn_grad(double i, double j, double *_d_i, double *_d_j) {
+// CHECK: void fn_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j) {
 // CHECK-NEXT:     double _t0;
 // CHECK-NEXT:     double _t1;
 // CHECK-NEXT:     double _t2;
@@ -765,11 +728,11 @@ double fn(double i,double j) {
 // CHECK-NEXT:     {
 // CHECK-NEXT:         double _r0 = 1 * _t0;
 // CHECK-NEXT:         double _r1 = _r0 * _t1;
-// CHECK-NEXT:         *_d_i += _r1;
+// CHECK-NEXT:         * _d_i += _r1;
 // CHECK-NEXT:         double _r2 = _t2 * _r0;
-// CHECK-NEXT:         *_d_i += _r2;
+// CHECK-NEXT:         * _d_i += _r2;
 // CHECK-NEXT:         double _r3 = _t3 * 1;
-// CHECK-NEXT:         *_d_j += _r3;
+// CHECK-NEXT:         * _d_j += _r3;
 // CHECK-NEXT:     }
 // CHECK-NEXT: }
 

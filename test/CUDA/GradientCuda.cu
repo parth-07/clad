@@ -24,7 +24,7 @@ gaus_grad_1(double* x, double* p, double sigma, int dim, double* _d_p);
 
 auto gaus_g = clad::gradient(gaus, "p");
 
-// CHECK:    void gaus_grad_1(double *x, double *p, double sigma, int dim, double *_d_p) __attribute__((device)) __attribute__((host)) {
+// CHECK:    void gaus_grad_1(double *x, double *p, double sigma, int dim, clad::array_ref<double> _d_p) __attribute__((device)) __attribute__((host)) {
 // CHECK-NEXT:       double _d_t = 0;
 // CHECK-NEXT:       unsigned long _t0;
 // CHECK-NEXT:       int _d_i = 0;

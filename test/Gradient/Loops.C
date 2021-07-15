@@ -12,7 +12,7 @@ double f1(double x) {
   return t;
 } // == x^3
 
-// CHECK:   void f1_grad(double x, double *_d_x) {
+// CHECK:   void f1_grad(double x, clad::array_ref<double> _d_x) {
 // CHECK-NEXT:       double _d_t = 0;
 // CHECK-NEXT:       unsigned long _t0;
 // CHECK-NEXT:       int _d_i = 0;
@@ -33,7 +33,7 @@ double f1(double x) {
 // CHECK-NEXT:           double _r_d0 = _d_t;
 // CHECK-NEXT:           _d_t += _r_d0 * clad::pop(_t1);
 // CHECK-NEXT:           double _r0 = clad::pop(_t2) * _r_d0;
-// CHECK-NEXT:           *_d_x += _r0;
+// CHECK-NEXT:           * _d_x += _r0;
 // CHECK-NEXT:           _d_t -= _r_d0;
 // CHECK-NEXT:       }
 // CHECK-NEXT:   }
@@ -46,7 +46,7 @@ double f2(double x) {
   return t;
 } // == x^9
 
-// CHECK:   void f2_grad(double x, double *_d_x) {
+// CHECK:   void f2_grad(double x, clad::array_ref<double> _d_x) {
 // CHECK-NEXT:       double _d_t = 0;
 // CHECK-NEXT:       unsigned long _t0;
 // CHECK-NEXT:       int _d_i = 0;
@@ -74,7 +74,7 @@ double f2(double x) {
 // CHECK-NEXT:               double _r_d0 = _d_t;
 // CHECK-NEXT:               _d_t += _r_d0 * clad::pop(_t2);
 // CHECK-NEXT:               double _r0 = clad::pop(_t3) * _r_d0;
-// CHECK-NEXT:               *_d_x += _r0;
+// CHECK-NEXT:               * _d_x += _r0;
 // CHECK-NEXT:               _d_t -= _r_d0;
 // CHECK-NEXT:           }
 // CHECK-NEXT:           clad::pop(_t1);
@@ -91,7 +91,7 @@ double f3(double x) {
   return t;
 } // == x^2
 
-// CHECK:   void f3_grad(double x, double *_d_x) {
+// CHECK:   void f3_grad(double x, clad::array_ref<double> _d_x) {
 // CHECK-NEXT:       double _d_t = 0;
 // CHECK-NEXT:       unsigned long _t0;
 // CHECK-NEXT:       int _d_i = 0;
@@ -125,7 +125,7 @@ double f3(double x) {
 // CHECK-NEXT:               double _r_d0 = _d_t;
 // CHECK-NEXT:               _d_t += _r_d0 * clad::pop(_t1);
 // CHECK-NEXT:               double _r0 = clad::pop(_t2) * _r_d0;
-// CHECK-NEXT:               *_d_x += _r0;
+// CHECK-NEXT:               * _d_x += _r0;
 // CHECK-NEXT:               _d_t -= _r_d0;
 // CHECK-NEXT:           }
 // CHECK-NEXT:       }
@@ -138,7 +138,7 @@ double f4(double x) {
   return t;
 } // == x^3
 
-// CHECK:   void f4_grad(double x, double *_d_x) {
+// CHECK:   void f4_grad(double x, clad::array_ref<double> _d_x) {
 // CHECK-NEXT:       double _d_t = 0;
 // CHECK-NEXT:       unsigned long _t0;
 // CHECK-NEXT:       int _d_i = 0;
@@ -158,7 +158,7 @@ double f4(double x) {
 // CHECK-NEXT:           double _r_d0 = _d_t;
 // CHECK-NEXT:           _d_t += _r_d0 * clad::pop(_t1);
 // CHECK-NEXT:           double _r0 = clad::pop(_t2) * _r_d0;
-// CHECK-NEXT:           *_d_x += _r0;
+// CHECK-NEXT:           * _d_x += _r0;
 // CHECK-NEXT:           _d_t -= _r_d0;
 // CHECK-NEXT:       }
 // CHECK-NEXT:   }
@@ -169,7 +169,7 @@ double f5(double x){
   return x;
 } // == x + 10
 
-// CHECK:   void f5_grad(double x, double *_d_x) {
+// CHECK:   void f5_grad(double x, clad::array_ref<double> _d_x) {
 // CHECK-NEXT:       unsigned long _t0;
 // CHECK-NEXT:       int _d_i = 0;
 // CHECK-NEXT:       _t0 = 0;
@@ -180,7 +180,7 @@ double f5(double x){
 // CHECK-NEXT:       double f5_return = x;
 // CHECK-NEXT:       goto _label0;
 // CHECK-NEXT:     _label0:
-// CHECK-NEXT:       *_d_x += 1;
+// CHECK-NEXT:       * _d_x += 1;
 // CHECK-NEXT:       for (; _t0; _t0--)
 // CHECK-NEXT:           ;
 // CHECK-NEXT:   }
@@ -192,7 +192,7 @@ double f_sum(double *p, int n) {
   return s;
 }
 
-// CHECK:   void f_sum_grad_0(double *p, int n, double *_d_p) {
+// CHECK:   void f_sum_grad_0(double *p, int n, clad::array_ref<double> _d_p) {
 // CHECK-NEXT:       double _d_s = 0;
 // CHECK-NEXT:       unsigned long _t0;
 // CHECK-NEXT:       int _d_i = 0;
@@ -216,7 +216,7 @@ double f_sum(double *p, int n) {
 // CHECK-NEXT:   }
 
 double sq(double x) { return x * x; }
-// CHECK:   void sq_grad(double x, double *_d_x) {
+// CHECK:   void sq_grad(double x, clad::array_ref<double> _d_x) {
 // CHECK-NEXT:       double _t0;
 // CHECK-NEXT:       double _t1;
 // CHECK-NEXT:       _t1 = x;
@@ -226,9 +226,9 @@ double sq(double x) { return x * x; }
 // CHECK-NEXT:     _label0:
 // CHECK-NEXT:       {
 // CHECK-NEXT:           double _r0 = 1 * _t0;
-// CHECK-NEXT:           *_d_x += _r0;
+// CHECK-NEXT:           * _d_x += _r0;
 // CHECK-NEXT:           double _r1 = _t1 * 1;
-// CHECK-NEXT:           *_d_x += _r1;
+// CHECK-NEXT:           * _d_x += _r1;
 // CHECK-NEXT:       }
 // CHECK-NEXT:   }
 
@@ -239,7 +239,7 @@ double f_sum_squares(double *p, int n) {
   return s;
 }
 
-// CHECK:   void f_sum_squares_grad_0(double *p, int n, double *_d_p) {
+// CHECK:   void f_sum_squares_grad_0(double *p, int n, clad::array_ref<double> _d_p) {
 // CHECK-NEXT:       double _d_s = 0;
 // CHECK-NEXT:       unsigned long _t0;
 // CHECK-NEXT:       int _d_i = 0;
@@ -276,7 +276,7 @@ double f_log_gaus(double* x, double* p /*means*/, double n, double sigma) {
   return std::log(gaus);
 }
 
-// CHECK:   void f_log_gaus_grad_1(double *x, double *p, double n, double sigma, double *_d_p) {
+// CHECK:   void f_log_gaus_grad_1(double *x, double *p, double n, double sigma, clad::array_ref<double> _d_p) {
 // CHECK-NEXT:       double _d_power = 0;
 // CHECK-NEXT:       unsigned long _t0;
 // CHECK-NEXT:       int _d_i = 0;
@@ -377,7 +377,7 @@ double f_const(const double a, const double b) {
 }
 
 void f_const_grad(const double, const double, double *);
-// CHECK:   void f_const_grad(const double a, const double b, double *_d_a, double *_d_b) {
+// CHECK:   void f_const_grad(const double a, const double b, clad::array_ref<double> _d_a, clad::array_ref<double> _d_b) {
 // CHECK-NEXT:       int _d_r = 0;
 // CHECK-NEXT:       unsigned long _t0;
 // CHECK-NEXT:       int _d_i = 0;
@@ -404,9 +404,9 @@ void f_const_grad(const double, const double, double *);
 // CHECK-NEXT:           }
 // CHECK-NEXT:           {
 // CHECK-NEXT:               double _r0 = _d_sq * clad::pop(_t1);
-// CHECK-NEXT:               *_d_b += _r0;
+// CHECK-NEXT:               * _d_b += _r0;
 // CHECK-NEXT:               double _r1 = clad::pop(_t2) * _d_sq;
-// CHECK-NEXT:               *_d_b += _r1;
+// CHECK-NEXT:               * _d_b += _r1;
 // CHECK-NEXT:           }
 // CHECK-NEXT:       }
 // CHECK-NEXT:   }

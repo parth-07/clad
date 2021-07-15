@@ -12,23 +12,23 @@ __attribute__((always_inline)) double f_add1(double x, double y) {
   return x + y;
 }
 
-// CHECK:   void f_add1_grad(double x, double y, double *_d_x, double *_d_y) __attribute__((always_inline)) {
+// CHECK:   void f_add1_grad(double x, double y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y) __attribute__((always_inline)) {
 // CHECK-NEXT:       double f_add1_return = x + y;
 // CHECK-NEXT:       goto _label0;
 // CHECK-NEXT:     _label0:
 // CHECK-NEXT:       {
-// CHECK-NEXT:           *_d_x += 1;
-// CHECK-NEXT:           *_d_y += 1;
+// CHECK-NEXT:           * _d_x += 1;
+// CHECK-NEXT:           * _d_y += 1;
 // CHECK-NEXT:       }
 // CHECK-NEXT:   }
 
-void f_add1_grad(double x, double y, double* _d_x, double* _d_y);
+void f_add1_grad(double x, double y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y);
 
 double f_add2(double x, double y) {
   return 3*x + 4*y;
 }
 
-// CHECK:   void f_add2_grad(double x, double y, double *_d_x, double *_d_y) {
+// CHECK:   void f_add2_grad(double x, double y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y) {
 // CHECK-NEXT:       double _t0;
 // CHECK-NEXT:       double _t1;
 // CHECK-NEXT:       _t0 = x;
@@ -39,20 +39,20 @@ double f_add2(double x, double y) {
 // CHECK-NEXT:       {
 // CHECK-NEXT:           double _r0 = 1 * _t0;
 // CHECK-NEXT:           double _r1 = 3 * 1;
-// CHECK-NEXT:           *_d_x += _r1;
+// CHECK-NEXT:           * _d_x += _r1;
 // CHECK-NEXT:           double _r2 = 1 * _t1;
 // CHECK-NEXT:           double _r3 = 4 * 1;
-// CHECK-NEXT:           *_d_y += _r3;
+// CHECK-NEXT:           * _d_y += _r3;
 // CHECK-NEXT:       }
 // CHECK-NEXT:   }
 
-void f_add2_grad(double x, double y, double* _d_x, double* _d_y);
+void f_add2_grad(double x, double y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y);
 
 double f_add3(double x, double y) {
   return 3*x + 4*y*4;
 }
 
-// CHECK:   void f_add3_grad(double x, double y, double *_d_x, double *_d_y) {
+// CHECK:   void f_add3_grad(double x, double y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y) {
 // CHECK-NEXT:       double _t0;
 // CHECK-NEXT:       double _t1;
 // CHECK-NEXT:       _t0 = x;
@@ -63,36 +63,36 @@ double f_add3(double x, double y) {
 // CHECK-NEXT:       {
 // CHECK-NEXT:           double _r0 = 1 * _t0;
 // CHECK-NEXT:           double _r1 = 3 * 1;
-// CHECK-NEXT:           *_d_x += _r1;
+// CHECK-NEXT:           * _d_x += _r1;
 // CHECK-NEXT:           double _r2 = 1 * 4;
 // CHECK-NEXT:           double _r3 = _r2 * _t1;
 // CHECK-NEXT:           double _r4 = 4 * _r2;
-// CHECK-NEXT:           *_d_y += _r4;
+// CHECK-NEXT:           * _d_y += _r4;
 // CHECK-NEXT:       }
 // CHECK-NEXT:   }
 
-void f_add3_grad(double x, double y, double* _d_x, double* _d_y);
+void f_add3_grad(double x, double y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y);
 
 double f_sub1(double x, double y) {
   return x - y;
 }
 
-// CHECK:   void f_sub1_grad(double x, double y, double *_d_x, double *_d_y) {
+// CHECK:   void f_sub1_grad(double x, double y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y) {
 // CHECK-NEXT:       double f_sub1_return = x - y;
 // CHECK-NEXT:       goto _label0;
 // CHECK-NEXT:     _label0:
 // CHECK-NEXT:       {
-// CHECK-NEXT:           *_d_x += 1;
-// CHECK-NEXT:           *_d_y += -1;
+// CHECK-NEXT:           * _d_x += 1;
+// CHECK-NEXT:           * _d_y += -1;
 // CHECK-NEXT:       }
 // CHECK-NEXT:   }
-void f_sub1_grad(double x, double y, double* _d_x, double* _d_y);
+void f_sub1_grad(double x, double y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y);
 
 double f_sub2(double x, double y) {
   return 3*x - 4*y;
 }
 
-// CHECK:   void f_sub2_grad(double x, double y, double *_d_x, double *_d_y) {
+// CHECK:   void f_sub2_grad(double x, double y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y) {
 // CHECK-NEXT:       double _t0;
 // CHECK-NEXT:       double _t1;
 // CHECK-NEXT:       _t0 = x;
@@ -103,20 +103,20 @@ double f_sub2(double x, double y) {
 // CHECK-NEXT:       {
 // CHECK-NEXT:           double _r0 = 1 * _t0;
 // CHECK-NEXT:           double _r1 = 3 * 1;
-// CHECK-NEXT:           *_d_x += _r1;
+// CHECK-NEXT:           * _d_x += _r1;
 // CHECK-NEXT:           double _r2 = -1 * _t1;
 // CHECK-NEXT:           double _r3 = 4 * -1;
-// CHECK-NEXT:           *_d_y += _r3;
+// CHECK-NEXT:           * _d_y += _r3;
 // CHECK-NEXT:       }
 // CHECK-NEXT:   }
 
-void f_sub2_grad(double x, double y, double* _d_x, double* _d_y);
+void f_sub2_grad(double x, double y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y);
 
 double f_mult1(double x, double y) {
   return x*y;
 }
 
-// CHECK:   void f_mult1_grad(double x, double y, double *_d_x, double *_d_y) {
+// CHECK:   void f_mult1_grad(double x, double y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y) {
 // CHECK-NEXT:       double _t0;
 // CHECK-NEXT:       double _t1;
 // CHECK-NEXT:       _t1 = x;
@@ -126,19 +126,19 @@ double f_mult1(double x, double y) {
 // CHECK-NEXT:     _label0:
 // CHECK-NEXT:       {
 // CHECK-NEXT:           double _r0 = 1 * _t0;
-// CHECK-NEXT:           *_d_x += _r0;
+// CHECK-NEXT:           * _d_x += _r0;
 // CHECK-NEXT:           double _r1 = _t1 * 1;
-// CHECK-NEXT:           *_d_y += _r1;
+// CHECK-NEXT:           * _d_y += _r1;
 // CHECK-NEXT:       }
 // CHECK-NEXT:   }
 
-void f_mult1_grad(double x, double y, double* _d_x, double* _d_y);
+void f_mult1_grad(double x, double y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y);
 
 double f_mult2(double x, double y) {
    return 3*x*4*y;
 }
 
-// CHECK:   void f_mult2_grad(double x, double y, double *_d_x, double *_d_y) {
+// CHECK:   void f_mult2_grad(double x, double y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y) {
 // CHECK-NEXT:       double _t0;
 // CHECK-NEXT:       double _t1;
 // CHECK-NEXT:       double _t2;
@@ -153,19 +153,19 @@ double f_mult2(double x, double y) {
 // CHECK-NEXT:           double _r1 = _r0 * 4;
 // CHECK-NEXT:           double _r2 = _r1 * _t1;
 // CHECK-NEXT:           double _r3 = 3 * _r1;
-// CHECK-NEXT:           *_d_x += _r3;
+// CHECK-NEXT:           * _d_x += _r3;
 // CHECK-NEXT:           double _r4 = _t2 * 1;
-// CHECK-NEXT:           *_d_y += _r4;
+// CHECK-NEXT:           * _d_y += _r4;
 // CHECK-NEXT:       }
 // CHECK-NEXT:   }
 
-void f_mult2_grad(double x, double y, double* _d_x, double* _d_y);
+void f_mult2_grad(double x, double y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y);
 
 double f_div1(double x, double y) {
   return x/y;
 }
 
-// CHECK:   void f_div1_grad(double x, double y, double *_d_x, double *_d_y) {
+// CHECK:   void f_div1_grad(double x, double y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y) {
 // CHECK-NEXT:       double _t0;
 // CHECK-NEXT:       double _t1;
 // CHECK-NEXT:       _t1 = x;
@@ -175,19 +175,19 @@ double f_div1(double x, double y) {
 // CHECK-NEXT:     _label0:
 // CHECK-NEXT:       {
 // CHECK-NEXT:           double _r0 = 1 / _t0;
-// CHECK-NEXT:           *_d_x += _r0;
+// CHECK-NEXT:           * _d_x += _r0;
 // CHECK-NEXT:           double _r1 = 1 * -_t1 / (_t0 * _t0);
-// CHECK-NEXT:           *_d_y += _r1;
+// CHECK-NEXT:           * _d_y += _r1;
 // CHECK-NEXT:       }
 // CHECK-NEXT:   }
 
-void f_div1_grad(double x, double y, double* _d_x, double* _d_y);
+void f_div1_grad(double x, double y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y);
 
 double f_div2(double x, double y) {
   return 3*x/(4*y);
 }
 
-// CHECK:   void f_div2_grad(double x, double y, double *_d_x, double *_d_y) {
+// CHECK:   void f_div2_grad(double x, double y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y) {
 // CHECK-NEXT:       double _t0;
 // CHECK-NEXT:       double _t1;
 // CHECK-NEXT:       double _t2;
@@ -203,21 +203,21 @@ double f_div2(double x, double y) {
 // CHECK-NEXT:           double _r0 = 1 / _t0;
 // CHECK-NEXT:           double _r1 = _r0 * _t1;
 // CHECK-NEXT:           double _r2 = 3 * _r0;
-// CHECK-NEXT:           *_d_x += _r2;
+// CHECK-NEXT:           * _d_x += _r2;
 // CHECK-NEXT:           double _r3 = 1 * -_t2 / (_t0 * _t0);
 // CHECK-NEXT:           double _r4 = _r3 * _t3;
 // CHECK-NEXT:           double _r5 = 4 * _r3;
-// CHECK-NEXT:           *_d_y += _r5;
+// CHECK-NEXT:           * _d_y += _r5;
 // CHECK-NEXT:       }
 // CHECK-NEXT:   }
 
-void f_div2_grad(double x, double y, double* _d_x, double* _d_y);
+void f_div2_grad(double x, double y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y);
 
 double f_c(double x, double y) {
   return -x*y + (x + y)*(x/y) - x*x; 
 }
 
-// CHECK:   void f_c_grad(double x, double y, double *_d_x, double *_d_y) {
+// CHECK:   void f_c_grad(double x, double y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y) {
 // CHECK-NEXT:       double _t0;
 // CHECK-NEXT:       double _t1;
 // CHECK-NEXT:       double _t2;
@@ -239,31 +239,31 @@ double f_c(double x, double y) {
 // CHECK-NEXT:     _label0:
 // CHECK-NEXT:       {
 // CHECK-NEXT:           double _r0 = 1 * _t0;
-// CHECK-NEXT:           *_d_x += -_r0;
+// CHECK-NEXT:           * _d_x += -_r0;
 // CHECK-NEXT:           double _r1 = _t1 * 1;
-// CHECK-NEXT:           *_d_y += _r1;
+// CHECK-NEXT:           * _d_y += _r1;
 // CHECK-NEXT:           double _r2 = 1 * _t2;
-// CHECK-NEXT:           *_d_x += _r2;
-// CHECK-NEXT:           *_d_y += _r2;
+// CHECK-NEXT:           * _d_x += _r2;
+// CHECK-NEXT:           * _d_y += _r2;
 // CHECK-NEXT:           double _r3 = _t3 * 1;
 // CHECK-NEXT:           double _r4 = _r3 / _t4;
-// CHECK-NEXT:           *_d_x += _r4;
+// CHECK-NEXT:           * _d_x += _r4;
 // CHECK-NEXT:           double _r5 = _r3 * -_t5 / (_t4 * _t4);
-// CHECK-NEXT:           *_d_y += _r5;
+// CHECK-NEXT:           * _d_y += _r5;
 // CHECK-NEXT:           double _r6 = -1 * _t6;
-// CHECK-NEXT:           *_d_x += _r6;
+// CHECK-NEXT:           * _d_x += _r6;
 // CHECK-NEXT:           double _r7 = _t7 * -1;
-// CHECK-NEXT:           *_d_x += _r7;
+// CHECK-NEXT:           * _d_x += _r7;
 // CHECK-NEXT:       }
 // CHECK-NEXT:   }
 
-void f_c_grad(double x, double y, double* _d_x, double* _d_y);
+void f_c_grad(double x, double y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y);
 
 double f_rosenbrock(double x, double y) {
   return (x - 1) * (x - 1) + 100 * (y - x * x) * (y - x * x);
 }
 
-// CHECK:   void f_rosenbrock_grad(double x, double y, double *_d_x, double *_d_y) {
+// CHECK:   void f_rosenbrock_grad(double x, double y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y) {
 // CHECK-NEXT:       double _t0;
 // CHECK-NEXT:       double _t1;
 // CHECK-NEXT:       double _t2;
@@ -287,51 +287,51 @@ double f_rosenbrock(double x, double y) {
 // CHECK-NEXT:     _label0:
 // CHECK-NEXT:       {
 // CHECK-NEXT:           double _r0 = 1 * _t0;
-// CHECK-NEXT:           *_d_x += _r0;
+// CHECK-NEXT:           * _d_x += _r0;
 // CHECK-NEXT:           double _r1 = _t1 * 1;
-// CHECK-NEXT:           *_d_x += _r1;
+// CHECK-NEXT:           * _d_x += _r1;
 // CHECK-NEXT:           double _r2 = 1 * _t2;
 // CHECK-NEXT:           double _r3 = _r2 * _t3;
 // CHECK-NEXT:           double _r4 = 100 * _r2;
-// CHECK-NEXT:           *_d_y += _r4;
+// CHECK-NEXT:           * _d_y += _r4;
 // CHECK-NEXT:           double _r5 = -_r4 * _t4;
-// CHECK-NEXT:           *_d_x += _r5;
+// CHECK-NEXT:           * _d_x += _r5;
 // CHECK-NEXT:           double _r6 = _t5 * -_r4;
-// CHECK-NEXT:           *_d_x += _r6;
+// CHECK-NEXT:           * _d_x += _r6;
 // CHECK-NEXT:           double _r7 = _t6 * 1;
-// CHECK-NEXT:           *_d_y += _r7;
+// CHECK-NEXT:           * _d_y += _r7;
 // CHECK-NEXT:           double _r8 = -_r7 * _t7;
-// CHECK-NEXT:           *_d_x += _r8;
+// CHECK-NEXT:           * _d_x += _r8;
 // CHECK-NEXT:           double _r9 = _t8 * -_r7;
-// CHECK-NEXT:           *_d_x += _r9;
+// CHECK-NEXT:           * _d_x += _r9;
 // CHECK-NEXT:       }
 // CHECK-NEXT:   }
 
-void f_rosenbrock_grad(double x, double y, double* _d_x, double* _d_y);
+void f_rosenbrock_grad(double x, double y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y);
 
 double f_cond1(double x, double y) {
   return (x > y ? x : y);
 }
 
-// CHECK:   void f_cond1_grad(double x, double y, double *_d_x, double *_d_y) {
+// CHECK:   void f_cond1_grad(double x, double y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y) {
 // CHECK-NEXT:       bool _cond0;
 // CHECK-NEXT:       _cond0 = x > y;
 // CHECK-NEXT:       double f_cond1_return = (_cond0 ? x : y);
 // CHECK-NEXT:       goto _label0;
 // CHECK-NEXT:     _label0:
 // CHECK-NEXT:       if (_cond0)
-// CHECK-NEXT:           *_d_x += 1;
+// CHECK-NEXT:           * _d_x += 1;
 // CHECK-NEXT:       else
-// CHECK-NEXT:           *_d_y += 1;
+// CHECK-NEXT:           * _d_y += 1;
 // CHECK-NEXT:   }
 
-void f_cond1_grad(double x, double y, double* _d_x, double* _d_y);
+void f_cond1_grad(double x, double y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y);
 
 double f_cond2(double x, double y) {
   return (x > y ? x : (y > 0 ? y : -y));
 }
 
-// CHECK:   void f_cond2_grad(double x, double y, double *_d_x, double *_d_y) {
+// CHECK:   void f_cond2_grad(double x, double y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y) {
 // CHECK-NEXT:       bool _cond0;
 // CHECK-NEXT:       bool _cond1;
 // CHECK-NEXT:       _cond0 = x > y;
@@ -343,35 +343,35 @@ double f_cond2(double x, double y) {
 // CHECK-NEXT:       goto _label0;
 // CHECK-NEXT:     _label0:
 // CHECK-NEXT:       if (_cond0)
-// CHECK-NEXT:           *_d_x += 1;
+// CHECK-NEXT:           * _d_x += 1;
 // CHECK-NEXT:       else if (_cond1)
-// CHECK-NEXT:           *_d_y += 1;
+// CHECK-NEXT:           * _d_y += 1;
 // CHECK-NEXT:       else
-// CHECK-NEXT:           *_d_y += -1;
+// CHECK-NEXT:           * _d_y += -1;
 // CHECK-NEXT:   }
 
-void f_cond2_grad(double x, double y, double* _d_x, double* _d_y);
+void f_cond2_grad(double x, double y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y);
 
 double f_cond3(double x, double c) {
   return (c > 0 ? x + c : x - c);
 }
 
-// CHECK:   void f_cond3_grad(double x, double c, double *_d_x, double *_d_c) {
+// CHECK:   void f_cond3_grad(double x, double c, clad::array_ref<double> _d_x, clad::array_ref<double> _d_c) {
 // CHECK-NEXT:       bool _cond0;
 // CHECK-NEXT:       _cond0 = c > 0;
 // CHECK-NEXT:       double f_cond3_return = (_cond0 ? x + c : x - c);
 // CHECK-NEXT:       goto _label0;
 // CHECK-NEXT:     _label0:
 // CHECK-NEXT:       if (_cond0) {
-// CHECK-NEXT:           *_d_x += 1;
-// CHECK-NEXT:           *_d_c += 1;
+// CHECK-NEXT:           * _d_x += 1;
+// CHECK-NEXT:           * _d_c += 1;
 // CHECK-NEXT:       } else {
-// CHECK-NEXT:           *_d_x += 1;
-// CHECK-NEXT:           *_d_c += -1;
+// CHECK-NEXT:           * _d_x += 1;
+// CHECK-NEXT:           * _d_c += -1;
 // CHECK-NEXT:       }
 // CHECK-NEXT:   }
 
-double f_cond3_grad(double x, double c, double* _d_x, double* _d_y);
+double f_cond3_grad(double x, double c, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y);
 
 double f_if1(double x, double y) {
   if (x > y)
@@ -380,7 +380,7 @@ double f_if1(double x, double y) {
     return y;
 }
 
-// CHECK:   void f_if1_grad(double x, double y, double *_d_x, double *_d_y) {
+// CHECK:   void f_if1_grad(double x, double y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y) {
 // CHECK-NEXT:       bool _cond0;
 // CHECK-NEXT:       _cond0 = x > y;
 // CHECK-NEXT:       if (_cond0) {
@@ -392,13 +392,13 @@ double f_if1(double x, double y) {
 // CHECK-NEXT:       }
 // CHECK-NEXT:       if (_cond0)
 // CHECK-NEXT:         _label0:
-// CHECK-NEXT:           *_d_x += 1;
+// CHECK-NEXT:           * _d_x += 1;
 // CHECK-NEXT:       else
 // CHECK-NEXT:         _label1:
-// CHECK-NEXT:           *_d_y += 1;
+// CHECK-NEXT:           * _d_y += 1;
 // CHECK-NEXT:   }
 
-double f_if1_grad(double x, double y, double* _d_x, double* _d_y);
+double f_if1_grad(double x, double y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y);
 
 double f_if2(double x, double y) {
   if (x > y)
@@ -409,7 +409,7 @@ double f_if2(double x, double y) {
     return -y;
 }
 
-// CHECK:   void f_if2_grad(double x, double y, double *_d_x, double *_d_y) {
+// CHECK:   void f_if2_grad(double x, double y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y) {
 // CHECK-NEXT:       bool _cond0;
 // CHECK-NEXT:       bool _cond1;
 // CHECK-NEXT:       _cond0 = x > y;
@@ -428,16 +428,16 @@ double f_if2(double x, double y) {
 // CHECK-NEXT:       }
 // CHECK-NEXT:       if (_cond0)
 // CHECK-NEXT:         _label0:
-// CHECK-NEXT:           *_d_x += 1;
+// CHECK-NEXT:           * _d_x += 1;
 // CHECK-NEXT:       else if (_cond1)
 // CHECK-NEXT:         _label1:
-// CHECK-NEXT:           *_d_y += 1;
+// CHECK-NEXT:           * _d_y += 1;
 // CHECK-NEXT:       else
 // CHECK-NEXT:         _label2:
-// CHECK-NEXT:           *_d_y += -1;
+// CHECK-NEXT:           * _d_y += -1;
 // CHECK-NEXT:   }
 
-void f_if2_grad(double x, double y, double* _d_x, double* _d_y);
+void f_if2_grad(double x, double y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y);
 
 struct S {
   double c1;
@@ -446,7 +446,7 @@ struct S {
     return c1 * x + c2 * y;
   }
 
-  // CHECK:   void f_grad(double x, double y, double *_d_x, double *_d_y) {
+  // CHECK:   void f_grad(double x, double y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y) {
   // CHECK-NEXT:       double _t0;
   // CHECK-NEXT:       double _t1;
   // CHECK-NEXT:       double _t2;
@@ -461,14 +461,14 @@ struct S {
   // CHECK-NEXT:       {
   // CHECK-NEXT:           double _r0 = 1 * _t0;
   // CHECK-NEXT:           double _r1 = _t1 * 1;
-  // CHECK-NEXT:           *_d_x += _r1;
+  // CHECK-NEXT:           * _d_x += _r1;
   // CHECK-NEXT:           double _r2 = 1 * _t2;
   // CHECK-NEXT:           double _r3 = _t3 * 1;
-  // CHECK-NEXT:           *_d_y += _r3;
+  // CHECK-NEXT:           * _d_y += _r3;
   // CHECK-NEXT:       }
   // CHECK-NEXT:   }
 
-  void f_grad(double x, double y, double* _d_x, double* _d_y);
+  void f_grad(double x, double y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y);
 };
 
 double sum_of_powers(double x, double y, double z, double p) {
@@ -505,7 +505,7 @@ void f_norm_grad(double x,
                  double* _d_y,
                  double* _d_z,
                  double* _d_d);
-// CHECK:   void f_norm_grad(double x, double y, double z, double d, double *_d_x, double *_d_y, double *_d_z, double *_d_d) {
+// CHECK:   void f_norm_grad(double x, double y, double z, double d, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y, clad::array_ref<double> _d_z, clad::array_ref<double> _d_d) {
 // CHECK-NEXT:       double _t0;
 // CHECK-NEXT:       double _t1;
 // CHECK-NEXT:       double _t2;
@@ -534,17 +534,17 @@ void f_norm_grad(double x,
 // CHECK-NEXT:           double _grad3 = 0.;
 // CHECK-NEXT:           custom_derivatives::sum_of_powers_grad(_t0, _t1, _t2, _t3, &_grad0, &_grad1, &_grad2, &_grad3);
 // CHECK-NEXT:           double _r1 = _r0 * _grad0;
-// CHECK-NEXT:           *_d_x += _r1;
+// CHECK-NEXT:           * _d_x += _r1;
 // CHECK-NEXT:           double _r2 = _r0 * _grad1;
-// CHECK-NEXT:           *_d_y += _r2;
+// CHECK-NEXT:           * _d_y += _r2;
 // CHECK-NEXT:           double _r3 = _r0 * _grad2;
-// CHECK-NEXT:           *_d_z += _r3;
+// CHECK-NEXT:           * _d_z += _r3;
 // CHECK-NEXT:           double _r4 = _r0 * _grad3;
-// CHECK-NEXT:           *_d_d += _r4;
+// CHECK-NEXT:           * _d_d += _r4;
 // CHECK-NEXT:           double _r5 = 1 * _grad5;
 // CHECK-NEXT:           double _r6 = _r5 / _t5;
 // CHECK-NEXT:           double _r7 = _r5 * -1 / (_t5 * _t5);
-// CHECK-NEXT:           *_d_d += _r7;
+// CHECK-NEXT:           * _d_d += _r7;
 // CHECK-NEXT:       }
 // CHECK-NEXT:   }
 
@@ -552,8 +552,8 @@ double f_sin(double x, double y) {
   return (std::sin(x) + std::sin(y))*(x + y);
 }
 
-void f_sin_grad(double x, double y, double* _d_x, double* _d_y);
-// CHECK:   void f_sin_grad(double x, double y, double *_d_x, double *_d_y) {
+void f_sin_grad(double x, double y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y);
+// CHECK:   void f_sin_grad(double x, double y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y) {
 // CHECK-NEXT:       double _t0;
 // CHECK-NEXT:       double _t1;
 // CHECK-NEXT:       double _t2;
@@ -568,12 +568,12 @@ void f_sin_grad(double x, double y, double* _d_x, double* _d_y);
 // CHECK-NEXT:       {
 // CHECK-NEXT:           double _r0 = 1 * _t0;
 // CHECK-NEXT:           double _r1 = _r0 * custom_derivatives::sin_darg0(_t1);
-// CHECK-NEXT:           *_d_x += _r1;
+// CHECK-NEXT:           * _d_x += _r1;
 // CHECK-NEXT:           double _r2 = _r0 * custom_derivatives::sin_darg0(_t2);
-// CHECK-NEXT:           *_d_y += _r2;
+// CHECK-NEXT:           * _d_y += _r2;
 // CHECK-NEXT:           double _r3 = _t3 * 1;
-// CHECK-NEXT:           *_d_x += _r3;
-// CHECK-NEXT:           *_d_y += _r3;
+// CHECK-NEXT:           * _d_x += _r3;
+// CHECK-NEXT:           * _d_y += _r3;
 // CHECK-NEXT:       }
 // CHECK-NEXT:   }
 
@@ -581,22 +581,22 @@ unsigned f_types(int x, float y, double z) {
   return x + y + z;
 }
 
-// CHECK:   void f_types_grad(int x, float y, double z, unsigned int *_d_x, unsigned int *_d_y, unsigned int *_d_z) {
-// CHECK-NEXT:       double f_types_return = x + y + z;
-// CHECK-NEXT:       goto _label0;
-// CHECK-NEXT:     _label0:
-// CHECK-NEXT:       {
-// CHECK-NEXT:           *_d_x += 1;
-// CHECK-NEXT:           *_d_y += 1;
-// CHECK-NEXT:           *_d_z += 1;
-// CHECK-NEXT:       }
-// CHECK-NEXT:   }
 void f_types_grad(int x,
                   float y,
                   double z,
                   unsigned int* _d_x,
                   unsigned int* _d_y,
                   unsigned int* _d_z);
+// CHECK:   void f_types_grad(int x, float y, double z, clad::array_ref<unsigned int> _d_x, clad::array_ref<unsigned int> _d_y, clad::array_ref<unsigned int> _d_z) {
+// CHECK-NEXT:       double f_types_return = x + y + z;
+// CHECK-NEXT:       goto _label0;
+// CHECK-NEXT:     _label0:
+// CHECK-NEXT:       {
+// CHECK-NEXT:           * _d_x += 1;
+// CHECK-NEXT:           * _d_y += 1;
+// CHECK-NEXT:           * _d_z += 1;
+// CHECK-NEXT:       }
+// CHECK-NEXT:   }
 
 double f_decls1(double x, double y) {
   double a = 3 * x;
@@ -605,8 +605,8 @@ double f_decls1(double x, double y) {
   return 2 * c;
 }
 
-void f_decls1_grad(double x, double y, double* _d_x, double* _d_y);
-// CHECK:   void f_decls1_grad(double x, double y, double *_d_x, double *_d_y) {
+void f_decls1_grad(double x, double y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y);
+// CHECK:   void f_decls1_grad(double x, double y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y) {
 // CHECK-NEXT:       double _t0;
 // CHECK-NEXT:       double _d_a = 0;
 // CHECK-NEXT:       double _t1;
@@ -634,12 +634,12 @@ void f_decls1_grad(double x, double y, double* _d_x, double* _d_y);
 // CHECK-NEXT:       {
 // CHECK-NEXT:           double _r2 = _d_b * _t1;
 // CHECK-NEXT:           double _r3 = 5 * _d_b;
-// CHECK-NEXT:           *_d_y += _r3;
+// CHECK-NEXT:           * _d_y += _r3;
 // CHECK-NEXT:       }
 // CHECK-NEXT:       {
 // CHECK-NEXT:           double _r0 = _d_a * _t0;
 // CHECK-NEXT:           double _r1 = 3 * _d_a;
-// CHECK-NEXT:           *_d_x += _r1;
+// CHECK-NEXT:           * _d_x += _r1;
 // CHECK-NEXT:       }
 // CHECK-NEXT:   }
 
@@ -650,8 +650,8 @@ double f_decls2(double x, double y) {
   return a + 2 * b + c;
 }
 
-void f_decls2_grad(double x, double y, double* _d_x, double* _d_y);
-// CHECK:   void f_decls2_grad(double x, double y, double *_d_x, double *_d_y) {
+void f_decls2_grad(double x, double y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y);
+// CHECK:   void f_decls2_grad(double x, double y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y) {
 // CHECK-NEXT:       double _t0;
 // CHECK-NEXT:       double _t1;
 // CHECK-NEXT:       double _d_a = 0;
@@ -684,21 +684,21 @@ void f_decls2_grad(double x, double y, double* _d_x, double* _d_y);
 // CHECK-NEXT:       }
 // CHECK-NEXT:       {
 // CHECK-NEXT:           double _r4 = _d_c * _t4;
-// CHECK-NEXT:           *_d_y += _r4;
+// CHECK-NEXT:           * _d_y += _r4;
 // CHECK-NEXT:           double _r5 = _t5 * _d_c;
-// CHECK-NEXT:           *_d_y += _r5;
+// CHECK-NEXT:           * _d_y += _r5;
 // CHECK-NEXT:       }
 // CHECK-NEXT:       {
 // CHECK-NEXT:           double _r2 = _d_b * _t2;
-// CHECK-NEXT:           *_d_x += _r2;
+// CHECK-NEXT:           * _d_x += _r2;
 // CHECK-NEXT:           double _r3 = _t3 * _d_b;
-// CHECK-NEXT:           *_d_y += _r3;
+// CHECK-NEXT:           * _d_y += _r3;
 // CHECK-NEXT:       }
 // CHECK-NEXT:       {
 // CHECK-NEXT:           double _r0 = _d_a * _t0;
-// CHECK-NEXT:           *_d_x += _r0;
+// CHECK-NEXT:           * _d_x += _r0;
 // CHECK-NEXT:           double _r1 = _t1 * _d_a;
-// CHECK-NEXT:           *_d_x += _r1;
+// CHECK-NEXT:           * _d_x += _r1;
 // CHECK-NEXT:       }
 // CHECK-NEXT:   }
 
@@ -713,8 +713,8 @@ double f_decls3(double x, double y) {
   return b;
 }
 
-void f_decls3_grad(double x, double y, double* _d_x, double* _d_y);
-// CHECK:   void f_decls3_grad(double x, double y, double *_d_x, double *_d_y) {
+void f_decls3_grad(double x, double y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y);
+// CHECK:   void f_decls3_grad(double x, double y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y) {
 // CHECK-NEXT:       double _t0;
 // CHECK-NEXT:       double _d_a = 0;
 // CHECK-NEXT:       double _t1;
@@ -773,12 +773,12 @@ void f_decls3_grad(double x, double y, double* _d_x, double* _d_y);
 // CHECK-NEXT:       {
 // CHECK-NEXT:           double _r2 = _d_c * _t1;
 // CHECK-NEXT:           double _r3 = 333 * _d_c;
-// CHECK-NEXT:           *_d_y += _r3;
+// CHECK-NEXT:           * _d_y += _r3;
 // CHECK-NEXT:       }
 // CHECK-NEXT:       {
 // CHECK-NEXT:           double _r0 = _d_a * _t0;
 // CHECK-NEXT:           double _r1 = 3 * _d_a;
-// CHECK-NEXT:           *_d_x += _r1;
+// CHECK-NEXT:           * _d_x += _r1;
 // CHECK-NEXT:       }
 // CHECK-NEXT:   }
 
@@ -787,8 +787,8 @@ double f_issue138(double x, double y) {
     return x*x*x*x + y*y*y*y;
 }
 
-void f_issue138_grad(double x, double y, double* _d_x, double* _d_y);
-// CHECK:   void f_issue138_grad(double x, double y, double *_d_x, double *_d_y) {
+void f_issue138_grad(double x, double y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y);
+// CHECK:   void f_issue138_grad(double x, double y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y) {
 // CHECK-NEXT:       double _d__t1 = 0;
 // CHECK-NEXT:       double _t0;
 // CHECK-NEXT:       double _t1;
@@ -822,23 +822,23 @@ void f_issue138_grad(double x, double y, double* _d_x, double* _d_y);
 // CHECK-NEXT:           double _r0 = 1 * _t0;
 // CHECK-NEXT:           double _r1 = _r0 * _t1;
 // CHECK-NEXT:           double _r2 = _r1 * _t2;
-// CHECK-NEXT:           *_d_x += _r2;
+// CHECK-NEXT:           * _d_x += _r2;
 // CHECK-NEXT:           double _r3 = _t3 * _r1;
-// CHECK-NEXT:           *_d_x += _r3;
+// CHECK-NEXT:           * _d_x += _r3;
 // CHECK-NEXT:           double _r4 = _t4 * _r0;
-// CHECK-NEXT:           *_d_x += _r4;
+// CHECK-NEXT:           * _d_x += _r4;
 // CHECK-NEXT:           double _r5 = _t5 * 1;
-// CHECK-NEXT:           *_d_x += _r5;
+// CHECK-NEXT:           * _d_x += _r5;
 // CHECK-NEXT:           double _r6 = 1 * _t6;
 // CHECK-NEXT:           double _r7 = _r6 * _t7;
 // CHECK-NEXT:           double _r8 = _r7 * _t8;
-// CHECK-NEXT:           *_d_y += _r8;
+// CHECK-NEXT:           * _d_y += _r8;
 // CHECK-NEXT:           double _r9 = _t9 * _r7;
-// CHECK-NEXT:           *_d_y += _r9;
+// CHECK-NEXT:           * _d_y += _r9;
 // CHECK-NEXT:           double _r10 = _t11 * _r6;
-// CHECK-NEXT:           *_d_y += _r10;
+// CHECK-NEXT:           * _d_y += _r10;
 // CHECK-NEXT:           double _r11 = _t12 * 1;
-// CHECK-NEXT:           *_d_y += _r11;
+// CHECK-NEXT:           * _d_y += _r11;
 // CHECK-NEXT:       }
 // CHECK-NEXT:   }
 
@@ -846,8 +846,8 @@ double f_const(const double a, const double b) {
   return a * b;
 }
 
-void f_const_grad(const double a, const double b, double* _d_a, double* _d_b);
-// CHECK: void f_const_grad(const double a, const double b, double *_d_a, double *_d_b) {
+void f_const_grad(const double a, const double b, clad::array_ref<double> _d_a, clad::array_ref<double> _d_b);
+// CHECK: void f_const_grad(const double a, const double b, clad::array_ref<double> _d_a, clad::array_ref<double> _d_b) {
 // CHECK-NEXT:       double _t0;
 // CHECK-NEXT:       double _t1;
 // CHECK-NEXT:       _t1 = a;
@@ -857,9 +857,9 @@ void f_const_grad(const double a, const double b, double* _d_a, double* _d_b);
 // CHECK-NEXT:     _label0:
 // CHECK-NEXT:       {
 // CHECK-NEXT:           double _r0 = 1 * _t0;
-// CHECK-NEXT:           *_d_a += _r0;
+// CHECK-NEXT:           * _d_a += _r0;
 // CHECK-NEXT:           double _r1 = _t1 * 1;
-// CHECK-NEXT:           *_d_b += _r1;
+// CHECK-NEXT:           * _d_b += _r1;
 // CHECK-NEXT:       }
 // CHECK-NEXT:   }
 
