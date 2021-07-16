@@ -443,14 +443,14 @@ namespace clad {
   // HessianDerivedFnTraits specializations for pure function pointer types
   template <class ReturnType, class... Args>
   struct HessianDerivedFnTraits<ReturnType (*)(Args...)> {
-    using type = void (*)(Args..., ReturnType*);
+    using type = void (*)(Args..., array_ref<ReturnType>);
   };
 
   // HessianDerivedFnTraits specializations for member function pointer types
 #define HessianDerivedFnTraits_AddSPECS(var, cv, vol, ref, noex)               \
   template <typename R, typename C, typename... Args>                          \
   struct HessianDerivedFnTraits<R (C::*)(Args...) cv vol ref noex> {           \
-    using type = void (C::*)(Args..., R*) cv vol ref noex;                     \
+    using type = void (C::*)(Args..., array_ref<R>) cv vol ref noex;                     \
   };
 
 #if __cpp_noexcept_function_type > 0

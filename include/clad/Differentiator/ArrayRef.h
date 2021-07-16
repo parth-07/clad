@@ -33,10 +33,20 @@ namespace clad {
     /// store their addresses
     CUDA_HOST_DEVICE array_ref(T* a) : m_arr(a), m_size(1) {}
     /// Constructor for clad::array types
-    CUDA_HOST_DEVICE array_ref(array<T>& a) : m_arr(a.ptr()), m_size(a.size()) {}
+    CUDA_HOST_DEVICE array_ref(array<T>& a)
+        : m_arr(a.ptr()), m_size(a.size()) {}
 
     /// Returns the size of the underlying array
     CUDA_HOST_DEVICE std::size_t size() { return m_size; }
+    /// Returns an array_ref to a window starting at offset and having the
+    /// specified size in the underlying array
+    CUDA_HOST_DEVICE array_ref<T> get_window(std::size_t offset,
+                                             std::size_t size) {
+      assert((offset >= 0) && (offset + size <= m_size) &&
+             "Window is outside array. Please provide an offset and size "
+             "inside the array size.");
+      return array_ref<T>(&m_arr[offset], size);
+    }
     /// Returns the reference to the location at the index of the underlying
     /// array
     CUDA_HOST_DEVICE T& operator[](std::size_t i) { return m_arr[i]; }

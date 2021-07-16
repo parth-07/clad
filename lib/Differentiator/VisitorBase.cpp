@@ -707,6 +707,24 @@ namespace clad {
             .get();
   }
 
+  Expr* VisitorBase::GetArrayRefGetWindowExpr(Expr* Base, MutableArrayRef<Expr*> Args) {
+    UnqualifiedId Member;
+    Member.setIdentifier(&m_Context.Idents.get("get_window"), noLoc);
+    CXXScopeSpec SS;
+    auto ME = m_Sema
+        .ActOnMemberAccessExpr(getCurrentScope(),
+                               Base,
+                               noLoc,
+                               tok::TokenKind::period,
+                               SS,
+                               noLoc,
+                               Member,
+                               nullptr)
+        .get();
+    return m_Sema.ActOnCallExpr(getCurrentScope(), ME, noLoc, Args, noLoc)
+        .get();
+  }
+
   VarDecl* VisitorBase::BuildArrayRefVarDecl(QualType ArrayRefType,
                                              MultiExprArg Args,
                                              IdentifierInfo* II) {

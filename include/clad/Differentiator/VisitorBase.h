@@ -373,6 +373,9 @@ namespace clad {
     clang::Expr* GetArrayRefSizeExpr(clang::Expr* Base);
     clang::TemplateDecl* GetCladArrayDecl();
     clang::QualType GetCladArrayOfType(clang::QualType T);
+    clang::Expr*
+    GetArrayRefGetWindowExpr(clang::Expr* Base,
+                             llvm::MutableArrayRef<clang::Expr*> Args);
   };
 } // end namespace clad
 

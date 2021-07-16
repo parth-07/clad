@@ -1879,6 +1879,12 @@ namespace clad {
     return StmtDiff(Clone(ME));
   }
 
+  StmtDiff ReverseModeVisitor::VisitExprWithCleanups(const ExprWithCleanups* EWC) {
+    StmtDiff subExprDiff = Visit(EWC->getSubExpr(), dfdx());
+    // We cannot create ExprWithCleanups for derived function
+    return StmtDiff(subExprDiff.getExpr(), subExprDiff.getExpr_dx());
+  }
+
   bool ReverseModeVisitor::UsefulToStoreGlobal(Expr* E) {
     if (isInsideLoop)
       return !E->isEvaluatable(m_Context, Expr::SE_NoSideEffects);

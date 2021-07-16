@@ -194,7 +194,7 @@ namespace clad {
                    std::begin(paramTypes),
                    [](const ParmVarDecl* PVD) { return PVD->getType(); });
 
-    paramTypes.back() = m_Context.getPointerType(m_Function->getReturnType());
+    paramTypes.back() = GetCladArrayRefOfType(m_Function->getReturnType());
 
     QualType hessianFunctionType = m_Context.getFunctionType(
         m_Context.VoidTy,
@@ -251,7 +251,7 @@ namespace clad {
                      return VD;
                    });
 
-    // The output paremeter "_result".
+    // The output parameter "hessianMatrix".
     params.back() = ParmVarDecl::Create(
         m_Context,
         hessianFD,
@@ -299,21 +299,23 @@ namespace clad {
       size_t columnIndex = 0;
       // Create Expr parameters for each independent arg in the CallExpr
       for (size_t j = 0, n = IndependentArgsSize.size(); j < n; j++) {
-        // Create the idx literal.
-        auto idx = IntegerLiteral::Create(
+        // Create the offset argument.
+        auto OffsetArg = IntegerLiteral::Create(
             m_Context,
             llvm::APInt(size_type_bits, HessianMatrixStartIndex + columnIndex),
             size_type,
             noLoc);
-        // Create the hessianMatrix[idx] expression.
-        auto arrayExpr =
-            m_Sema.CreateBuiltinArraySubscriptExpr(m_Result, noLoc, idx, noLoc)
-                .get();
-        // Creates the &hessianMatrix[idx] expression.
-        auto addressArrayExpr =
-            m_Sema.BuildUnaryOp(nullptr, noLoc, UO_AddrOf, arrayExpr).get();
+        // Create the size argument.
+        auto SizeArg = IntegerLiteral::Create(
+            m_Context,
+            llvm::APInt(size_type_bits, IndependentArgsSize[j]),
+            size_type,
+            noLoc);
+        SmallVector<Expr*, 2> Args({OffsetArg, SizeArg});
+        // Create the hessianMatrix.get_window(OffsetArg, SizeArg) expression.
+        auto WindowAccessExpr = GetArrayRefGetWindowExpr(m_Result, Args);
 
-        DeclRefToParams.push_back(addressArrayExpr);
+        DeclRefToParams.push_back(WindowAccessExpr);
         columnIndex += IndependentArgsSize[j];
       }
       Expr* call = BuildCallExprToFunction(secDerivFuncs[i], DeclRefToParams);
