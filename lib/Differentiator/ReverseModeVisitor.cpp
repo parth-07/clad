@@ -497,6 +497,11 @@ namespace clad {
       Stmt* gradientOverloadBody = endBlock();
 
       gradientOverloadFD->setBody(gradientOverloadBody);
+
+      endScope(); // Function body scope
+      m_Sema.PopFunctionScopeInfo();
+      m_Sema.PopDeclContext();
+      endScope(); // Function decl scope
     }
 
     return OverloadedDeclWithContext{result.first,
