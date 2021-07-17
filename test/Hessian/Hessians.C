@@ -9,8 +9,8 @@ __attribute__((always_inline)) double f_cubed_add1(double a, double b) {
   return a * a * a + b * b * b;
 }
 
-void f_cubed_add1_darg0_grad(double a, double b, double* _d_a, double* _d_b);
-// CHECK: void f_cubed_add1_darg0_grad(double a, double b, double *_d_a, double *_d_b) __attribute__((always_inline)) {
+void f_cubed_add1_darg0_grad(double a, double b, clad::array_ref<double> _d_a, clad::array_ref<double> _d_b);
+// CHECK: void f_cubed_add1_darg0_grad(double a, double b, clad::array_ref<double> _d_a, clad::array_ref<double> _d_b) __attribute__((always_inline)) {
 // CHECK-NEXT:     double _d__d_a = 0;
 // CHECK-NEXT:     double _d__d_b = 0;
 // CHECK-NEXT:     double _t0;
@@ -67,13 +67,13 @@ void f_cubed_add1_darg0_grad(double a, double b, double* _d_a, double* _d_b);
 // CHECK-NEXT:         double _r5 = _r4 * _t5;
 // CHECK-NEXT:         _d__d_a += _r5;
 // CHECK-NEXT:         double _r6 = _t6 * _r4;
-// CHECK-NEXT:         *_d_a += _r6;
+// CHECK-NEXT:         * _d_a += _r6;
 // CHECK-NEXT:         double _r7 = _r4 * _t7;
-// CHECK-NEXT:         *_d_a += _r7;
+// CHECK-NEXT:         * _d_a += _r7;
 // CHECK-NEXT:         double _r8 = _t8 * _r4;
 // CHECK-NEXT:         _d__d_a += _r8;
 // CHECK-NEXT:         double _r9 = _t9 * 1;
-// CHECK-NEXT:         *_d_a += _r9;
+// CHECK-NEXT:         * _d_a += _r9;
 // CHECK-NEXT:         double _r10 = 1 * _t11;
 // CHECK-NEXT:         _d__t0 += _r10;
 // CHECK-NEXT:         double _r11 = _t12 * 1;
@@ -82,13 +82,13 @@ void f_cubed_add1_darg0_grad(double a, double b, double* _d_a, double* _d_b);
 // CHECK-NEXT:         double _r13 = _r12 * _t14;
 // CHECK-NEXT:         _d__d_b += _r13;
 // CHECK-NEXT:         double _r14 = _t15 * _r12;
-// CHECK-NEXT:         *_d_b += _r14;
+// CHECK-NEXT:         * _d_b += _r14;
 // CHECK-NEXT:         double _r15 = _r12 * _t16;
-// CHECK-NEXT:         *_d_b += _r15;
+// CHECK-NEXT:         * _d_b += _r15;
 // CHECK-NEXT:         double _r16 = _t17 * _r12;
 // CHECK-NEXT:         _d__d_b += _r16;
 // CHECK-NEXT:         double _r17 = _t18 * 1;
-// CHECK-NEXT:         *_d_b += _r17;
+// CHECK-NEXT:         * _d_b += _r17;
 // CHECK-NEXT:         double _r18 = 1 * _t19;
 // CHECK-NEXT:         _d__t1 += _r18;
 // CHECK-NEXT:         double _r19 = _t20 * 1;
@@ -96,20 +96,20 @@ void f_cubed_add1_darg0_grad(double a, double b, double* _d_a, double* _d_b);
 // CHECK-NEXT:     }
 // CHECK-NEXT:     {
 // CHECK-NEXT:         double _r2 = _d__t1 * _t2;
-// CHECK-NEXT:         *_d_b += _r2;
+// CHECK-NEXT:         * _d_b += _r2;
 // CHECK-NEXT:         double _r3 = _t3 * _d__t1;
-// CHECK-NEXT:         *_d_b += _r3;
+// CHECK-NEXT:         * _d_b += _r3;
 // CHECK-NEXT:     }
 // CHECK-NEXT:     {
 // CHECK-NEXT:         double _r0 = _d__t0 * _t0;
-// CHECK-NEXT:         *_d_a += _r0;
+// CHECK-NEXT:         * _d_a += _r0;
 // CHECK-NEXT:         double _r1 = _t1 * _d__t0;
-// CHECK-NEXT:         *_d_a += _r1;
+// CHECK-NEXT:         * _d_a += _r1;
 // CHECK-NEXT:     }
 // CHECK-NEXT: }
 
-void f_cubed_add1_darg1_grad(double a, double b, double* _d_a, double* _d_b);
-// CHECK: void f_cubed_add1_darg1_grad(double a, double b, double *_d_a, double *_d_b) __attribute__((always_inline)) {
+void f_cubed_add1_darg1_grad(double a, double b, clad::array_ref<double> _d_a, clad::array_ref<double> _d_b);
+// CHECK: void f_cubed_add1_darg1_grad(double a, double b, clad::array_ref<double> _d_a, clad::array_ref<double> _d_b) __attribute__((always_inline)) {
 // CHECK-NEXT:     double _d__d_a = 0;
 // CHECK-NEXT:     double _d__d_b = 0;
 // CHECK-NEXT:     double _t0;
@@ -160,19 +160,19 @@ void f_cubed_add1_darg1_grad(double a, double b, double* _d_a, double* _d_b);
 // CHECK-NEXT:     _t19 = _d_b0;
 // CHECK-NEXT:     double f_cubed_add1_darg1_return = _t9 * _t4 + _t12 * _t11 + _t18 * _t13 + _t20 * _t19;
 // CHECK-NEXT:     goto _label0;
-// CHECK-NEXT: _label0:
+// CHECK-NEXT:   _label0:
 // CHECK-NEXT:     {
 // CHECK-NEXT:         double _r4 = 1 * _t4;
 // CHECK-NEXT:         double _r5 = _r4 * _t5;
 // CHECK-NEXT:         _d__d_a += _r5;
 // CHECK-NEXT:         double _r6 = _t6 * _r4;
-// CHECK-NEXT:         *_d_a += _r6;
+// CHECK-NEXT:         * _d_a += _r6;
 // CHECK-NEXT:         double _r7 = _r4 * _t7;
-// CHECK-NEXT:         *_d_a += _r7;
+// CHECK-NEXT:         * _d_a += _r7;
 // CHECK-NEXT:         double _r8 = _t8 * _r4;
 // CHECK-NEXT:         _d__d_a += _r8;
 // CHECK-NEXT:         double _r9 = _t9 * 1;
-// CHECK-NEXT:         *_d_a += _r9;
+// CHECK-NEXT:         * _d_a += _r9;
 // CHECK-NEXT:         double _r10 = 1 * _t11;
 // CHECK-NEXT:         _d__t0 += _r10;
 // CHECK-NEXT:         double _r11 = _t12 * 1;
@@ -181,13 +181,13 @@ void f_cubed_add1_darg1_grad(double a, double b, double* _d_a, double* _d_b);
 // CHECK-NEXT:         double _r13 = _r12 * _t14;
 // CHECK-NEXT:         _d__d_b += _r13;
 // CHECK-NEXT:         double _r14 = _t15 * _r12;
-// CHECK-NEXT:         *_d_b += _r14;
+// CHECK-NEXT:         * _d_b += _r14;
 // CHECK-NEXT:         double _r15 = _r12 * _t16;
-// CHECK-NEXT:         *_d_b += _r15;
+// CHECK-NEXT:         * _d_b += _r15;
 // CHECK-NEXT:         double _r16 = _t17 * _r12;
 // CHECK-NEXT:         _d__d_b += _r16;
 // CHECK-NEXT:         double _r17 = _t18 * 1;
-// CHECK-NEXT:         *_d_b += _r17;
+// CHECK-NEXT:         * _d_b += _r17;
 // CHECK-NEXT:         double _r18 = 1 * _t19;
 // CHECK-NEXT:         _d__t1 += _r18;
 // CHECK-NEXT:         double _r19 = _t20 * 1;
@@ -195,35 +195,35 @@ void f_cubed_add1_darg1_grad(double a, double b, double* _d_a, double* _d_b);
 // CHECK-NEXT:     }
 // CHECK-NEXT:     {
 // CHECK-NEXT:         double _r2 = _d__t1 * _t2;
-// CHECK-NEXT:         *_d_b += _r2;
+// CHECK-NEXT:         * _d_b += _r2;
 // CHECK-NEXT:         double _r3 = _t3 * _d__t1;
-// CHECK-NEXT:         *_d_b += _r3;
+// CHECK-NEXT:         * _d_b += _r3;
 // CHECK-NEXT:     }
 // CHECK-NEXT:     {
 // CHECK-NEXT:         double _r0 = _d__t0 * _t0;
-// CHECK-NEXT:         *_d_a += _r0;
+// CHECK-NEXT:         * _d_a += _r0;
 // CHECK-NEXT:         double _r1 = _t1 * _d__t0;
-// CHECK-NEXT:         *_d_a += _r1;
+// CHECK-NEXT:         * _d_a += _r1;
 // CHECK-NEXT:     }
 // CHECK-NEXT: }
 
-void f_cubed_add1_hessian(double a, double b, double *hessianMatrix);
-// CHECK: void f_cubed_add1_hessian(double a, double b, double *hessianMatrix) __attribute__((always_inline)) {
-// CHECK-NEXT:     f_cubed_add1_darg0_grad(a, b, &hessianMatrix[0UL], &hessianMatrix[1UL]);
-// CHECK-NEXT:     f_cubed_add1_darg1_grad(a, b, &hessianMatrix[2UL], &hessianMatrix[3UL]);
+void f_cubed_add1_hessian(double a, double b, clad::array_ref<double> hessianMatrix);
+// CHECK: void f_cubed_add1_hessian(double a, double b, clad::array_ref<double> hessianMatrix) __attribute__((always_inline)) {
+// CHECK-NEXT:     f_cubed_add1_darg0_grad(a, b, hessianMatrix.get_window(0UL, 1UL), hessianMatrix.get_window(1UL, 1UL));
+// CHECK-NEXT:     f_cubed_add1_darg1_grad(a, b, hessianMatrix.get_window(2UL, 1UL), hessianMatrix.get_window(3UL, 1UL));
 // CHECK-NEXT: }
 
 double f_suvat1(double u, double t) {
   return ((u * t) + ((0.5) * (9.81) * (t * t)));
 }
 
-void f_suvat1_darg0_grad(double u, double t, double* _d_u, double* _d_t);
-void f_suvat1_darg1_grad(double u, double t, double* _d_u, double* _d_t);
+void f_suvat1_darg0_grad(double u, double t, clad::array_ref<double> _d_u, clad::array_ref<double> _d_t);
+void f_suvat1_darg1_grad(double u, double t, clad::array_ref<double> _d_u, clad::array_ref<double> _d_t);
 
-void f_suvat1_hessian(double u, double t, double *hessianMatrix);
-// CHECK: void f_suvat1_hessian(double u, double t, double *hessianMatrix) {
-// CHECK-NEXT:     f_suvat1_darg0_grad(u, t, &hessianMatrix[0UL], &hessianMatrix[1UL]);
-// CHECK-NEXT:     f_suvat1_darg1_grad(u, t, &hessianMatrix[2UL], &hessianMatrix[3UL]);
+void f_suvat1_hessian(double u, double t, clad::array_ref<double> hessianMatrix);
+// CHECK: void f_suvat1_hessian(double u, double t, clad::array_ref<double> hessianMatrix) {
+// CHECK-NEXT:     f_suvat1_darg0_grad(u, t, hessianMatrix.get_window(0UL, 1UL), hessianMatrix.get_window(1UL, 1UL));
+// CHECK-NEXT:     f_suvat1_darg1_grad(u, t, hessianMatrix.get_window(2UL, 1UL), hessianMatrix.get_window(3UL, 1UL));
 // CHECK-NEXT: }
 
 double f_cond3(double x, double c) {
@@ -235,13 +235,13 @@ double f_cond3(double x, double c) {
   }
 }
 
-void f_cond3_darg0_grad(double x, double c, double* _d_x, double* _d_c);
-void f_cond3_darg1_grad(double x, double c, double* _d_x, double* _d_c);
+void f_cond3_darg0_grad(double x, double c, clad::array_ref<double> _d_x, clad::array_ref<double> _d_c);
+void f_cond3_darg1_grad(double x, double c, clad::array_ref<double> _d_x, clad::array_ref<double> _d_c);
 
-void f_cond3_hessian(double x, double c, double *hessianMatrix);
-// CHECK: void f_cond3_hessian(double x, double c, double *hessianMatrix) {
-// CHECK-NEXT:     f_cond3_darg0_grad(x, c, &hessianMatrix[0UL], &hessianMatrix[1UL]);
-// CHECK-NEXT:     f_cond3_darg1_grad(x, c, &hessianMatrix[2UL], &hessianMatrix[3UL]);
+void f_cond3_hessian(double x, double c, clad::array_ref<double> hessianMatrix);
+// CHECK: void f_cond3_hessian(double x, double c, clad::array_ref<double> hessianMatrix) {
+// CHECK-NEXT:     f_cond3_darg0_grad(x, c, hessianMatrix.get_window(0UL, 1UL), hessianMatrix.get_window(1UL, 1UL));
+// CHECK-NEXT:     f_cond3_darg1_grad(x, c, hessianMatrix.get_window(2UL, 1UL), hessianMatrix.get_window(3UL, 1UL));
 // CHECK-NEXT: }
 
 struct Experiment {
@@ -251,13 +251,13 @@ struct Experiment {
     return i*i*j + j*j*i;
   }
 
-  void f_someMethod_darg0_grad(double i, double j, double* _d_i, double* _d_j);
-  void f_someMethod_darg1_grad(double i, double j, double* _d_i, double* _d_j);
+  void f_someMethod_darg0_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j);
+  void f_someMethod_darg1_grad(double i, double j, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j);
 
-  void f_someMethod_hessian(double x, double *hessianMatrix);
-  // CHECK: void someMethod_hessian(double i, double j, double *hessianMatrix) {
-  // CHECK-NEXT:     this->someMethod_darg0_grad(i, j, &hessianMatrix[0UL], &hessianMatrix[1UL]);
-  // CHECK-NEXT:     this->someMethod_darg1_grad(i, j, &hessianMatrix[2UL], &hessianMatrix[3UL]);
+  void f_someMethod_hessian(double x, clad::array_ref<double> hessianMatrix);
+  // CHECK: void someMethod_hessian(double i, double j, clad::array_ref<double> hessianMatrix) {
+  // CHECK-NEXT:     this->someMethod_darg0_grad(i, j, hessianMatrix.get_window(0UL, 1UL), hessianMatrix.get_window(1UL, 1UL));
+  // CHECK-NEXT:     this->someMethod_darg1_grad(i, j, hessianMatrix.get_window(2UL, 1UL), hessianMatrix.get_window(3UL, 1UL));
   // CHECK-NEXT: }
 };
 
@@ -265,11 +265,11 @@ double f_power10(double x) {
   return x * x * x * x * x * x * x * x * x * x;
 }
 
-void f_power10_darg0_grad(double x, double* _d_x);
+void f_power10_darg0_grad(double x, clad::array_ref<double> _d_x);
 
-void f_power10_hessian(double x, double *hessianMatrix);
-// CHECK: void f_power10_hessian(double x, double *hessianMatrix) {
-// CHECK-NEXT:     f_power10_darg0_grad(x, &hessianMatrix[0UL]);
+void f_power10_hessian(double x, clad::array_ref<double> hessianMatrix);
+// CHECK: void f_power10_hessian(double x, clad::array_ref<double> hessianMatrix) {
+// CHECK-NEXT:     f_power10_darg0_grad(x, hessianMatrix.get_window(0UL, 1UL));
 // CHECK-NEXT: }
 
 #define TEST1(F, x) { \
@@ -288,7 +288,7 @@ void f_power10_hessian(double x, double *hessianMatrix);
     result[2] = 0;                                                             \
     result[3] = 0;                                                             \
     auto h = clad::hessian(F);                                                 \
-    h.execute(x, y, result);                                                   \
+    h.execute(x, y, result_ref4);                                              \
     printf("Result is = {%.2f, %.2f, %.2f, %.2f}\n",                           \
            result[0],                                                          \
            result[1],                                                          \
@@ -296,19 +296,21 @@ void f_power10_hessian(double x, double *hessianMatrix);
            result[3]);                                                         \
     F##_darg0_grad(x, y, &result[0], &result[1]);                              \
     F##_darg1_grad(x, y, &result[2], &result[3]);                              \
-    F##_hessian(x, y, result);                                                 \
+    F##_hessian(x, y, result_ref4);                                            \
   }
 
 #define TEST3(F, Obj, ...) { \
-  result[0]=result[1]=result[2]=result[3]=0;\
+  result[0]=result[1]=result[2]=result[3]=0; \
   auto h = clad::hessian(F);\
-  h.execute(Obj, __VA_ARGS__, result);\
+  h.execute(Obj, __VA_ARGS__, result_ref4);\
   printf("Result is = {%.2f, %.2f, %.2f, %2.f}\n", result[0], result[1], result[2], result[3]);\
 }
-  
+
 
 int main() {
   double result[10];
+  clad::array_ref<double> result_ref4(result, 4);
+
   TEST2(f_cubed_add1, 1, 2); // CHECK-EXEC: Result is = {6.00, 0.00, 0.00, 12.00}
   TEST2(f_suvat1, 1, 2); // CHECK-EXEC: Result is = {0.00, 1.00, 1.00, 9.81}
   TEST2(f_cond3, 5, -2); // CHECK-EXEC: Result is = {30.00, 0.00, 0.00, 12.00}
