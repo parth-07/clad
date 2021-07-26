@@ -21,3 +21,23 @@ message(WARNING "No documentation tool enabled. Enable any documentation tool "
                 "to generate documentation build targets")
 endif()
 
+find_program(SPHINX_EXECUTABLE
+             NAMES sphinx-build
+             DOC "Path to sphinx-build executable")
+
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(Sphinx
+                                  "Failed to find sphinx-build executable"
+                                  SPHINX_EXECUTABLE)
+
+find_package(Sphinx REQUIRED)
+set(SPHINX_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/sphinx/)
+set(SPHINX_BUILD ${CMAKE_BINARY_DIR}/docs/sphinx)
+
+add_custom_target(Sphinx
+                  COMMAND
+                  ${SPHINX_EXECUTABLE} -b html
+                  -Dbreathe_projects.Clad=${docs_builddir}/doxygen/xml
+                  ${SPHINX_SOURCE} ${SPHINX_BUILD}
+                  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+                  COMMENT "Generating documentation with Sphinx")

@@ -1,5 +1,5 @@
 .. Clad documentation master file, created by
-   sphinx-quickstart on Tue Jun  1 14:46:02 2021.
+   sphinx-quickstart on Mon Jul 26 20:55:30 2021.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
@@ -18,3 +18,8 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+Docs
+======
+
+.. doxygenindex::
