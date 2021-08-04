@@ -120,6 +120,30 @@ namespace clad {
     CUDA_HOST_DEVICE
     destroy(It B, It E) {}
   };
+
+  /// Tape type used for storing values in reverse-mode AD inside loops.
+  template <typename T>
+  using tape = tape_impl<T>;
+
+  /// Add value to the end of the tape, return the same value.
+  template <typename T>
+  CUDA_HOST_DEVICE T push(tape<T>& to, T val) {
+    to.emplace_back(val);
+    return val;
+  }
+
+  /// Remove the last value from the tape, return it.
+  template <typename T>
+  CUDA_HOST_DEVICE T pop(tape<T>& to) {
+    T val = to.back();
+    to.pop_back();
+    return val;
+  }
+
+  /// Access return the last value in the tape.
+  template <typename T> CUDA_HOST_DEVICE T& back(tape<T>& of) {
+    return of.back();
+  }
 }
 
 #endif // CLAD_TAPE_H
