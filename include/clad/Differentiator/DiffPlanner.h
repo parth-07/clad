@@ -48,7 +48,27 @@ namespace clad {
     bool CallUpdateRequired = false;
     /// A flag to enable/disable diag warnings/errors during differentiation.
     bool VerboseDiags = false;
-    /// Puts the derived function and its code in the diff call
+    
+    /// Update derived function and code arguments of original function call to
+    /// the clad differentiation functions.
+    ///
+    /// For example,
+    /// ```
+    /// auto d_fn = clad::differentiate(fn, "i");
+    /// ```
+    ///
+    /// will get transformed to,
+    ///
+    /// ```
+    /// auto d_fn = clad::differentiate(fn, "i", fn_darg0, "string literal containing code of fn_darg0");
+    /// ```
+    ///
+    /// Here, `fn_darg0` is the corresponding derived function.
+    ///
+    ///\param[in] FD Function declaration of the derived function
+    ///\param[in] OverloadedFD Derived function overload, if any, to be used
+    /// instead of the derived function.
+    ///\param[in] SemaRef Reference to Sema
     void updateCall(clang::FunctionDecl* FD, clang::FunctionDecl* OverloadedFD,
                     clang::Sema& SemaRef);
   };

@@ -19,7 +19,8 @@ namespace clad {
   static SourceLocation noLoc;
 
   /// Returns `DeclRefExpr` node corresponding to the function, method or
-  /// functor argument which is to be differentiated.
+  /// call operator in the case of functor argument, which is to be 
+  /// differentiated.
   ///
   /// \param[in] call A clad differentiation function call expression
   /// \param SemaRef Reference to Sema
@@ -160,24 +161,24 @@ namespace clad {
           return false;
         }
       private:
-        /// Creates nested name specifier associated with declaration context
-        /// argument `DC`. 
-        ///
-        /// For example, given a structure defined as,
-        /// namespace A {
-        /// namespace B {
-        ///   struct SomeStruct {};
-        /// }
-        /// }
-        ///
-        /// Passing `SomeStruct` as declaration context will create
-        /// nested name specifier of the form `::A::B::struct SomeClass::`
-        /// in `CXXScopeSpec` argument `CSS`.
-        /// \note Currently only namespace and class/struct nested name specifiers
-        /// are supported.
-        ///
-        /// \param[in] DC
-        /// \param[out] CSS
+        // Creates nested name specifier associated with declaration context
+        // argument `DC`. 
+        //
+        // For example, given a structure defined as,
+        // namespace A {
+        // namespace B {
+        //   struct SomeStruct {};
+        // }
+        // }
+        //
+        // Passing `SomeStruct` as declaration context will create
+        // nested name specifier of the form `::A::B::struct SomeClass::`
+        // in `CXXScopeSpec` argument `CSS`.
+        // \note Currently only namespace and class/struct nested name specifiers
+        // are supported.
+        //
+        // \param[in] DC
+        // \param[out] CSS
         void BuildNNS(DeclContext* DC, CXXScopeSpec& CSS) {
           assert(DC && "Must provide a non null DeclContext");
 
@@ -315,6 +316,9 @@ namespace clad {
     return false;
   }
 
+  /// Visits and check if the call expression calls clad differentiation
+  /// functions, if yes, then creates `DiffRequest` object for it, and save
+  /// it in `m_DiffPlans` member variable.
   bool DiffCollector::VisitCallExpr(CallExpr* E) {
     // Check if we should look into this.
     // FIXME: Generated code does not usually have valid source locations.

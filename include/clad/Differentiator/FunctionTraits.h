@@ -23,7 +23,7 @@ namespace clad {
       typename remove_reference_and_pointer<T>::type;
 
   /// Check whether class `C` defines a call operator. Provides the member
-  /// constant `value` which is equal to true, if class defines call operator.
+  /// constant `value` which is equal to true, if class defines a call operator.
   /// Otherwise `value` is equal to false.
   template <typename C, typename = void>
   struct has_call_operator : std::false_type {};
@@ -42,9 +42,10 @@ namespace clad {
   /// `type` to denote no function type exists.
   class NoFunction {};
 
-
-  // Trait class to deduce return type of function(both member and non-member) at commpile time
-  // Only function pointer types are supported by this trait class
+  /// \class return_type Trait class to deduce return type of a function (both member and non-member).
+  /// 
+  /// \note Only function pointer types are supported by this trait
+  /// class
   template <class F> 
   struct return_type {};
   template <class F> 
