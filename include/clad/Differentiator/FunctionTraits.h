@@ -51,6 +51,7 @@ namespace clad {
   template <class F> 
   using return_type_t = typename return_type<F>::type;
 
+  ///\cond
   // specializations for non-member functions pointer types
   template <class ReturnType, class... Args> 
   struct return_type<ReturnType (*)(Args...)> {
@@ -163,11 +164,11 @@ namespace clad {
   struct return_type<ReturnType (C::*)(Args..., ...) const volatile &&> { 
     using type = ReturnType; 
   };
-
   template<>
   struct return_type<NoFunction*> {
     using type = void;
   };
+  ///\endcond
 
   // specializations for noexcept member functions
   #if __cpp_noexcept_function_type > 0
