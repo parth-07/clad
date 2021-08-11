@@ -24,7 +24,7 @@ namespace clad {
       : public clang::ConstStmtVisitor<ReverseModeVisitor, StmtDiff>,
         public VisitorBase {
   private:
-    llvm::SmallVector<const clang::VarDecl*, 16> m_IndependentVars;
+    llvm::SmallVector<const clang::ValueDecl*, 16> m_IndependentVars;
     /// In addition to a sequence of forward-accumulated Stmts (m_Blocks), in
     /// the reverse mode we also accumulate Stmts for the reverse pass which
     /// will be executed on return.

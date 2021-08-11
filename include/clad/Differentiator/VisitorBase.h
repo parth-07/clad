@@ -89,7 +89,7 @@ namespace clad {
 
     /// Map used to keep track of variable declarations and match them
     /// with their derivatives.
-    std::unordered_map<const clang::VarDecl*, clang::Expr*> m_Variables;
+    std::unordered_map<const clang::ValueDecl*, clang::Expr*> m_Variables;
     /// Map contains variable declarations replacements. If the original
     /// function contains a declaration which name collides with something
     /// already created inside derivative's body, the declaration is replaced

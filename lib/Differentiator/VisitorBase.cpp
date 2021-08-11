@@ -56,23 +56,43 @@ namespace clad {
         names.push_back(name.trim());
       } while (!string.empty());
       // Find function's parameters corresponding to the specified names.
-      llvm::SmallVector<std::pair<llvm::StringRef, VarDecl*>, 16>
-          param_names_map{};
+      llvm::SmallVector<std::pair<llvm::StringRef, ValueDecl*>, 16>
+          candidates_names_map{};
+
       for (auto PVD : FD->parameters())
-        param_names_map.emplace_back(PVD->getName(), PVD);
+        candidates_names_map.emplace_back(PVD->getName(), PVD);
+      
+      if (auto method = dyn_cast<CXXMethodDecl>(FD)) {
+        const CXXRecordDecl* RD = method->getParent();
+        // TODO: Handle static variables as well.
+        for (FieldDecl* fieldDecl : RD->fields()) {
+          llvm::StringRef fieldName = fieldDecl->getName();
+          auto it = std::find_if(
+            std::begin(candidates_names_map),
+            std::end(candidates_names_map),
+            [&fieldName](const std::pair<llvm::StringRef, ValueDecl*>& candidate) {
+              return candidate.first == fieldName;
+            }
+          );
+          if(it == candidates_names_map.end()) {
+            candidates_names_map.emplace_back(fieldName, fieldDecl);
+          }
+        }
+      }
+      
       for (const auto& name : names) {
         size_t loc = name.find('[');
         loc = (loc == llvm::StringRef::npos) ? name.size() : loc;
         llvm::StringRef base = name.substr(0, loc);
 
         auto it = std::find_if(
-            std::begin(param_names_map),
-            std::end(param_names_map),
-            [&base](const std::pair<llvm::StringRef, VarDecl*>& p) {
+            std::begin(candidates_names_map),
+            std::end(candidates_names_map),
+            [&base](const std::pair<llvm::StringRef, ValueDecl*>& p) {
               return p.first == base;
             });
 
-        if (it == std::end(param_names_map)) {
+        if (it == std::end(candidates_names_map)) {
           // Fail if the function has no parameter with specified name.
           diag(DiagnosticsEngine::Error,
                diffArgs->getEndLoc(),
