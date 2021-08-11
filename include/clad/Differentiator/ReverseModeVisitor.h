@@ -265,6 +265,11 @@ namespace clad {
     StmtDiff VisitStmt(const clang::Stmt* S);
     StmtDiff VisitUnaryOperator(const clang::UnaryOperator* UnOp);
     StmtDiff VisitExprWithCleanups(const clang::ExprWithCleanups* EWC);
+    StmtDiff VisitBreakStmt(const clang::BreakStmt* stmt);
+    StmtDiff VisitSwitchStmt(const clang::SwitchStmt* SS);
+    void DeriveSwitchStmtBodyHelper(const clang::Stmt* S,
+                                    clang::SwitchCase*& activeForwardSC,
+                                    clang::SwitchCase*& activeReverseSC);
     /// Decl is not Stmt, so it cannot be visited directly.
     VarDeclDiff DifferentiateVarDecl(const clang::VarDecl* VD);
     /// A helper method to differentiate a single Stmt in the reverse mode.

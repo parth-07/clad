@@ -646,4 +646,26 @@ namespace clad {
   bool VisitorBase::isArrayRefType(QualType QT) {
     return QT.getAsString().find("clad::array_ref") != std::string::npos;
   }
+
+  void VisitorBase::setSwitchCaseSubStmt(SwitchCase* SC, Stmt* subStmt) {
+    if (auto caseStmt = dyn_cast<CaseStmt>(SC)) {
+      caseStmt->setSubStmt(subStmt);
+    } else if (auto defaultStmt = dyn_cast<DefaultStmt>(SC)) {
+      defaultStmt->setSubStmt(subStmt);
+    } else {
+      assert(0 && "Unsupported switch case statement");
+    }
+  }
+
+  SwitchCase* VisitorBase::getContainedSwitchCaseStmt(const CompoundStmt* CS) {
+    for (Stmt* stmt : CS->body()) {
+      if (auto SC = dyn_cast<SwitchCase>(stmt))
+        return SC;
+      else if (auto nestedCS = dyn_cast<CompoundStmt>(stmt)) {
+        if (SwitchCase* nestedRes = getContainedSwitchCaseStmt(nestedCS))
+          return nestedRes;
+      }
+    }
+    return nullptr;
+  }
 } // end namespace clad

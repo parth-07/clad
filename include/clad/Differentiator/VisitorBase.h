@@ -386,7 +386,9 @@ namespace clad {
     clang::Expr*
     BuildArrayRefSliceExpr(clang::Expr* Base,
                            llvm::MutableArrayRef<clang::Expr*> Args);
-
+    static void setSwitchCaseSubStmt(clang::SwitchCase* SC, clang::Stmt* substmt);
+    /// returns first switch case label contained in the compound statement `CS`.
+    static clang::SwitchCase* getContainedSwitchCaseStmt(const clang::CompoundStmt* CS);
   public:
     /// Rebuild a sequence of nested namespaces ending with DC.
     clang::NamespaceDecl* RebuildEnclosingNamespaces(clang::DeclContext* DC);

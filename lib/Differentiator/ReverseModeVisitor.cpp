@@ -2019,4 +2019,189 @@ namespace clad {
                                 /*isInsideLoop*/ false};
     }
   }
+
+  StmtDiff ReverseModeVisitor::VisitBreakStmt(const BreakStmt* stmt) {
+    return {Clone(stmt), Clone(stmt)};
+  }
+
+  StmtDiff ReverseModeVisitor::VisitSwitchStmt(const SwitchStmt* SS) {
+    // Scope and block for the compound statement that encloses the switch
+    // stmt in both forward and reverse pass.
+    //
+    // {
+    //   ...
+    //   switch (...) {
+    //     ...
+    //     ...
+    //   }
+    //   ...
+    // }
+    // Outer compound statement is required to define derived variable for 
+    // condition and init variables, and for clad::push and clad::pop if
+    // required.
+    beginScope(Scope::DeclScope);
+    beginBlock(forward);
+    beginBlock(reverse);
+
+    // TODO: Handle switch init statements
+    // TODO: Handle condition variable
+    Expr* condClone = Clone(SS->getCond());
+    Expr* condTempVar = nullptr;
+    Expr* condPush = nullptr;
+    Expr* condPop = nullptr;    
+    if (isInsideLoop) {
+      condTempVar = StoreAndRef(condClone, forward, "_t", /*force=*/true);
+      StmtDiff condPushPop = GlobalStoreAndRef(condTempVar, "_cond");
+      condPush = condPushPop.getExpr();
+      condPop = condPushPop.getExpr_dx();
+    } else
+      condTempVar = GlobalStoreAndRef(condClone, "_cond").getExpr();
+    
+    addToCurrentBlock(condTempVar, forward);
+
+    // for switch statement of both forward and reverse pass
+    beginScope(Scope::ControlScope | Scope::BreakScope | Scope::DeclScope |
+               Scope::SwitchScope);
+
+    // for the body of the switch statement of both forward and reverse pass
+    beginScope(Scope::DeclScope);
+    // begin blocks for body of switch statements
+    beginBlock(forward);
+    beginBlock(reverse);
+
+    const Stmt* body = SS->getBody();
+    SwitchCase*
+        dummyForwardSC = CaseStmt::CreateEmpty(m_Context,
+                                               /*CaseStmtIsGNURange=*/false);
+    SwitchCase*
+        dummyReverseSC = CaseStmt::CreateEmpty(m_Context,
+                                               /*CaseStmtIsGNURange=*/false);
+    SwitchCase* activeForwardSC = dummyForwardSC, *activeReverseSC = dummyReverseSC;
+    if (auto CS = dyn_cast<const CompoundStmt>(body)) {
+      for (Stmt* stmt : CS->body())
+        DeriveSwitchStmtBodyHelper(stmt, activeForwardSC, activeReverseSC);
+    } else {
+      // TODO: complete this
+    }
+    llvm::errs()<<"Body differentiated successfully\n";
+    if (activeForwardSC) {
+      setSwitchCaseSubStmt(activeForwardSC, endBlock(forward));
+      setSwitchCaseSubStmt(activeReverseSC, endBlock(reverse));
+      activeForwardSC = activeReverseSC = nullptr;
+      endScope();
+    }
+
+    StmtDiff bodyDiff = {endBlock(forward), endBlock(reverse)};
+    // for the body of switch statements of both forward and reverse pass
+    endScope();
+    Sema::ConditionResult
+        condRes = m_Sema.ActOnCondition(m_CurScope, noLoc, condTempVar,
+                                        Sema::ConditionKind::Switch);
+    SwitchStmt* forwardSS = clad_compat::Sema_ActOnStartOfSwitchStmt(m_Sema,
+                                                                     nullptr,
+                                                                     condRes).getAs<SwitchStmt>();
+    llvm::errs()<<"Starting to set switch case list for forward switch statement\n";
+    forwardSS->setSwitchCaseList(dummyForwardSC->getNextSwitchCase());
+    llvm::errs()<<"successfully set switch case list for forward switch statement\n";
+    forwardSS = m_Sema.ActOnFinishSwitchStmt(noLoc, forwardSS,
+                                             bodyDiff.getStmt()).getAs<SwitchStmt>();
+    
+    llvm::errs()<<"Forward switch statement created successfully\n";
+
+    SwitchStmt* reverseSS = clad_compat::Sema_ActOnStartOfSwitchStmt(m_Sema,
+                                                                     nullptr,
+                                                                     condRes).getAs<SwitchStmt>();
+    reverseSS->setSwitchCaseList(dummyReverseSC->getNextSwitchCase());
+    reverseSS = m_Sema.ActOnFinishSwitchStmt(noLoc, reverseSS,
+                                             bodyDiff.getStmt_dx()).getAs<SwitchStmt>();
+    llvm::errs()<<"Reverse switch statement created successfully\n";                                             
+    
+    addToCurrentBlock(forwardSS, forward);
+    addToCurrentBlock(reverseSS, reverse);
+    // for the switch statements of both forward and reverse pass.
+    endScope();
+    
+    
+    Stmt* forwardBlock = endBlock(forward);
+    Stmt* reverseBlock = endBlock(reverse);
+    // for the outer compound statement
+    endScope();
+    llvm::errs()<<"Reaching the end of VisitSwitchStmt function\n";
+    return {forwardBlock, reverseBlock};
+  }
+
+  void
+  ReverseModeVisitor::DeriveSwitchStmtBodyHelper(const Stmt* stmt,
+                                                 SwitchCase*& activeForwardSC,
+                                                 SwitchCase*& activeReverseSC) {
+    if (auto SC = dyn_cast<SwitchCase>(stmt)) {
+      if (activeForwardSC) {
+        if (auto dummyCaseStmt = dyn_cast<CaseStmt>(activeForwardSC)) {
+          if (dummyCaseStmt->getLHS() != nullptr) {
+            setSwitchCaseSubStmt(activeForwardSC, endBlock(forward));
+            setSwitchCaseSubStmt(activeReverseSC, endBlock(reverse));
+            endScope();
+          }
+        }
+        else {
+          setSwitchCaseSubStmt(activeForwardSC, endBlock(forward));
+          setSwitchCaseSubStmt(activeReverseSC, endBlock(reverse));
+          endScope();
+        }
+      }
+
+      SwitchCase* newActiveForwardSC = nullptr, *newActiveReverseSC = nullptr;
+
+      if (auto newCaseSC = dyn_cast<CaseStmt>(SC)) {
+        Expr* lhsClone = (newCaseSC->getLHS() ? Clone(newCaseSC->getLHS())
+                                              : nullptr);
+        Expr* rhsClone = (newCaseSC->getRHS() ? Clone(newCaseSC->getRHS())
+                                              : nullptr);
+        newActiveForwardSC = clad_compat::CaseStmt_Create(m_Sema
+                                                              .getASTContext(),
+                                                          lhsClone, rhsClone,
+                                                          noLoc, noLoc, noLoc);
+        newActiveReverseSC = clad_compat::CaseStmt_Create(m_Sema
+                                                              .getASTContext(),
+                                                          lhsClone, rhsClone,
+                                                          noLoc, noLoc, noLoc);
+      } else if (auto newDefaultSC = dyn_cast<DefaultStmt>(SC)) {
+        newActiveForwardSC = new (m_Sema.getASTContext())
+            DefaultStmt(noLoc, noLoc, nullptr);
+        newActiveReverseSC = new (m_Sema.getASTContext())
+            DefaultStmt(noLoc, noLoc, nullptr);
+      }
+
+      activeForwardSC->setNextSwitchCase(newActiveForwardSC);
+      activeForwardSC = newActiveForwardSC;
+      activeReverseSC->setNextSwitchCase(newActiveReverseSC);
+      activeReverseSC = newActiveReverseSC;
+
+      addToCurrentBlock(activeForwardSC, forward);
+      addToCurrentBlock(activeReverseSC, reverse);
+
+      beginScope(Scope::DeclScope);
+      beginBlock(forward);
+      beginBlock(reverse);
+      DeriveSwitchStmtBodyHelper(SC->getSubStmt(), activeForwardSC,
+                                 activeReverseSC);
+    } else if (auto breakStmt = dyn_cast<BreakStmt>(stmt)) {
+      addToCurrentBlock(Clone(breakStmt), forward);
+
+      
+    } else {
+      if (auto CS = dyn_cast<CompoundStmt>(stmt)) {
+        if (auto containedSC = getContainedSwitchCaseStmt(CS)) {
+          diag(DiagnosticsEngine::Error, containedSC->getBeginLoc(),
+               "Differentiating switch case label contained in a compound "
+               "statement, other than the switch statement compound "
+               "statement, is not supported.");
+          return;               
+        }
+      }
+      StmtDiff SDiff = DifferentiateSingleStmt(stmt);
+      addToCurrentBlock(SDiff.getStmt(), forward);
+      addToCurrentBlock(SDiff.getStmt_dx(), reverse);
+    }
+  }
 } // end namespace clad
