@@ -295,6 +295,8 @@ namespace clad {
         llvm::SmallVectorImpl<clang::ParmVarDecl*>& GradientParams,
         clang::DeclarationNameInfo& GradientName,
         clang::FunctionDecl* GradientFD);
+    
+    size_t getTotalGradientOverloadParams() const;
   };
 } // end namespace clad
 

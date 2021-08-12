@@ -49,6 +49,8 @@ namespace clad {
     /// Puts the derived function and its code in the diff call
     void updateCall(clang::FunctionDecl* FD, clang::FunctionDecl* OverloadedFD,
                     clang::Sema& SemaRef);
+    /// Functor to be differentiated, if any.
+    const clang::CXXRecordDecl* Functor = nullptr;
   };
 
   using DiffSchedule = llvm::SmallVector<DiffRequest, 16>;

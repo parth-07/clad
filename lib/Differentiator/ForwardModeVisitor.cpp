@@ -41,6 +41,7 @@ namespace clad {
                              const DiffRequest& request) {
     silenceDiags = !request.VerboseDiags;
     m_Function = FD;
+    m_Functor = request.Functor;
     assert(!m_DerivativeInFlight &&
            "Doesn't support recursive diff. Use DiffPlan.");
     m_DerivativeInFlight = true;
@@ -201,10 +202,8 @@ namespace clad {
       m_Variables[param] = dParam;
     }
 
-    if (auto method = dyn_cast<CXXMethodDecl>(m_Function)) {
-      const CXXRecordDecl* RD = method->getParent();
-      // TODO: Handle static variables
-      for (FieldDecl* fieldDecl : RD->fields()) {
+    if (m_Functor) {
+      for (FieldDecl* fieldDecl : m_Functor->fields()) {
         int dValue = (fieldDecl == m_IndependentVar);
         auto dValueLiteral = ConstantFolder::synthesizeLiteral(m_Context.IntTy,
                                                                m_Context,
@@ -500,21 +499,21 @@ namespace clad {
     
     auto clonedME = dyn_cast<MemberExpr>(Clone(ME));
     // Copy paste from VisitDeclRefExpr.
-    // QualType Ty = ME->getType();
-    // if (clonedME->getMemberDecl() == m_IndependentVar)
-    //   return StmtDiff(clonedME,
-    //                   ConstantFolder::synthesizeLiteral(Ty, m_Context, 1));
-    // return StmtDiff(clonedME,
-    //                 ConstantFolder::synthesizeLiteral(Ty, m_Context, 0));
+    QualType Ty = ME->getType();
+    if (clonedME->getMemberDecl() == m_IndependentVar)
+      return StmtDiff(clonedME,
+                      ConstantFolder::synthesizeLiteral(Ty, m_Context, 1));
+    return StmtDiff(clonedME,
+                    ConstantFolder::synthesizeLiteral(Ty, m_Context, 0));
 
-    auto it = m_Variables.find(memberDecl);
-    if (it != std::end(m_Variables)) {
-      return StmtDiff(clonedME, it->second);
-    }
+    // auto it = m_Variables.find(memberDecl);
+    // if (it != std::end(m_Variables)) {
+    //   return StmtDiff(clonedME, it->second);
+    // }
 
-    auto zero =
-        ConstantFolder::synthesizeLiteral(m_Context.IntTy, m_Context, 0);
-    return StmtDiff(clonedME, zero);
+    // auto zero =
+    //     ConstantFolder::synthesizeLiteral(m_Context.IntTy, m_Context, 0);
+    // return StmtDiff(clonedME, zero);
   }
 
   StmtDiff ForwardModeVisitor::VisitInitListExpr(const InitListExpr* ILE) {

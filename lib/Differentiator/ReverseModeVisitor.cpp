@@ -86,11 +86,11 @@ namespace clad {
       DeclarationNameInfo& GradientName, FunctionDecl* GradientFD) {
     // Calculate the total number of parameters that would be present in the
     // derived function if all args are requested
-    size_t totalDerivedParamsSize = m_Function->getNumParams() * 2;
+    size_t totalOverloadParamsSize = getTotalGradientOverloadParams();
     // Calculate the number of arguments that we need to append for the
     // overload function. These arguments are provided default argument
     // like functionality during execution.
-    size_t remainingArgs = totalDerivedParamsSize - GradientParamTypes.size();
+    size_t remainingArgs = totalOverloadParamsSize - GradientParamTypes.size();
 
     QualType DerivedOutputParamType =
         GetCladArrayRefOfType(m_Function->getReturnType());
@@ -111,6 +111,9 @@ namespace clad {
 
     DeclContext* DC = const_cast<DeclContext*>(m_Function->getDeclContext());
     m_Sema.CurContext = DC;
+    // beginScope(Scope::FnScope | Scope::DeclScope);
+    // m_DerivativeFnScope = getCurrentScope();
+    // beginBlock();
     DeclWithContext gradientOverloadFDWC =
         m_Builder.cloneFunction(m_Function, *this, DC, m_Sema, m_Context, noLoc,
                                 GradientName, gradientFunctionOverloadType);
@@ -191,6 +194,7 @@ namespace clad {
                              const DiffRequest& request) {
     silenceDiags = !request.VerboseDiags;
     m_Function = FD;
+    m_Functor = request.Functor;
     assert(m_Function && "Must not be null.");
 
     DiffParams args{};
@@ -226,7 +230,13 @@ namespace clad {
         gradientName += ('_' + std::to_string(idx));
       }
     }
-
+    if (m_Function->param_empty() && m_Functor) {
+      for (auto arg : args) {
+        auto it = std::find(m_Functor->field_begin(), m_Functor->field_end(), arg);
+        auto idx = std::distance(m_Functor->field_begin(), it);
+        gradientName += ('_' + std::to_string(idx));
+      }
+    }
     if (isVectorValued)
       args.pop_back();
 
@@ -248,6 +258,16 @@ namespace clad {
         }
       }
     }
+    if (m_Function->param_empty() && m_Functor) {
+      if (!isVectorValued) {
+        for (auto field : m_Functor->fields()) {
+          auto it = std::find(std::begin(args), std::end(args), field);
+          if (it != std::end(args)) {
+            outputParamTypes.push_back(DerivedOutputParamType);
+          }
+        }
+      }
+    }
     if (isVectorValued) {
       unsigned lastArgN = m_Function->getNumParams() - 1;
       paramTypes.push_back(DerivedOutputParamType);
@@ -260,8 +280,8 @@ namespace clad {
     bool shouldCreateOverload = false;
     // Calculate the total number of parameters that would be present in the
     // derived function if all args are requested
-    size_t totalDerivedParamsSize = m_Function->getNumParams() * 2;
-    if (paramTypes.size() != totalDerivedParamsSize && !isVectorValued)
+    size_t totalOverloadParamsSize = getTotalGradientOverloadParams();
+    if (paramTypes.size() != totalOverloadParamsSize && !isVectorValued)
       shouldCreateOverload = true;
 
     auto originalFnType = dyn_cast<FunctionProtoType>(m_Function->getType());
@@ -319,7 +339,8 @@ namespace clad {
       // variables
       auto it = std::find(std::begin(args), std::end(args), PVD);
       if (it != std::end(args)) {
-        *it = VD;
+        if (isa<ParmVarDecl>(*it))
+          *it = VD;
 
         if (!isVectorValued) {
           IdentifierInfo* DVDII =
@@ -346,6 +367,17 @@ namespace clad {
         }
       }
     }
+    // if (auto method = dyn_cast<CXXMethodDecl>(m_Function)) {
+    //   const CXXRecordDecl* RD = method->getParent();
+    //   for (auto field : RD->fields()) {
+    //     auto it = std::find(std::begin(args), std::end(args), field);
+    //     if (it != std::end(args)) {
+    //       if (!isVectorValued) {
+
+    //       }
+    //     }
+    //   }
+    // }
     auto nonDiffParams = params;
     if (isVectorValued) {
       TypeSourceInfo* paramTSI =
@@ -1890,9 +1922,25 @@ namespace clad {
   }
 
   StmtDiff ReverseModeVisitor::VisitMemberExpr(const MemberExpr* ME) {
-    // We do not treat struct members as independent variables, so they are not
-    // differentiated.
-    return StmtDiff(Clone(ME));
+    if (m_Functor) {
+      auto clonedME = Clone(ME);
+      ValueDecl* memberDecl = ME->getMemberDecl();
+      if (auto fieldDecl = dyn_cast<FieldDecl>(memberDecl)) {
+        auto it = m_Variables.find(fieldDecl);
+        if (it == std::end(m_Variables)) {
+          return StmtDiff(clonedME);
+        }
+        if (dfdx()) {
+          Expr* add_assign = BuildOp(BO_AddAssign, it->second, dfdx());
+          addToCurrentBlock(add_assign, reverse);
+        }
+        return StmtDiff(clonedME, it->second);
+      }
+    } else {
+      // We do not treat struct members as independent variables, so they are not
+      // differentiated.
+      return StmtDiff(Clone(ME));
+    }
   }
 
   StmtDiff
@@ -2018,5 +2066,15 @@ namespace clad {
                                 /*isConstant*/ false,
                                 /*isInsideLoop*/ false};
     }
+  }
+
+  size_t ReverseModeVisitor::getTotalGradientOverloadParams() const {
+    size_t totalDerivedParams = 0;
+    if (m_Function->param_size() == 0 && m_Functor) {
+      totalDerivedParams = std::distance(m_Functor->field_begin(), m_Functor->field_end());
+    } else {
+      totalDerivedParams = m_Function->param_size(); 
+    }
+    return m_Function->param_size() + totalDerivedParams;
   }
 } // end namespace clad

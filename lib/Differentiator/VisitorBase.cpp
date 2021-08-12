@@ -59,27 +59,31 @@ namespace clad {
       llvm::SmallVector<std::pair<llvm::StringRef, ValueDecl*>, 16>
           candidates_names_map{};
 
-      for (auto PVD : FD->parameters())
-        candidates_names_map.emplace_back(PVD->getName(), PVD);
-      
-      if (auto method = dyn_cast<CXXMethodDecl>(FD)) {
-        const CXXRecordDecl* RD = method->getParent();
-        // TODO: Handle static variables as well.
-        for (FieldDecl* fieldDecl : RD->fields()) {
-          llvm::StringRef fieldName = fieldDecl->getName();
-          auto it = std::find_if(
-            std::begin(candidates_names_map),
-            std::end(candidates_names_map),
-            [&fieldName](const std::pair<llvm::StringRef, ValueDecl*>& candidate) {
-              return candidate.first == fieldName;
+      // llvm::errs()<<"FD->param_empty() = "<<FD->param_empty()<<"\n";
+      // llvm::errs()<<"m_Functor = "<<m_Functor<<"\n";
+      if (FD->param_empty() && m_Functor) {
+        // llvm::errs()<<"Reachign here\n";
+        if (auto method = dyn_cast<CXXMethodDecl>(FD)) {
+          const CXXRecordDecl* RD = method->getParent();
+          for (FieldDecl* fieldDecl : RD->fields()) {
+            llvm::StringRef fieldName = fieldDecl->getName();
+            auto it = std::find_if(
+              std::begin(candidates_names_map),
+              std::end(candidates_names_map),
+              [&fieldName](const std::pair<llvm::StringRef, ValueDecl*>& candidate) {
+                return candidate.first == fieldName;
+              }
+            );
+            if(it == candidates_names_map.end()) {
+              candidates_names_map.emplace_back(fieldName, fieldDecl);
             }
-          );
-          if(it == candidates_names_map.end()) {
-            candidates_names_map.emplace_back(fieldName, fieldDecl);
           }
         }
+      } else {
+        for (auto PVD : FD->parameters())
+          candidates_names_map.emplace_back(PVD->getName(), PVD);
       }
-      
+
       for (const auto& name : names) {
         size_t loc = name.find('[');
         loc = (loc == llvm::StringRef::npos) ? name.size() : loc;
@@ -151,14 +155,27 @@ namespace clad {
     if (clad_compat::Expr_EvaluateAsInt(E, intValue, m_Context)) {
       auto idx = intValue.getExtValue();
       // Fail if the specified index is invalid.
-      if ((idx < 0) || (idx >= FD->getNumParams())) {
-        diag(DiagnosticsEngine::Error,
-             diffArgs->getEndLoc(),
-             "Invalid argument index %0 among %1 argument(s)",
-             {std::to_string(idx), std::to_string(FD->getNumParams())});
-        return {};
+      if (FD->param_size() == 0 && m_Functor) {
+        size_t totalFields = std::distance(m_Functor->field_begin(),
+                                           m_Functor->field_end());
+        // TODO: Refactor this                                           
+        if ((idx < 0) || idx >= totalFields) {
+          diag(DiagnosticsEngine::Error, diffArgs->getEndLoc(),
+               "Invalid argument index %0 among %1 argument(s)",
+               {std::to_string(idx), std::to_string(totalFields)});
+        }
+        params.push_back(*std::next(params.begin(), idx));
       }
-      params.push_back(FD->getParamDecl(idx));
+      else {
+        if ((idx < 0) || (idx >= FD->getNumParams())) {
+          diag(DiagnosticsEngine::Error,
+              diffArgs->getEndLoc(),
+              "Invalid argument index %0 among %1 argument(s)",
+              {std::to_string(idx), std::to_string(FD->getNumParams())});
+          return {};
+        }
+        params.push_back(FD->getParamDecl(idx));
+      }
       // Returns a single parameter.
       return {params, {}};
     }
@@ -594,6 +611,8 @@ namespace clad {
   VisitorBase::BuildCallExprToMemFn(clang::CXXMethodDecl* FD,
                   llvm::MutableArrayRef<clang::Expr*> argExprs) {
     Expr* thisExpr = clad_compat::Sema_BuildCXXThisExpr(m_Sema, FD);
+    CXXRecordDecl* RD = FD->getParent();
+
     NestedNameSpecifierLoc NNS(FD->getQualifier(),
                                /*Data=*/nullptr);
     auto DAP = DeclAccessPair::make(FD, FD->getAccess());
