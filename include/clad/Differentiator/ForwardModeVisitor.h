@@ -33,7 +33,7 @@ namespace clad {
     ForwardModeVisitor(DerivativeBuilder& builder);
     ~ForwardModeVisitor();
 
-    ///\brief Produces the first derivative of a given function.
+    /// Produces the first derivative of a given function.
     ///
     ///\param[in] FD - the function that will be differentiated.
     ///
