@@ -325,7 +325,7 @@ namespace clad {
     /// Updates references in newly cloned statements.
     void updateReferencesOf(clang::Stmt* InSubtree);
     /// Parses the argument expression for the
-    /// clad::differentiate/clad::gradient call. The argument is used to specify
+    /// clad differentiation calls. The argument is used to specify
     /// independent parameter(s) for differentiation. There are three valid
     /// options for the argument expression:
     ///   1) A string literal, containing comma-separated names of function's

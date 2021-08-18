@@ -42,16 +42,22 @@ namespace clad {
   /// `type` to denote no function type exists.
   class NoFunction {};
 
-  /// \class return_type Trait class to deduce return type of a function (both member and non-member).
-  /// 
+  ///\defgroup return_type return_type trait
+  /// Provides the member typedef `type` which is the return type of the
+  /// function (both member and non-member) pointer type `F`.
+  ///
+  /// Typical usage:
+  /// ```
+  /// double SomeFn(double i, int j);
+  /// typename return_type<decltype(&SomeFn)>::type var = 7;  // type of `var` is `double`
+  /// ```
   /// \note Only function pointer types are supported by this trait
-  /// class
+  ///@{
   template <class F> 
   struct return_type {};
   template <class F> 
   using return_type_t = typename return_type<F>::type;
 
-  ///\cond
   // specializations for non-member functions pointer types
   template <class ReturnType, class... Args> 
   struct return_type<ReturnType (*)(Args...)> {
@@ -168,7 +174,6 @@ namespace clad {
   struct return_type<NoFunction*> {
     using type = void;
   };
-  ///\endcond
 
   // specializations for noexcept member functions
   #if __cpp_noexcept_function_type > 0
@@ -270,6 +275,8 @@ namespace clad {
     using type = ReturnType;
   };
 #endif
+
+///@}
 
 #define REM_CTOR(...) __VA_ARGS__
 
@@ -687,6 +694,8 @@ namespace clad {
     using type = NoFunction*;
   };
 
+  ///\defgroup ExtractDerivedFnTraitsForwMode Extract ExtractDerivedFnTraitsForwMode type trait
+  ///
   /// Compute type of derived function of function, method or functor when
   /// differentiated using forward differentiation mode
   /// (`clad::differentiate`). Computed type is provided as member typedef
@@ -713,6 +722,7 @@ namespace clad {
   /// This type trait is specific to forward mode differentiation since the
   /// rules for computing the signature of derived functions are different
   /// for forward and reverse mode.
+  ///@{
   template <class F, class = void> struct ExtractDerivedFnTraitsForwMode {};
 
   /// Helper type for ExtractDerivedFnTraitsForwMode
@@ -759,15 +769,18 @@ namespace clad {
           !has_call_operator<F>::value>::type> {
     using type = NoFunction*;
   };
+  ///@}
 
   /// Placeholder type for denoting no object type exists.
   ///
-  /// This is used by `ExtractFunctorTraits` type trait as value of member
+  /// This is used by \ref `ExtractFunctorTraits` type trait as value of member
   /// typedef `type` to denote no functor type exist.
   class NoObject {};
 
+  ///\defgroup ExtractFunctorTraits ExtractFunctorTraits type trait
+  ///
   /// Compute class type from member function type, deduced type is
-  /// void if free function type is provided. If class type is provided,
+  /// `void` if free function type is provided. If class type is provided,
   /// then deduced type is same as that of the provided class type.
   ///
   /// More precisely, this type trait behaves as following :
@@ -784,6 +797,7 @@ namespace clad {
   ///   Defines member typedef 'type` same as the type of the class.
   ///
   /// - For all other cases, no member typedef `type` is provided.
+  ///@{
   template <class F, class = void> struct ExtractFunctorTraits {};
 
   /// Helper type for ExtractFunctorTraits
@@ -812,6 +826,7 @@ namespace clad {
           std::is_class<remove_reference_and_pointer_t<F>>::value>::type> {
     using type = remove_reference_and_pointer_t<F>;
   };
+  ///@}
 } // namespace clad
 
 #endif // FUNCTION_TRAITS

@@ -39,7 +39,7 @@ namespace clad {
     /// that will be put immediately in the beginning of derivative function
     /// block.
     Stmts m_Globals;
-    //// A reference to the output parameter of the gradient function.
+    /// A reference to the output parameter of the gradient function.
     clang::Expr* m_Result;
     /// A flag indicating if the Stmt we are currently visiting is inside loop.
     bool isInsideLoop = false;
@@ -100,7 +100,7 @@ namespace clad {
       else
         return m_Reverse.back();
     }
-    /// Create new block.
+    /// Create a new block and return it.
     Stmts& beginBlock(direction d = forward) {
       if (d == forward)
         m_Blocks.push_back({});
