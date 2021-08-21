@@ -895,7 +895,9 @@ namespace clad {
                  opCode == BO_SubAssign)
         opDiff = BuildOp(opCode, Ldiff.getExpr_dx(), Rdiff.getExpr_dx());
       else if (opCode == BO_MulAssign) {
-        Ldiff = {StoreAndRef(Ldiff.getExpr()), Ldiff.getExpr_dx()};
+        auto LdiffExpr_dx = StoreAndRef(Ldiff.getExpr_dx());
+        auto LdiffExpr = StoreAndRef(Ldiff.getExpr());
+        Ldiff = {LdiffExpr, LdiffExpr_dx};
         Rdiff = {StoreAndRef(Rdiff.getExpr()), Rdiff.getExpr_dx()};
         opDiff =
             BuildOp(BO_Assign, Ldiff.getExpr_dx(), deriveMul(Ldiff, Rdiff));
