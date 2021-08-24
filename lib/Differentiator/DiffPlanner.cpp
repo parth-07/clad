@@ -18,7 +18,7 @@ using namespace clang;
 namespace clad {
   static SourceLocation noLoc;
 
-  /// Returns `DeclRefExpr` node corresponding to the function, method or
+  /// Returns reference node corresponding to the function, method or
   /// call operator in the case of functor argument, which is to be 
   /// differentiated.
   ///
@@ -317,8 +317,8 @@ namespace clad {
   }
 
   /// Visits and check if the call expression calls clad differentiation
-  /// functions, if yes, then creates `DiffRequest` object for it, and save
-  /// it in `m_DiffPlans` member variable.
+  /// functions, if yes, then creates a differentiation request (`DiffRequest`)
+  /// object for it, and save it in `m_DiffPlans` member variable.
   bool DiffCollector::VisitCallExpr(CallExpr* E) {
     // Check if we should look into this.
     // FIXME: Generated code does not usually have valid source locations.

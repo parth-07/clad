@@ -49,7 +49,7 @@ namespace clad {
     /// A flag to enable/disable diag warnings/errors during differentiation.
     bool VerboseDiags = false;
     
-    /// Update derived function and code arguments of original function call to
+    /// Update `derivedFn` and `code` arguments of original function call to
     /// the clad differentiation functions.
     ///
     /// For example,
@@ -57,13 +57,13 @@ namespace clad {
     /// auto d_fn = clad::differentiate(fn, "i");
     /// ```
     ///
-    /// will get transformed to,
+    /// will get updated to,
     ///
     /// ```
-    /// auto d_fn = clad::differentiate(fn, "i", fn_darg0, "string literal containing code of fn_darg0");
+    /// auto d_fn = clad::differentiate(fn, "i", fn_darg0, "string representation of fn_darg0 function");
     /// ```
     ///
-    /// Here, `fn_darg0` is the corresponding derived function.
+    /// Here, `fn_darg0` is the corresponding derived function of `fn`.
     ///
     ///\param[in] FD Function declaration of the derived function
     ///\param[in] OverloadedFD Derived function overload, if any, to be used
@@ -77,6 +77,8 @@ namespace clad {
   using DiffInterval = std::vector<clang::SourceRange>;
   using DerivativesSet = llvm::SmallSet<const clang::Decl*, 16>;
 
+  /// Collect and create differentiation requests from calls to `clad`
+  /// differentiation functions.
   class DiffCollector: public clang::RecursiveASTVisitor<DiffCollector> {
     /// The source interval where clad was activated.
     ///
