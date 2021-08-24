@@ -77,7 +77,7 @@ namespace clad {
   using DiffInterval = std::vector<clang::SourceRange>;
   using DerivativesSet = llvm::SmallSet<const clang::Decl*, 16>;
 
-  /// Collect and create differentiation requests from calls to `clad`
+  /// Collect and create differentiation requests by visiting calls to `clad`
   /// differentiation functions.
   class DiffCollector: public clang::RecursiveASTVisitor<DiffCollector> {
     /// The source interval where clad was activated.
