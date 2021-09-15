@@ -47,15 +47,15 @@ namespace clad {
     }
   }
 
-  void MultiplexExternalRMVSource::ActOnStartOfDerivedFnBody() {
+  void MultiplexExternalRMVSource::ActOnStartOfDerivedFnBody(const DiffRequest& request) {
     for (auto source : m_Sources) {
-      source->ActOnStartOfDerivedFnBody();
+      source->ActOnStartOfDerivedFnBody(request);
     }
   }
 
-  void MultiplexExternalRMVSource::ActOnEndOfDerivedFnBody() {
+  void MultiplexExternalRMVSource::ActOnEndOfDerivedFnBody(const DiffRequest& request, DiffParams& args) {
     for (auto source : m_Sources) {
-      source->ActOnEndOfDerivedFnBody();
+      source->ActOnEndOfDerivedFnBody(request, args);
     }
   }
 } // namespace clad

@@ -336,6 +336,27 @@ namespace clad {
            "attempt to differentiate unsupported operator, ignored.",
            args);
     }
+
+    clang::ASTContext& getASTContext() {
+      return m_Context;
+    }
+
+    clang::Sema& getSema() {
+      return m_Sema;
+    }
+
+    DerivativeBuilder& getDerivativeBuilder() {
+      return m_Builder;
+    }
+
+    plugin::CladPlugin& getCladPlugin() {
+      return m_CladPlugin;
+    }
+
+    Stmts& getGlobals() {
+      return m_Globals;
+    }
+
     /// Builds an overload for the gradient function that has derived params for
     /// all the arguments of the requested function and it calls the original
     /// gradient function internally
