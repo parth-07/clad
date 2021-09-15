@@ -1,6 +1,7 @@
-#include "clad/Differentiator/ErrorEstimator.h"
+#include "clad/Differentiator/CladUtils.h"
 #include "clad/Differentiator/DerivativeBuilder.h"
 #include "clad/Differentiator/DiffPlanner.h"
+#include "clad/Differentiator/ErrorEstimator.h"
 #include "clad/Differentiator/ReverseModeVisitor.h"
 
 #include "clang/AST/Decl.h"
@@ -170,7 +171,7 @@ namespace clad {
     Expr* init = m_EstModel->SetError(VD);
     auto VDType = VD->getType();
     // The type of the _delta_ value should be customisable.
-    auto QType = isArrayOrPointerType(VDType) ? VDType : m_Context.DoubleTy;
+    auto QType = utils::isArrayOrPointerType(VDType) ? VDType : m_Context.DoubleTy;
     init = init ? init : getZeroInit(QType);
     Expr* deltaVar = nullptr;
     // Store the "_delta_*" value.
@@ -258,7 +259,7 @@ namespace clad {
     for (size_t i = 0; i < numParams; i++) {
       // Right now, we just ignore them since we have no way of knowing
       // the size of an array.
-      // if (isArrayOrPointerType(params[i]->getType()))
+      // if (utils::isArrayOrPointerType(params[i]->getType()))
       //   continue;
 
       // Check if the declaration was registered
@@ -273,7 +274,7 @@ namespace clad {
 
       // If till now, we have a delta declaration, emit it into the code.
       if (deltaVar) {
-        if (!isArrayOrPointerType(params[i]->getType())) {
+        if (!utils::isArrayOrPointerType(params[i]->getType())) {
           // Since we need the input value of x, check for a replacement.
           // If no replacement found, use the actual declRefExpr.
           auto savedVal = GetParamReplacement(params[i]);

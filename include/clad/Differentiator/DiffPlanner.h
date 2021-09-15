@@ -1,3 +1,5 @@
+#ifndef CLAD_DIFF_PLANNER_H
+#define CLAD_DIFF_PLANNER_H
 #include "clang/AST/RecursiveASTVisitor.h"
 
 #include "llvm/ADT/SmallSet.h"
@@ -94,3 +96,4 @@ namespace clad {
     bool isInInterval(clang::SourceLocation Loc) const;
   };
 }
+#endif

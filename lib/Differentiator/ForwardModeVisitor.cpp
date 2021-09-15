@@ -8,6 +8,7 @@
 
 #include "ConstantFolder.h"
 
+#include "clad/Differentiator/CladUtils.h"
 #include "clad/Differentiator/DiffPlanner.h"
 #include "clad/Differentiator/ErrorEstimator.h"
 #include "clad/Differentiator/StmtClone.h"
@@ -61,7 +62,7 @@ namespace clad {
       return {};
     // Check that only one arg is requested and if the arg requested is of array
     // or pointer type, only one of the indices have been requested
-    if (args.size() > 1 || (isArrayOrPointerType(args[0]->getType()) &&
+    if (args.size() > 1 || (utils::isArrayOrPointerType(args[0]->getType()) &&
                             (indexIntervalTable.size() != 1 || indexIntervalTable[0].size() != 1))) {
       diag(DiagnosticsEngine::Error,
            request.Args ? request.Args->getEndLoc() : noLoc,
@@ -77,7 +78,7 @@ namespace clad {
     // If param is not real (i.e. floating point or integral), a pointer to a
     // real type, or an array of a real type we cannot differentiate it.
     // FIXME: we should support custom numeric types in the future.
-    if (isArrayOrPointerType(m_IndependentVar->getType())) {
+    if (utils::isArrayOrPointerType(m_IndependentVar->getType())) {
       if (!m_IndependentVar->getType()
                ->getPointeeOrArrayElementType()
                ->isRealType()) {
@@ -645,7 +646,7 @@ namespace clad {
 
     Expr* target = it->second;
     // FIXME: fix when adding array inputs
-    if (!isArrayOrPointerType(target->getType()))
+    if (!utils::isArrayOrPointerType(target->getType()))
       return StmtDiff(cloned, zero);
     // llvm::APSInt IVal;
     // if (!I->EvaluateAsInt(IVal, m_Context))

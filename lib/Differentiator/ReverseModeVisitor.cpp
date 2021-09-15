@@ -11,6 +11,8 @@
 #include "clad/Differentiator/DiffPlanner.h"
 #include "clad/Differentiator/ErrorEstimator.h"
 #include "clad/Differentiator/StmtClone.h"
+#include "clad/Differentiator/ExternalRMVSource.h"
+#include "clad/Differentiator/MultiplexExternalRMVSource.h"
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Expr.h"
@@ -81,9 +83,19 @@ namespace clad {
   }
 
   ReverseModeVisitor::ReverseModeVisitor(DerivativeBuilder& builder)
-      : VisitorBase(builder), m_Result(nullptr) {}
+      : VisitorBase(builder), m_Result(nullptr) {
+    m_ExternalSource = new MultiplexExternalRMVSource;
+  }
 
-  ReverseModeVisitor::~ReverseModeVisitor() {}
+  ReverseModeVisitor::~ReverseModeVisitor() {
+    if (m_ExternalSource) {
+      // Inform external sources that `ReverseModeVisitor` object no longer
+      // exists.
+      m_ExternalSource->ForgetRMV();
+      // Free the external sources multiplexer since we own this resource.
+      delete m_ExternalSource;
+    }
+  }
 
   FunctionDecl* ReverseModeVisitor::CreateGradientOverload(
       SmallVectorImpl<QualType>& GradientParamTypes,
@@ -195,6 +207,7 @@ namespace clad {
   OverloadedDeclWithContext
   ReverseModeVisitor::Derive(const FunctionDecl* FD,
                              const DiffRequest& request) {
+    m_ExternalSource->ActOnStartOfDerive();                               
     silenceDiags = !request.VerboseDiags;
     m_Function = FD;
     assert(m_Function && "Must not be null.");
@@ -208,6 +221,7 @@ namespace clad {
     if (args.empty())
       return {};
 
+    m_ExternalSource->ActAfterParsingDiffArgs(request, args);
     // Save the type of the output parameter(s) that is add by clad to the
     // derived function
     clang::QualType DerivedOutputParamType;
@@ -308,11 +322,15 @@ namespace clad {
     FunctionDecl* gradientFD = result.first;
     m_Derivative = gradientFD;
 
+    m_ExternalSource->ActBeforeCreatingDerivedFnScope();
+
     // Function declaration scope
     beginScope(Scope::FunctionPrototypeScope | Scope::FunctionDeclarationScope |
                Scope::DeclScope);
     m_Sema.PushFunctionScope();
     m_Sema.PushDeclContext(getCurrentScope(), m_Derivative);
+
+    m_ExternalSource->ActAfterCreatingDerivedFnScope();
 
     // Create parameter declarations.
     llvm::SmallVector<ParmVarDecl*, 4> params;
@@ -354,7 +372,7 @@ namespace clad {
             m_Sema.PushOnScopeChains(DVD, getCurrentScope(),
                                      /*AddToContext=*/false);
           outputParams.push_back(DVD);
-          if (isArrayOrPointerType(PVD->getType())) {
+          if (utils::isArrayOrPointerType(PVD->getType())) {
             m_Variables[*it] = (Expr*)BuildDeclRef(DVD);
           } else {
             m_Variables[*it] =
@@ -410,7 +428,7 @@ namespace clad {
       for (auto arg : args) {
         // FIXME: fix when adding array inputs, now we are just skipping all
         // array/pointer inputs (not treating them as independent variables).
-        if (isArrayOrPointerType(arg->getType())) {
+        if (utils::isArrayOrPointerType(arg->getType())) {
           if (arg->getName() == "p")
             m_Variables[arg] = m_Result;
           idx += 1;
@@ -438,6 +456,8 @@ namespace clad {
     beginScope(Scope::FnScope | Scope::DeclScope);
     m_DerivativeFnScope = getCurrentScope();
     beginBlock();
+    m_ExternalSource->ActOnStartOfDerivedFnBody(request);
+
     // create derived variables for parameters which are not part of
     // independent variables (args).
     for (ParmVarDecl* param : nonDiffParams) {
@@ -450,7 +470,7 @@ namespace clad {
       auto VDDerivedType = param->getType();
       // We cannot initialize derived variable for pointer types because
       // we do not know the correct size.
-      if (isArrayOrPointerType(VDDerivedType))
+      if (utils::isArrayOrPointerType(VDDerivedType))
         continue;
       auto VDDerived =
           BuildVarDecl(VDDerivedType, "_d_" + param->getNameAsString(),
@@ -484,6 +504,9 @@ namespace clad {
     // given it is not a DeclRefExpr.
     if (m_ErrorEstimationEnabled)
       errorEstHandler->EmitFinalErrorStmts(params, m_Function->getNumParams());
+
+    m_ExternalSource->ActOnEndOfDerivedFnBody(request, args);
+
     Stmt* gradientBody = endBlock();
     m_Derivative->setBody(gradientBody);
     endScope(); // Function body scope
@@ -1045,7 +1068,7 @@ namespace clad {
     if (!target)
       return cloned;
     Expr* result = nullptr;
-    if (isArrayOrPointerType(target->getType()))
+    if (utils::isArrayOrPointerType(target->getType()))
       // Create the target[idx] expression.
       result = BuildArraySubscript(target, reverseIndices);
     else if (isArrayRefType(target->getType())) {
@@ -1201,7 +1224,7 @@ namespace clad {
       if (isVectorValued) {
         dArg = StoreAndRef(/*E=*/nullptr, CEType, reverse, "_r",
                            /*forceDeclCreation=*/true);
-      } else if (isArrayOrPointerType(Arg->getType())) {
+      } else if (utils::isArrayOrPointerType(Arg->getType())) {
         Expr* nullptrLiteral = m_Sema.ActOnCXXNullPtrLiteral(noLoc).get();
         dArg = StoreAndRef(nullptrLiteral, GetCladArrayRefOfType(CEType),
                            reverse, "_r",
@@ -1288,7 +1311,7 @@ namespace clad {
           ResultExpr = nullptr;
           ResultII = CreateUniqueIdentifier(funcPostfix());
           if (arg && (isArrayRefType(arg->getType()) ||
-                      isArrayOrPointerType(arg->getType()))) {
+                      utils::isArrayOrPointerType(arg->getType()))) {
             Expr* SizeE;
             if (auto CAT = dyn_cast<ConstantArrayType>(arg->getType())) {
               SizeE = ConstantFolder::synthesizeLiteral(m_Context.getSizeType(),
@@ -2147,5 +2170,10 @@ namespace clad {
                                 /*isConstant*/ false,
                                 /*isInsideLoop*/ false};
     }
+  }
+
+  void ReverseModeVisitor::AddExternalSource(ExternalRMVSource& source) {
+    source.InitialiseRMV(*this);
+    m_ExternalSource->AddSource(source);
   }
 } // end namespace clad

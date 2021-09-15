@@ -11,10 +11,10 @@
 #include "clad/Differentiator/HessianModeVisitor.h"
 #include "clad/Differentiator/JacobianModeVisitor.h"
 #include "clad/Differentiator/ReverseModeVisitor.h"
+#include "clad/Differentiator/ReverseModeVerifier.h"
 
 #include "clad/Differentiator/DiffPlanner.h"
 #include "clad/Differentiator/StmtClone.h"
-
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/TemplateBase.h"
 #include "clang/Sema/Sema.h"
@@ -149,6 +149,10 @@ namespace clad {
       result = V.Derive(FD, request);
     } else if (request.Mode == DiffMode::reverse) {
       ReverseModeVisitor V(*this);
+      if (plugin::isReverseModeTestingEnabled(m_CladPlugin)) {
+        ReverseModeVerifier verifier;
+        V.AddExternalSource(verifier);
+      }
       result = V.Derive(FD, request);
     } else if (request.Mode == DiffMode::hessian) {
       HessianModeVisitor H(*this);

@@ -18,6 +18,9 @@
 #include <unordered_map>
 
 namespace clad {
+  class MultiplexExternalRMVSource;
+  class ExternalRMVSource;
+
   /// A visitor for processing the function code in reverse mode.
   /// Used to compute derivatives by clad::gradient.
   class ReverseModeVisitor
@@ -48,6 +51,7 @@ namespace clad {
     unsigned outputArrayCursor = 0;
     unsigned numParams = 0;
     bool isVectorValued = false;
+    MultiplexExternalRMVSource* m_ExternalSource = nullptr;
 
     const char* funcPostfix() const {
       if (isVectorValued)
@@ -332,6 +336,27 @@ namespace clad {
            "attempt to differentiate unsupported operator, ignored.",
            args);
     }
+
+    clang::ASTContext& getASTContext() {
+      return m_Context;
+    }
+
+    clang::Sema& getSema() {
+      return m_Sema;
+    }
+
+    DerivativeBuilder& getDerivativeBuilder() {
+      return m_Builder;
+    }
+
+    plugin::CladPlugin& getCladPlugin() {
+      return m_CladPlugin;
+    }
+
+    Stmts& getGlobals() {
+      return m_Globals;
+    }
+
     /// Builds an overload for the gradient function that has derived params for
     /// all the arguments of the requested function and it calls the original
     /// gradient function internally
@@ -340,6 +365,13 @@ namespace clad {
         llvm::SmallVectorImpl<clang::ParmVarDecl*>& GradientParams,
         clang::DeclarationNameInfo& GradientName,
         clang::FunctionDecl* GradientFD);
+
+    /// Registers an external RMV source.
+    ///
+    /// Multiple external RMV source can be registered by calling this function
+    /// multiple times.
+    ///\paramp[in] source An external RMV source
+    void AddExternalSource(ExternalRMVSource& source);
   };
 } // end namespace clad
 
