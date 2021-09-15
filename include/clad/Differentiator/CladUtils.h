@@ -3,9 +3,10 @@
 #ifndef CLAD_UTILS_CLADUTILS_H
 #define CLAD_UTILS_CLADUTILS_H
 
+#include "clang/AST/Type.h"
 #include <llvm/ADT/StringRef.h>
-
 #include <string>
+
 namespace clang {
   class ASTContext;
   class FunctionDecl;
@@ -27,6 +28,9 @@ namespace clad {
     ///\param[in] str string literal to create.
     clang::StringLiteral* CreateStringLiteral(clang::ASTContext& C,
                                               llvm::StringRef str);
+
+    /// Returns true if `QT` is Array or Pointer Type, otherwise returns false.
+    bool isArrayOrPointerType(const clang::QualType QT);                                              
   }
 }
 

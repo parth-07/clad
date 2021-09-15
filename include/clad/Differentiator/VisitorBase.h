@@ -67,7 +67,7 @@ namespace clad {
 
   /// A base class for all common functionality for visitors
   class VisitorBase {
-  protected:
+  public:
     VisitorBase(DerivativeBuilder& builder)
         : m_Builder(builder), m_Sema(builder.m_Sema),
           m_CladPlugin(builder.m_CladPlugin), m_Context(builder.m_Context),
@@ -140,10 +140,6 @@ namespace clad {
       V.endScope();
       return S.ActOnCallExpr(V.getCurrentScope(), lambda, noLoc, {}, noLoc)
           .get();
-    }
-    /// For a qualtype QT returns if it's type is Array or Pointer Type
-    static bool isArrayOrPointerType(const clang::QualType QT) {
-      return QT->isArrayType() || QT->isPointerType();
     }
 
     clang::CompoundStmt* MakeCompoundStmt(const Stmts& Stmts);

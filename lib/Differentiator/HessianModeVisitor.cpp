@@ -98,7 +98,7 @@ namespace clad {
         // Using the properties of a vector to find the index of the requested
         // arg
         auto argIndex = it - args.begin();
-        if (isArrayOrPointerType(PVD->getType())) {
+        if (utils::isArrayOrPointerType(PVD->getType())) {
           if (indexIntervalTable.size() == 0 ||
               indexIntervalTable[argIndex].size() == 0) {
             std::string suggestedArgsStr{};

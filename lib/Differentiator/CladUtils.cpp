@@ -33,5 +33,9 @@ namespace clad {
                                                 /*Pascal=*/false, StrTy, noLoc);
       return SL;
     }
+
+    bool isArrayOrPointerType(const clang::QualType QT) {
+      return QT->isArrayType() || QT->isPointerType();
+    }
   } // namespace utils
 } // namespace clad

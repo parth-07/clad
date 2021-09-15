@@ -54,10 +54,10 @@ namespace clad {
     virtual void ActAfterCreatingDerivedFnScope() {}
 
     /// This is called at the beginning of the derived function body.
-    virtual void ActOnStartOfDerivedFnBody() {}
+    virtual void ActOnStartOfDerivedFnBody(const DiffRequest& request) {}
 
     /// This is called at the end of the derived function body.
-    virtual void ActOnEndOfDerivedFnBody() {}
+    virtual void ActOnEndOfDerivedFnBody(const DiffRequest& request, DiffParams& args) {}
   };
 } // namespace clad
 #endif

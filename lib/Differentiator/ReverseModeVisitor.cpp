@@ -372,7 +372,7 @@ namespace clad {
             m_Sema.PushOnScopeChains(DVD, getCurrentScope(),
                                      /*AddToContext=*/false);
           outputParams.push_back(DVD);
-          if (isArrayOrPointerType(PVD->getType())) {
+          if (utils::isArrayOrPointerType(PVD->getType())) {
             m_Variables[*it] = (Expr*)BuildDeclRef(DVD);
           } else {
             m_Variables[*it] =
@@ -428,7 +428,7 @@ namespace clad {
       for (auto arg : args) {
         // FIXME: fix when adding array inputs, now we are just skipping all
         // array/pointer inputs (not treating them as independent variables).
-        if (isArrayOrPointerType(arg->getType())) {
+        if (utils::isArrayOrPointerType(arg->getType())) {
           if (arg->getName() == "p")
             m_Variables[arg] = m_Result;
           idx += 1;
@@ -456,7 +456,7 @@ namespace clad {
     beginScope(Scope::FnScope | Scope::DeclScope);
     m_DerivativeFnScope = getCurrentScope();
     beginBlock();
-    m_ExternalSource->ActOnStartOfDerivedFnBody();
+    m_ExternalSource->ActOnStartOfDerivedFnBody(request);
 
     // create derived variables for parameters which are not part of
     // independent variables (args).
@@ -470,7 +470,7 @@ namespace clad {
       auto VDDerivedType = param->getType();
       // We cannot initialize derived variable for pointer types because
       // we do not know the correct size.
-      if (isArrayOrPointerType(VDDerivedType))
+      if (utils::isArrayOrPointerType(VDDerivedType))
         continue;
       auto VDDerived =
           BuildVarDecl(VDDerivedType, "_d_" + param->getNameAsString(),
@@ -505,7 +505,7 @@ namespace clad {
     if (m_ErrorEstimationEnabled)
       errorEstHandler->EmitFinalErrorStmts(params, m_Function->getNumParams());
 
-    m_ExternalSource->ActOnEndOfDerivedFnBody();
+    m_ExternalSource->ActOnEndOfDerivedFnBody(request, args);
 
     Stmt* gradientBody = endBlock();
     m_Derivative->setBody(gradientBody);
@@ -1068,7 +1068,7 @@ namespace clad {
     if (!target)
       return cloned;
     Expr* result = nullptr;
-    if (isArrayOrPointerType(target->getType()))
+    if (utils::isArrayOrPointerType(target->getType()))
       // Create the target[idx] expression.
       result = BuildArraySubscript(target, reverseIndices);
     else if (isArrayRefType(target->getType())) {
@@ -1224,7 +1224,7 @@ namespace clad {
       if (isVectorValued) {
         dArg = StoreAndRef(/*E=*/nullptr, CEType, reverse, "_r",
                            /*forceDeclCreation=*/true);
-      } else if (isArrayOrPointerType(Arg->getType())) {
+      } else if (utils::isArrayOrPointerType(Arg->getType())) {
         Expr* nullptrLiteral = m_Sema.ActOnCXXNullPtrLiteral(noLoc).get();
         dArg = StoreAndRef(nullptrLiteral, GetCladArrayRefOfType(CEType),
                            reverse, "_r",
@@ -1311,7 +1311,7 @@ namespace clad {
           ResultExpr = nullptr;
           ResultII = CreateUniqueIdentifier(funcPostfix());
           if (arg && (isArrayRefType(arg->getType()) ||
-                      isArrayOrPointerType(arg->getType()))) {
+                      utils::isArrayOrPointerType(arg->getType()))) {
             Expr* SizeE;
             if (auto CAT = dyn_cast<ConstantArrayType>(arg->getType())) {
               SizeE = ConstantFolder::synthesizeLiteral(m_Context.getSizeType(),

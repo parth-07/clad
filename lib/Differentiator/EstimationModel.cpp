@@ -1,5 +1,6 @@
-#include "clad/Differentiator/EstimationModel.h"
+#include "clad/Differentiator/CladUtils.h"
 #include "clad/Differentiator/DerivativeBuilder.h"
+#include "clad/Differentiator/EstimationModel.h"
 
 #include "clang/AST/Decl.h"
 #include "clang/AST/Expr.h"
@@ -31,7 +32,7 @@ namespace clad {
       // Errors through array subscript expressions are already captured
       // to avoid having long add expression at the end and to only add
       // the values to the final error that have a non zero delta.
-      if (isArrayOrPointerType(var.first->getType()))
+      if (utils::isArrayOrPointerType(var.first->getType()))
         continue;
 
       if (!addExpr) {
