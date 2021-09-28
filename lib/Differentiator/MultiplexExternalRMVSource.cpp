@@ -47,9 +47,9 @@ namespace clad {
     }
   }
 
-  void MultiplexExternalRMVSource::ActOnStartOfDerivedFnBody() {
+  void MultiplexExternalRMVSource::ActOnStartOfDerivedFnBody(const DiffRequest& request) {
     for (auto source : m_Sources) {
-      source->ActOnStartOfDerivedFnBody();
+      source->ActOnStartOfDerivedFnBody(request);
     }
   }
 

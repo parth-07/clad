@@ -5,12 +5,17 @@
 
 namespace clang {
   class ValueDecl;
+  class CallExpr;
+  class FunctionDecl;
+  class Expr;
 }
 
 namespace clad {
 
   class ReverseModeVisitor;
   class DiffRequest;
+  class StmtDiff;
+  class VarDeclDiff;
   // Should we include `DerivativeBuilder.h` instead? `DiffParams` is originally
   // defined in `DerivativeBuilder.h`.
   using DiffParams = llvm::SmallVector<const clang::ValueDecl*, 16>;
@@ -44,6 +49,11 @@ namespace clad {
     ///\param[in] args differentiation args
     virtual void ActAfterParsingDiffArgs(const DiffRequest& request,
                                          DiffParams& args) {}
+    virtual void ActBeforeCreatingDerivedFnParamTypes(unsigned &numExtraParam) {}   
+    // TODO: Change to ActAfter...                                      
+    virtual void ActOnEndOfCreatingDerivedFnParamTypes(llvm::SmallVector<clang::QualType, 16>& paramTypes) {}
+    // TODO: Change to ActAfter...
+    virtual void ActOnEndOfCreatingDerivedFnParams(llvm::SmallVector<clang::ParmVarDecl*, 4>& params) {}
 
     /// This is called just before the scopes are created for the derived
     /// function.
@@ -54,10 +64,28 @@ namespace clad {
     virtual void ActAfterCreatingDerivedFnScope() {}
 
     /// This is called at the beginning of the derived function body.
-    virtual void ActOnStartOfDerivedFnBody() {}
+    virtual void ActOnStartOfDerivedFnBody(const DiffRequest& request) {}
 
     /// This is called at the end of the derived function body.
     virtual void ActOnEndOfDerivedFnBody() {}
+
+    virtual void ActAfterProcessingStmtInVisitCompoundStmt() {}
+    virtual void ActBeforeFinalizingIfVisitBranchSingleStmt() {}
+    virtual void ActAfterProcessingForLoopSingleStmt() {}
+    virtual void ActOnEndOfVisitReturnStmt(StmtDiff& ExprDiff) {}
+    virtual void ActBeforeFinalizingVisitCallExpr(
+        const clang::CallExpr*& CE, clang::Expr*& OverloadedDerivedFn,
+        llvm::SmallVector<clang::Expr*, 16>& CallArgs,
+        llvm::SmallVector<clang::VarDecl*, 16>& ArgResultDecls) {}
+    virtual void ActBeforeFinalizingPostIncDecOp(StmtDiff& diff);
+    virtual void
+    ActAfterCloningLHSOfAssignOp(clang::Expr*&, clang::Expr*&,
+                                 clang::BinaryOperator::Opcode& opCode) {}
+    virtual void ActBeforeFinalizingAssignOp(clang::Expr*&, clang::Expr*&);
+    virtual void ActOnStartOfDifferentiateSingleStmt(bool&);
+    virtual void ActBeforeFinalizingDifferentiateSingleStmt(const ReverseModeVisitor::direction& d) {}
+    virtual void ActBeforeFinalizingDifferentiateSingleExpr(const ReverseModeVisitor::direction& d) {}
+    virtual void ActAfterDifferentiatingVDInVisitDeclStmt(VarDeclDiff&) {}
   };
 } // namespace clad
 #endif

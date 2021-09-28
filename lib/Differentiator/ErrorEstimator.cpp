@@ -2,6 +2,7 @@
 #include "clad/Differentiator/DerivativeBuilder.h"
 #include "clad/Differentiator/DiffPlanner.h"
 #include "clad/Differentiator/ReverseModeVisitor.h"
+#include "clad/Differentiator/CladUtils.h"
 
 #include "clang/AST/Decl.h"
 
@@ -18,8 +19,8 @@ namespace clad {
     // If we encountered any arithmetic expression in the return statement,
     // we must add its error to the final estimate.
     if (m_RetErrorExpr) {
-      auto flitr = FloatingLiteral::Create(m_Context, llvm::APFloat(1.0), true,
-                                           m_Context.DoubleTy, noLoc);
+      auto flitr = FloatingLiteral::Create(m_RMV->m_Context, llvm::APFloat(1.0), true,
+                                           m_RMV->m_Context.DoubleTy, noLoc);
       finExpr = m_EstModel->AssignError(StmtDiff(m_RetErrorExpr, flitr));
     }
 
@@ -27,14 +28,14 @@ namespace clad {
     Expr* addErrorExpr = m_EstModel->CalculateAggregateError();
     if (addErrorExpr) {
       if (finExpr)
-        addErrorExpr = BuildOp(BO_Add, addErrorExpr, finExpr);
+        addErrorExpr = m_RMV->BuildOp(BO_Add, addErrorExpr, finExpr);
     } else if (finExpr) {
       addErrorExpr = finExpr;
     }
 
     // Finally add the final error expression to the derivative body.
-    addToCurrentBlock(BuildOp(BO_AddAssign, m_FinalError, addErrorExpr),
-                      forward);
+    m_RMV->addToCurrentBlock(m_RMV->BuildOp(BO_AddAssign, m_FinalError, addErrorExpr),
+                      m_RMV->forward);
   }
 
   void
@@ -50,45 +51,45 @@ namespace clad {
       // to avoid storage of the pop value.
       Expr* popVal = ASE->getIdx();
       if (isInsideLoop) {
-        LookupResult& Pop = GetCladTapePop();
+        LookupResult& Pop = m_RMV->GetCladTapePop();
         CXXScopeSpec CSS;
-        CSS.Extend(m_Context, GetCladNamespace(), noLoc, noLoc);
-        auto PopDRE = m_Sema
+        CSS.Extend(m_RMV->m_Context, m_RMV->GetCladNamespace(), noLoc, noLoc);
+        auto PopDRE = m_RMV->m_Sema
                           .BuildDeclarationNameExpr(CSS, Pop,
                                                     /*AcceptInvalidDecl=*/false)
                           .get();
         Expr* tapeRef = dyn_cast<CallExpr>(popVal)->getArg(0);
-        popVal = m_Sema
-                     .ActOnCallExpr(getCurrentScope(), PopDRE, noLoc, tapeRef,
+        popVal = m_RMV->m_Sema
+                     .ActOnCallExpr(m_RMV->getCurrentScope(), PopDRE, noLoc, tapeRef,
                                     noLoc)
                      .get();
-        popVal = StoreAndRef(popVal, reverse);
+        popVal = m_RMV->StoreAndRef(popVal, m_RMV->reverse);
       }
       // If the variable declration referes to an array element
       // create the suitable _delta_arr[i] (because we have not done
       // this before).
-      deltaVar = m_Sema
+      deltaVar = m_RMV->m_Sema
                      .CreateBuiltinArraySubscriptExpr(deltaVar, noLoc, popVal,
                                                       noLoc)
                      .get();
-      addToCurrentBlock(BuildOp(BO_AddAssign, deltaVar, errorExpr), reverse);
+      m_RMV->addToCurrentBlock(m_RMV->BuildOp(BO_AddAssign, deltaVar, errorExpr), m_RMV->reverse);
       // immediately emit fin_err += delta_[].
       // This is done to avoid adding all errors at the end
       // and only add the errors that were calculated.
-      addToCurrentBlock(BuildOp(BO_AddAssign, m_FinalError, deltaVar), reverse);
+      m_RMV->addToCurrentBlock(m_RMV->BuildOp(BO_AddAssign, m_FinalError, deltaVar), m_RMV->reverse);
 
     } else
-      addToCurrentBlock(BuildOp(BO_AddAssign, deltaVar, errorExpr), reverse);
+      m_RMV->addToCurrentBlock(m_RMV->BuildOp(BO_AddAssign, deltaVar, errorExpr), m_RMV->reverse);
   }
 
   void
-  ErrorEstimationHandler::EmitErrorEstimationStmts(direction d /*=forward*/) {
-    if (d == forward) {
+  ErrorEstimationHandler::EmitErrorEstimationStmts(ReverseModeVisitor::direction d /*=forward*/) {
+    if (d == m_RMV->forward) {
       while (!m_ForwardReplStmts.empty())
-        addToCurrentBlock(m_ForwardReplStmts.pop_back_val(), d);
+        m_RMV->addToCurrentBlock(m_ForwardReplStmts.pop_back_val(), d);
     } else {
       while (!m_ReverseErrorStmts.empty())
-        addToCurrentBlock(m_ReverseErrorStmts.pop_back_val(), d);
+        m_RMV->addToCurrentBlock(m_ReverseErrorStmts.pop_back_val(), d);
     }
   }
 
@@ -104,13 +105,13 @@ namespace clad {
     // This will be helpful in the case that we have multiple
     // returns.
     if (!m_RetErrorExpr) {
-      auto retVarDecl = BuildVarDecl(m_Context.DoubleTy, "_ret_value",
-                                     getZeroInit(m_Context.DoubleTy));
-      AddToGlobalBlock(BuildDeclStmt(retVarDecl));
-      m_RetErrorExpr = BuildDeclRef(retVarDecl);
+      auto retVarDecl = m_RMV->BuildVarDecl(m_RMV->m_Context.DoubleTy, "_ret_value",
+                                     m_RMV->getZeroInit(m_RMV->m_Context.DoubleTy));
+      m_RMV->AddToGlobalBlock(m_RMV->BuildDeclStmt(retVarDecl));
+      m_RetErrorExpr = m_RMV->BuildDeclRef(retVarDecl);
     }
-    addToCurrentBlock(BuildOp(BO_Assign, m_RetErrorExpr, retDeclRefExpr),
-                      forward);
+    m_RMV->addToCurrentBlock(m_RMV->BuildOp(BO_Assign, m_RetErrorExpr, retDeclRefExpr),
+                      m_RMV->forward);
   }
 
   void ErrorEstimationHandler::EmitNestedFunctionParamError(
@@ -121,8 +122,8 @@ namespace clad {
       if (!fnDecl->getParamDecl(0)->getType()->isLValueReferenceType())
         continue;
       Expr* errorExpr = m_EstModel->AssignError(
-          {CallArgs[i], BuildDeclRef(ArgResultDecls[i])});
-      Expr* errorStmt = BuildOp(BO_AddAssign, m_FinalError, errorExpr);
+          {CallArgs[i], m_RMV->BuildDeclRef(ArgResultDecls[i])});
+      Expr* errorStmt = m_RMV->BuildOp(BO_AddAssign, m_FinalError, errorExpr);
       m_ReverseErrorStmts.push_back(errorStmt);
     }
   }
@@ -134,20 +135,20 @@ namespace clad {
     assert(declRefVal && "Val cannot be null!");
     std::string name = "_EERepl_" + declRefVal->getDecl()->getNameAsString();
     if (isInsideLoop) {
-      auto tape = MakeCladTapeFor(val, name);
+      auto tape = m_RMV->MakeCladTapeFor(val, name);
       m_ForwardReplStmts.push_back(tape.Push);
       // Nice to store pop values becuase user might refer to getExpr
       // multiple times in Assign Error.
-      Expr* popVal = StoreAndRef(tape.Pop, reverse);
+      Expr* popVal = m_RMV->StoreAndRef(tape.Pop, m_RMV->reverse);
       return StmtDiff(tape.Push, popVal);
     } else {
       QualType QTval = val->getType();
       if (auto AType = dyn_cast<ArrayType>(QTval))
         QTval = AType->getElementType();
 
-      auto savedVD = GlobalStoreImpl(QTval, name);
-      auto savedRef = BuildDeclRef(savedVD);
-      m_ForwardReplStmts.push_back(BuildOp(BO_Assign, savedRef, val));
+      auto savedVD = m_RMV->GlobalStoreImpl(QTval, name);
+      auto savedRef = m_RMV->BuildDeclRef(savedVD);
+      m_ForwardReplStmts.push_back(m_RMV->BuildOp(BO_Assign, savedRef, val));
       return StmtDiff(savedRef, savedRef);
     }
   }
@@ -155,10 +156,10 @@ namespace clad {
   void ErrorEstimationHandler::SaveParamValue(DeclRefExpr* paramRef) {
     assert(paramRef && "Must have a value");
     VarDecl* paramDecl = cast<VarDecl>(paramRef->getDecl());
-    auto savedDecl = GlobalStoreImpl(paramRef->getType(),
+    auto savedDecl = m_RMV->GlobalStoreImpl(paramRef->getType(),
                                      "_EERepl_" + paramDecl->getNameAsString(),
                                      paramRef);
-    m_ParamRepls.emplace(paramDecl, BuildDeclRef(savedDecl));
+    m_ParamRepls.emplace(paramDecl, m_RMV->BuildDeclRef(savedDecl));
   }
 
   Expr*
@@ -170,16 +171,16 @@ namespace clad {
     Expr* init = m_EstModel->SetError(VD);
     auto VDType = VD->getType();
     // The type of the _delta_ value should be customisable.
-    auto QType = isArrayOrPointerType(VDType) ? VDType : m_Context.DoubleTy;
-    init = init ? init : getZeroInit(QType);
+    auto QType = m_RMV->isArrayOrPointerType(VDType) ? VDType : m_RMV->m_Context.DoubleTy;
+    init = init ? init : m_RMV->getZeroInit(QType);
     Expr* deltaVar = nullptr;
     // Store the "_delta_*" value.
     if (!toCurrentScope) {
-      auto EstVD = GlobalStoreImpl(QType, "_delta_" + VD->getNameAsString(),
+      auto EstVD = m_RMV->GlobalStoreImpl(QType, "_delta_" + VD->getNameAsString(),
                                    init);
-      deltaVar = BuildDeclRef(EstVD);
+      deltaVar = m_RMV->BuildDeclRef(EstVD);
     } else {
-      deltaVar = StoreAndRef(init, QType, forward,
+      deltaVar = m_RMV->StoreAndRef(init, QType, m_RMV->forward,
                              "_delta_" + VD->getNameAsString(),
                              /*forceDeclCreation=*/true);
     }
@@ -212,7 +213,7 @@ namespace clad {
       // For now, we will just warn the user of casts like these
       // because we assume the cast is intensional.
       if (init && init->IgnoreImpCasts()->getType()->isFloatingType())
-        diag(DiagnosticsEngine::Warning, VD->getEndLoc(),
+        m_RMV->diag(DiagnosticsEngine::Warning, VD->getEndLoc(),
              "Lossy assignment from '%0' to '%1', this error will not be "
              "taken into cosideration while estimation",
              {init->IgnoreImpCasts()->getType().getAsString(),
@@ -258,7 +259,7 @@ namespace clad {
     for (size_t i = 0; i < numParams; i++) {
       // Right now, we just ignore them since we have no way of knowing
       // the size of an array.
-      // if (isArrayOrPointerType(params[i]->getType()))
+      // if (m_RMV->isArrayOrPointerType(params[i]->getType()))
       //   continue;
 
       // Check if the declaration was registered
@@ -273,70 +274,70 @@ namespace clad {
 
       // If till now, we have a delta declaration, emit it into the code.
       if (deltaVar) {
-        if (!isArrayOrPointerType(params[i]->getType())) {
+        if (!m_RMV->isArrayOrPointerType(params[i]->getType())) {
           // Since we need the input value of x, check for a replacement.
           // If no replacement found, use the actual declRefExpr.
           auto savedVal = GetParamReplacement(params[i]);
-          savedVal = savedVal ? savedVal : BuildDeclRef(decl);
+          savedVal = savedVal ? savedVal : m_RMV->BuildDeclRef(decl);
           // Finally emit the error.
-          auto errorExpr = GetError(savedVal, m_Variables[decl]);
-          addToCurrentBlock(BuildOp(BO_AddAssign, deltaVar, errorExpr));
+          auto errorExpr = GetError(savedVal, m_RMV->m_Variables[decl]);
+          m_RMV->addToCurrentBlock(m_RMV->BuildOp(BO_AddAssign, deltaVar, errorExpr));
         } else {
-          auto LdiffExpr = m_Variables[decl];
+          auto LdiffExpr = m_RMV->m_Variables[decl];
           VarDecl* idxExprDecl = nullptr;
           // Save our index expression so it can be used later.
           if (!m_IdxExpr) {
-            idxExprDecl = BuildVarDecl(m_Context.IntTy, "i",
-                                       getZeroInit(m_Context.IntTy));
-            m_IdxExpr = BuildDeclRef(idxExprDecl);
+            idxExprDecl = m_RMV->BuildVarDecl(m_RMV->m_Context.IntTy, "i",
+                                       m_RMV->getZeroInit(m_RMV->m_Context.IntTy));
+            m_IdxExpr = m_RMV->BuildDeclRef(idxExprDecl);
           }
           Expr* Ldiff;
           // Build the different expressions to be used in errro output.
-          if (isArrayRefType(LdiffExpr->getType())) {
-            Ldiff = m_Sema
-                        .ActOnArraySubscriptExpr(getCurrentScope(), LdiffExpr,
+          if (m_RMV->isArrayRefType(LdiffExpr->getType())) {
+            Ldiff = m_RMV->m_Sema
+                        .ActOnArraySubscriptExpr(m_RMV->getCurrentScope(), LdiffExpr,
                                                  decl->getLocation(), m_IdxExpr,
                                                  noLoc)
                         .get();
           } else {
-            Ldiff = m_Sema
+            Ldiff = m_RMV->m_Sema
                         .CreateBuiltinArraySubscriptExpr(LdiffExpr, noLoc,
                                                          m_IdxExpr, noLoc)
                         .get();
           }
-          auto Ldelta = m_Sema
+          auto Ldelta = m_RMV->m_Sema
                             .CreateBuiltinArraySubscriptExpr(deltaVar, noLoc,
                                                              m_IdxExpr, noLoc)
                             .get();
           auto savedVal = GetParamReplacement(params[i]);
-          savedVal = savedVal ? savedVal : BuildDeclRef(decl);
-          auto LRepl = m_Sema
+          savedVal = savedVal ? savedVal : m_RMV->BuildDeclRef(decl);
+          auto LRepl = m_RMV->m_Sema
                            .CreateBuiltinArraySubscriptExpr(savedVal, noLoc,
                                                             m_IdxExpr, noLoc)
                            .get();
           // Build the loop to put in reverse mode.
-          Expr* deltaAssignExpr = BuildOp(BO_AddAssign, Ldelta,
+          Expr* deltaAssignExpr = m_RMV->BuildOp(BO_AddAssign, Ldelta,
                                           GetError(LRepl, Ldiff));
-          Expr* finalAssignExpr = BuildOp(BO_AddAssign, m_FinalError, Ldelta);
-          Stmts loopBody;
+          Expr* finalAssignExpr = m_RMV->BuildOp(BO_AddAssign, m_FinalError, Ldelta);
+          ReverseModeVisitor::Stmts loopBody;
           loopBody.push_back(deltaAssignExpr);
           loopBody.push_back(finalAssignExpr);
-          Expr* conditionExpr = BuildOp(BO_LT, m_IdxExpr,
-                                        BuildArrayRefSizeExpr(LdiffExpr));
-          Expr* incExpr = BuildOp(UO_PostInc, m_IdxExpr);
-          Stmt* ArrayParamLoop = new (m_Context)
-              ForStmt(m_Context, nullptr, conditionExpr, nullptr, incExpr,
-                      MakeCompoundStmt(loopBody), noLoc, noLoc, noLoc);
+          Expr* conditionExpr = m_RMV->BuildOp(BO_LT, m_IdxExpr,
+                                        m_RMV->BuildArrayRefSizeExpr(LdiffExpr));
+          Expr* incExpr = m_RMV->BuildOp(UO_PostInc, m_IdxExpr);
+          Stmt* ArrayParamLoop = new (m_RMV->m_Context)
+              ForStmt(m_RMV->m_Context, nullptr, conditionExpr, nullptr, incExpr,
+                      m_RMV->MakeCompoundStmt(loopBody), noLoc, noLoc, noLoc);
           // For multiple array parameters, we want to keep the same
           // iterative variable, so reset that here in the case that this
           // is not out first array.
           if (!idxExprDecl) {
-            addToCurrentBlock(
-                BuildOp(BO_Assign, m_IdxExpr, getZeroInit(m_Context.IntTy)));
+            m_RMV->addToCurrentBlock(
+                m_RMV->BuildOp(BO_Assign, m_IdxExpr, m_RMV->getZeroInit(m_RMV->m_Context.IntTy)));
           } else {
-            addToCurrentBlock(BuildDeclStmt(idxExprDecl));
+            m_RMV->addToCurrentBlock(m_RMV->BuildDeclStmt(idxExprDecl));
           }
-          addToCurrentBlock(ArrayParamLoop);
+          m_RMV->addToCurrentBlock(ArrayParamLoop);
         }
       }
     }
@@ -352,7 +353,7 @@ namespace clad {
       if (auto deltaVar = IsRegistered(cast<VarDecl>(DRE->getDecl()))) {
         // Create a variable/tape call to store the current value of the
         // the sub-expression so that it can be used later.
-        StmtDiff savedVar = GlobalStoreAndRef(DRE, "_EERepl_" +
+        StmtDiff savedVar = m_RMV->GlobalStoreAndRef(DRE, "_EERepl_" +
                                                        DRE->getDecl()
                                                            ->getNameAsString());
         if (isInsideLoop) {
@@ -360,7 +361,7 @@ namespace clad {
           // We do not know how many times the user will use dx,
           // hence we should pop values beforehand to avoid unequal pushes
           // and and pops.
-          Expr* popVal = StoreAndRef(savedVar.getExpr_dx(), reverse);
+          Expr* popVal = m_RMV->StoreAndRef(savedVar.getExpr_dx(), m_RMV->reverse);
           savedVar = {savedVar.getExpr(), popVal};
         }
         Expr* erroExpr = GetError(savedVar.getExpr_dx(), var.getExpr_dx());
@@ -410,7 +411,7 @@ namespace clad {
     Expr* errorExpr = GetError(savedExpr.getExpr_dx(), oldValue);
     AddErrorStmtToBlock(LExpr, deltaVar, errorExpr, isInsideLoop);
     // If there are assign statements to emit in reverse, do that.
-    EmitErrorEstimationStmts(reverse);
+    EmitErrorEstimationStmts(m_RMV->reverse);
   }
 
   void ErrorEstimationHandler::EmitDeclErrorStmts(VarDeclDiff VDDiff,
@@ -420,17 +421,167 @@ namespace clad {
       return;
     // Build the delta expresion for the variable to be registered.
     auto EstVD = RegisterVariable(VD);
-    DeclRefExpr* VDRef = BuildDeclRef(VD);
+    DeclRefExpr* VDRef = m_RMV->BuildDeclRef(VD);
     // FIXME: We should do this for arrays too.
     if (!VD->getType()->isArrayType()) {
       StmtDiff savedDecl = SaveValue(VDRef, isInsideLoop);
       // If the VarDecl has an init, we should assign it with an error.
       if (VD->getInit() && !GetUnderlyingDeclRefOrNull(VD->getInit())) {
         Expr* errorExpr = GetError(savedDecl.getExpr_dx(),
-                                   BuildDeclRef(VDDiff.getDecl_dx()));
+                                   m_RMV->BuildDeclRef(VDDiff.getDecl_dx()));
         AddErrorStmtToBlock(VDRef, EstVD, errorExpr, isInsideLoop);
       }
     }
+  }
+
+  void ErrorEstimationHandler::InitialiseRMV(ReverseModeVisitor& RMV) {
+    m_RMV = &RMV;
+  }
+
+  void ErrorEstimationHandler::ForgetRMV() {
+    m_RMV = nullptr;
+  }
+
+  void ErrorEstimationHandler::ActBeforeCreatingDerivedFnParamTypes(unsigned& numExtraParam) {
+    numExtraParam += 1;
+  }
+
+  void ErrorEstimationHandler::ActOnEndOfCreatingDerivedFnParamTypes(
+      llvm::SmallVector<QualType, 16>& paramTypes) {
+    m_ParamTypes = &paramTypes;
+    // If we are performing error estimation, our gradient function
+    // will have an extra argument which will hold the final error value
+    paramTypes.push_back(
+        m_RMV->m_Context.getLValueReferenceType(m_RMV->m_Context.DoubleTy));
+  };
+
+  void ErrorEstimationHandler::ActOnEndOfCreatingDerivedFnParams(
+      llvm::SmallVector<ParmVarDecl*, 4>& params) {
+        m_Params = &params;
+    // If in error estimation mode, create the error parameter
+    ASTContext& context = m_RMV->m_Context;
+    // Repeat the above but for the error ouput var "_final_error"
+    ParmVarDecl* errorVarDecl = ParmVarDecl::
+        Create(context, m_RMV->m_Derivative, noLoc, noLoc,
+               &context.Idents.get("_final_error"), m_ParamTypes->back(),
+               context.getTrivialTypeSourceInfo(m_ParamTypes->back(), noLoc),
+               params.front()->getStorageClass(),
+               /*DefArg=*/nullptr);
+    params.push_back(errorVarDecl);
+    m_RMV->m_Sema.PushOnScopeChains(params.back(), m_RMV->getCurrentScope(),
+                                    /*AddToContext=*/false);
+  }
+
+  void ErrorEstimationHandler::ActBeforeCreatingDerivedFnScope() {
+    // Reference to the final error statement
+      SetFinalErrorExpr(m_RMV->BuildDeclRef(m_Params->back()));
+  }
+
+  void ErrorEstimationHandler::ActOnEndOfDerivedFnBody() {
+    // Since 'return' is not an assignment, add its error to _final_error
+    // given it is not a DeclRefExpr.
+    EmitFinalErrorStmts(*m_Params, m_RMV->m_Function->getNumParams());
+  }
+
+  void ErrorEstimationHandler::ActAfterProcessingStmtInVisitCompoundStmt() {
+    // In error estimation mode, if we have any residual statements
+    // to be emitted into the forward or revese blocks, we should
+    // emit them here. This is to maintain the correct order of
+    // statements generated.
+    EmitErrorEstimationStmts(m_RMV->forward);
+    EmitErrorEstimationStmts(m_RMV->reverse);
+  }
+
+  void ErrorEstimationHandler::ActBeforeFinalizingIfVisitBranchSingleStmt() {
+    // In error estimation, manually emit the code here instead of
+    // DifferentiateSingleStmt to maintain correct order.
+    EmitErrorEstimationStmts(m_RMV->forward);
+  }
+
+  void ErrorEstimationHandler::ActAfterProcessingForLoopSingleStmt() {
+    // Emit some statemnts later to maintain correct statement order.
+    EmitErrorEstimationStmts(m_RMV->forward);
+  }
+
+  void ErrorEstimationHandler::ActOnEndOfVisitReturnStmt(StmtDiff& ExprDiff) {
+    // Since returned expression may have some side effects affecting reverse
+    // computation (e.g. assignments), we also have to emit it to execute it.
+    Expr* retDeclRefExpr = m_RMV->StoreAndRef(ExprDiff.getExpr(), m_RMV->forward,
+                                       utils::ComputeEffectiveFnName(
+                                           m_RMV->m_Function) +
+                                           "_return",
+                                       /*forceDeclCreation=*/true);
+    // If the return expression is not a DeclRefExpression and is of type
+    // float, we should add it to the error estimate because returns are
+    // similiar to implicit assigns.
+      SaveReturnExpr(ExprDiff.getExpr(),
+                                      cast<DeclRefExpr>(retDeclRefExpr));
+    
+  }
+
+  void ErrorEstimationHandler::ActBeforeFinalizingPostIncDecOp(StmtDiff& diff) {
+    EmitUnaryOpErrorStmts(diff, m_RMV->isInsideLoop);
+  }
+
+  void ErrorEstimationHandler::ActBeforeFinalizingVisitCallExpr(
+      const clang::CallExpr*& CE, clang::Expr*& OverloadedDerivedFn,
+      llvm::SmallVector<Expr*, 16>& CallArgs,
+      llvm::SmallVector<VarDecl*, 16>& ArgResultDecls) {
+    if (OverloadedDerivedFn) {
+      // Derivative was found.
+      FunctionDecl* fnDecl = dyn_cast<CallExpr>(OverloadedDerivedFn)
+                                 ->getDirectCallee();
+      if (!m_RMV->isVectorValued) {
+        // If in error estimation, build the statement for the error
+        // in the input prameters (if they are reference types) to call and
+        // save to emit them later.
+
+        // If in error estimation, build the statement for the error
+        // in the input prameters (if of reference type) to call and save to
+        // emit them later.
+
+        errorEstHandler->EmitNestedFunctionParamError(fnDecl, CallArgs,
+                                                      ArgResultDecls,
+                                                      CE->getNumArgs());
+      }
+    }
+  }
+  void ErrorEstimationHandler::ActAfterCloningLHSOfAssignOp(
+      clang::Expr*& LCloned, clang::Expr*& R,
+      clang::BinaryOperator::Opcode& opCode) {
+    m_DeltaVar = RegisterBinaryOpLHS(LCloned, R,
+                                     /*isAssign=*/opCode == BO_Assign);
+  }
+
+  void
+  ErrorEstimationHandler::ActBeforeFinalizingAssignOp(clang::Expr*& LCloned,
+                                                      clang::Expr*& oldValue) {
+    errorEstHandler->EmitBinaryOpErrorStmts(LCloned, oldValue, m_DeltaVar,
+                                            m_RMV->isInsideLoop);
+  }
+
+  void ErrorEstimationHandler::ActOnStartOfDifferentiateSingleStmt(bool& shouldEmit) {
+    m_ShouldEmit = shouldEmit;
+  }
+
+  void ErrorEstimationHandler::ActBeforeFinalizingDifferentiateSingleStmt(
+      const ReverseModeVisitor::direction& d) {
+    // We might have some expressions to emit, so do that here.
+    if (m_ShouldEmit)
+      EmitErrorEstimationStmts(d);
+  }
+
+  void ErrorEstimationHandler::ActBeforeFinalizingDifferentiateSingleExpr(
+      const ReverseModeVisitor::direction& d) {
+    // We might have some expressions to emit, so do that here.
+    errorEstHandler->EmitErrorEstimationStmts(d);
+  }
+
+  void ErrorEstimationHandler::ActAfterDifferentiatingVDInVisitDeclStmt(
+      VarDeclDiff& VD) {
+    // For all dependent variables, we register them for estimation
+    // here.
+    errorEstHandler->EmitDeclErrorStmts(VD, m_RMV->isInsideLoop);
   }
 
 } // namespace clad

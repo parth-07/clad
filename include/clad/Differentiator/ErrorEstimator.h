@@ -3,7 +3,7 @@
 
 #include "EstimationModel.h"
 #include "ReverseModeVisitor.h"
-
+#include "clad/Differentiator/ExternalRMVSource.h"
 namespace clang {
   class Stmt;
   class Expr;
@@ -12,12 +12,13 @@ namespace clang {
   class ParmVarDecl;
   class FunctionDecl;
   class CompoundStmt;
+  enum BinaryOperatorKind;
 } // namespace clang
 
 namespace clad {
   /// The estimation handler which interfaces with Clad's reverse mode visitors
   /// to fetch derivatives.
-  class ErrorEstimationHandler : public ReverseModeVisitor {
+  class ErrorEstimationHandler : public ExternalRMVSource {
     /// Keeps a track of the delta error expression we shouldn't emit.
     bool m_DoNotEmitDelta;
     /// Reference to the final error parameter in the augumented target
@@ -36,10 +37,15 @@ namespace clad {
     /// A set of declRefExprs for parameter value replacements.
     std::unordered_map<const clang::VarDecl*, clang::Expr*> m_ParamRepls;
 
+    bool m_ShouldEmit = false;
+    ReverseModeVisitor* m_RMV;
+    clang::Expr* m_DeltaVar = nullptr;
+    llvm::SmallVector<clang::QualType, 16>* m_ParamTypes = nullptr;
+    llvm::SmallVector<clang::ParmVarDecl*, 4>* m_Params = nullptr;
+
   public:
-    ErrorEstimationHandler(DerivativeBuilder& builder)
-        : ReverseModeVisitor(builder), m_DoNotEmitDelta(false),
-          m_FinalError(nullptr), m_RetErrorExpr(nullptr), m_EstModel(nullptr),
+    ErrorEstimationHandler()
+        : m_DoNotEmitDelta(false), m_FinalError(nullptr), m_RetErrorExpr(nullptr), m_EstModel(nullptr),
           m_IdxExpr(nullptr) {}
     ~ErrorEstimationHandler() {}
 
@@ -76,7 +82,7 @@ namespace clad {
     ///
     /// \param[in] d The direction of the block in which to emit the
     /// statements.
-    void EmitErrorEstimationStmts(direction d = forward);
+    void EmitErrorEstimationStmts(ReverseModeVisitor::direction d = ReverseModeVisitor::forward);
 
     /// We should save the return value if it is an arithmetic expression,
     /// since we also need to take into account the error in that expression.
@@ -215,8 +221,33 @@ namespace clad {
     /// \param[in] isInsideLoop A flag to keep track of if we are inside a
     /// loop.
     void EmitDeclErrorStmts(VarDeclDiff VDDiff, bool isInsideLoop);
-  };
 
+    void InitialiseRMV(ReverseModeVisitor& RMV) override;
+    void ForgetRMV() override;
+    void ActBeforeCreatingDerivedFnParamTypes(unsigned&) override;
+    void ActOnEndOfCreatingDerivedFnParamTypes(
+        llvm::SmallVector<clang::QualType, 16>& paramTypes) override;
+    void ActOnEndOfCreatingDerivedFnParams(llvm::SmallVector<clang::ParmVarDecl*, 4>& params) override;
+    void ActBeforeCreatingDerivedFnScope() override;
+    void ActOnEndOfDerivedFnBody() override;
+    void ActAfterProcessingStmtInVisitCompoundStmt() override;
+    void ActBeforeFinalizingIfVisitBranchSingleStmt() override;
+    void ActAfterProcessingForLoopSingleStmt() override;
+    void ActOnEndOfVisitReturnStmt(StmtDiff& ExprDiff) override;
+    void ActBeforeFinalizingPostIncDecOp(StmtDiff& diff) override;
+    void ActBeforeFinalizingVisitCallExpr(
+        const clang::CallExpr*& CE, clang::Expr*& fnDecl,
+        llvm::SmallVector<clang::Expr*, 16>& CallArgs,
+        llvm::SmallVector<clang::VarDecl*, 16>& ArgResultDecls) override;
+    void ActAfterCloningLHSOfAssignOp(
+        clang::Expr*& LCloned, clang::Expr*& R,
+        clang::BinaryOperator::Opcode& opCode) override;
+    void ActBeforeFinalizingAssignOp(clang::Expr*&, clang::Expr*&) override;
+    void ActBeforeFinalizingDifferentiateSingleStmt(const ReverseModeVisitor::direction& d) override;
+    void ActBeforeFinalizingDifferentiateSingleExpr(const ReverseModeVisitor::direction& d) override;
+    void ActAfterDifferentiatingVDInVisitDeclStmt(VarDeclDiff& VD) override;
+    void ActOnStartOfDifferentiateSingleStmt(bool&) override;
+  };
 } // namespace clad
 
 #endif // CLAD_ERROR_ESTIMATOR_H

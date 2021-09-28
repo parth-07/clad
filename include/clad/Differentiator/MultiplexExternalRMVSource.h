@@ -1,8 +1,8 @@
 #ifndef MULTIPLEX_EXTERNAL_RMV_SOURCE_H
 #define MULTIPLEX_EXTERNAL_RMV_SOURCE_H
 
-#include "llvm/ADT/SmallVector.h"
 #include "clad/Differentiator/ExternalRMVSource.h"
+#include "llvm/ADT/SmallVector.h"
 
 namespace clad {
   class DiffRequest;
@@ -27,7 +27,7 @@ namespace clad {
                                  DiffParams& args) override;
     void ActBeforeCreatingDerivedFnScope() override;
     void ActAfterCreatingDerivedFnScope() override;
-    void ActOnStartOfDerivedFnBody() override;
+    void ActOnStartOfDerivedFnBody(const DiffRequest& request) override;
     void ActOnEndOfDerivedFnBody() override;
   };
 } // namespace clad

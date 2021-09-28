@@ -20,15 +20,20 @@
 namespace clad {
   class MultiplexExternalRMVSource;
   class ExternalRMVSource;
+  class ErrorEstimationHandler;
 
   /// A visitor for processing the function code in reverse mode.
   /// Used to compute derivatives by clad::gradient.
   class ReverseModeVisitor
       : public clang::ConstStmtVisitor<ReverseModeVisitor, StmtDiff>,
         public VisitorBase {
+
+  friend class ErrorEstimationHandler;
+  
   private:
     /// Determines if an error estimation is in process; helps decide whether
     /// to visit error estimation specific code in calls to VisitStmt.
+    // TODO: remove this member variable after converting error estimator to callback.
     bool m_ErrorEstimationEnabled = false;
     llvm::SmallVector<const clang::ValueDecl*, 16> m_IndependentVars;
     /// In addition to a sequence of forward-accumulated Stmts (m_Blocks), in
