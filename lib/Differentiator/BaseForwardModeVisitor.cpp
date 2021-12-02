@@ -1577,16 +1577,6 @@ static SwitchCase* getContainedSwitchCaseStmt(const CompoundStmt* CS) {
   return nullptr;
 }
 
-static void setSwitchCaseSubStmt(SwitchCase* SC, Stmt* subStmt) {
-  if (auto caseStmt = dyn_cast<CaseStmt>(SC)) {
-    caseStmt->setSubStmt(subStmt);
-  } else if (auto defaultStmt = dyn_cast<DefaultStmt>(SC)) {
-    defaultStmt->setSubStmt(subStmt);
-  } else {
-    assert(0 && "Unsupported switch case statement");
-  }
-}
-
 /// Returns top switch statement in the `SwitchStack` of the given
 /// Function Scope.
 static SwitchStmt* getTopSwitchStmtOfSwitchStack(sema::FunctionScopeInfo* FSI) {
@@ -1659,7 +1649,7 @@ StmtDiff BaseForwardModeVisitor::VisitSwitchStmt(const SwitchStmt* SS) {
   // been processed aka when all the statments in switch statement body
   // have been processed.
   if (activeSC) {
-    setSwitchCaseSubStmt(activeSC, endBlock());
+    utils::SetSwitchCaseSubStmt(activeSC, endBlock());
     endScope();
     activeSC = nullptr;
   }
@@ -1687,7 +1677,7 @@ BaseForwardModeVisitor::DeriveSwitchStmtBodyHelper(const Stmt* stmt,
     // corresponding to the active switch case label, and update its
     // substatement.
     if (activeSC) {
-      setSwitchCaseSubStmt(activeSC, endBlock());
+      utils::SetSwitchCaseSubStmt(activeSC, endBlock());
       endScope();
     }
     // sub statement will be updated later, either when the corresponding
