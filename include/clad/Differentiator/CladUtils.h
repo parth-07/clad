@@ -27,6 +27,8 @@ namespace clad {
     clang::CompoundStmt* AppendAndCreateCompoundStmt(clang::ASTContext& C,
                                                      clang::Stmt* initial,
                                                      clang::Stmt* S);
+    
+    void SetSwitchCaseSubStmt(clang::SwitchCase* SC, clang::Stmt* subStmt);
   }
 }
 

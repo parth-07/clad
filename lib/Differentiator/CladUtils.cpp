@@ -42,5 +42,12 @@ namespace clad {
       auto stmtsRef = llvm::makeArrayRef(block.begin(), block.end());
       return clad_compat::CompoundStmt_Create(C, stmtsRef, noLoc, noLoc);
     }
+
+    void SetSwitchCaseSubStmt(SwitchCase* SC, Stmt* subStmt) {
+      if (auto caseStmt = dyn_cast<CaseStmt>(SC))
+        caseStmt->setSubStmt(subStmt);
+      else
+        cast<DefaultStmt>(SC)->setSubStmt(subStmt);
+    }
   } // namespace utils
 } // namespace clad
