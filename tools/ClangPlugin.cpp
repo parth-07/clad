@@ -20,9 +20,11 @@
 #include "clang/Frontend/FrontendPluginRegistry.h"
 #include "clang/Frontend/MultiplexConsumer.h"
 #include "clang/Lex/LexDiagnostic.h"
-#include "clang/Sema/Sema.h"
 #include "clang/Sema/Lookup.h"
+#include "clang/Sema/ParsedAttr.h"
+#include "clang/Sema/Sema.h"
 
+#include "llvm/IR/Attributes.h"
 #include "llvm/Support/Registry.h"
 #include "llvm/Support/Timer.h"
 #include "llvm/Support/raw_ostream.h"
@@ -43,7 +45,7 @@ namespace {
         Start = llvm::TimeRecord::getCurrentTime();
     }
 
-    void setOutput(const Twine &Output) {
+    void setOutput(const Twine& Output) {
       if (WantTiming)
         this->Output = Output.str();
     }
@@ -58,7 +60,7 @@ namespace {
       }
     }
   };
-}
+} // namespace
 
 namespace clad {
   namespace plugin {
@@ -98,7 +100,7 @@ namespace clad {
     };
 
     CladPlugin::CladPlugin(CompilerInstance& CI, DifferentiationOptions& DO)
-      : m_CI(CI), m_DO(DO), m_HasRuntime(false) { }
+        : m_CI(CI), m_DO(DO), m_HasRuntime(false) {}
     CladPlugin::~CladPlugin() {}
 
     // We cannot use HandleTranslationUnit because codegen already emits code on
@@ -199,16 +201,16 @@ namespace clad {
         // TODO: Maybe find a better way to declare and use
         //  OverloadedDeclWithContext
         std::tie(DerivativeDecl, DerivativeDeclContext,
-                 OverloadedDerivativeDecl) =
-            m_DerivativeBuilder->Derive(FD, request);
+                 OverloadedDerivativeDecl) = m_DerivativeBuilder
+                                                 ->Derive(FD, request);
       }
 
       if (DerivativeDecl) {
         auto I = m_Derivatives.insert(DerivativeDecl);
         (void)I;
         assert(I.second);
-        bool lastDerivativeOrder = 
-          (request.CurrentDerivativeOrder == request.RequestedDerivativeOrder);
+        bool lastDerivativeOrder = (request.CurrentDerivativeOrder ==
+                                    request.RequestedDerivativeOrder);
         // If this is the last required derivative order, replace the function
         // inside a call to clad::differentiate/gradient with its derivative.
         if (request.CallUpdateRequired && lastDerivativeOrder)
@@ -226,16 +228,17 @@ namespace clad {
         // if enabled, print the derivatives in a file.
         if (m_DO.GenerateSourceFile) {
           std::error_code err;
-          llvm::raw_fd_ostream f("Derivatives.cpp",
-                                 err, CLAD_COMPAT_llvm_sys_fs_Append);
+          llvm::raw_fd_ostream f("Derivatives.cpp", err,
+                                 CLAD_COMPAT_llvm_sys_fs_Append);
           DerivativeDecl->print(f, Policy);
           f.flush();
         }
         // Call CodeGen only if the produced decl is a top-most decl.
-        Decl* DerivativeDeclOrEnclosingContext = DerivativeDeclContext ?
-          DerivativeDeclContext : DerivativeDecl;
-        bool isTU = DerivativeDeclOrEnclosingContext->getDeclContext()->
-          isTranslationUnit();
+        Decl* DerivativeDeclOrEnclosingContext = DerivativeDeclContext
+                                                     ? DerivativeDeclContext
+                                                     : DerivativeDecl;
+        bool isTU = DerivativeDeclOrEnclosingContext->getDeclContext()
+                        ->isTranslationUnit();
         if (isTU) {
           ProcessTopLevelDecl(DerivativeDeclOrEnclosingContext);
           if (OverloadedDerivativeDecl)
@@ -264,10 +267,10 @@ namespace clad {
       // out-of-tree and hybrid. When we pick up the wrong header files we
       // usually see a problem with C.Idents not being properly initialized.
       // This assert tries to catch such situations heuristically.
-      assert(&C.Idents == &m_CI.getPreprocessor().getIdentifierTable()
-             && "Miscompiled?");
+      assert(&C.Idents == &m_CI.getPreprocessor().getIdentifierTable() &&
+             "Miscompiled?");
       DeclarationName Name = &C.Idents.get("clad");
-      Sema &SemaR = m_CI.getSema();
+      Sema& SemaR = m_CI.getSema();
       LookupResult R(SemaR, Name, SourceLocation(), Sema::LookupNamespaceName,
                      clad_compat::Sema_ForVisibleRedeclaration);
       SemaR.LookupQualifiedName(R, C.getTranslationUnitDecl(),
@@ -275,13 +278,51 @@ namespace clad {
       m_HasRuntime = !R.empty();
       return m_HasRuntime;
     }
+
+    class PushforwardOfAttrInfo : public ParsedAttrInfo {
+    public:
+      PushforwardOfAttrInfo() {
+        static constexpr Spelling S[] = {
+          {ParsedAttr::AS_GNU, "example"},
+          {ParsedAttr::AS_GNU, "pushforwardOf"},
+          {ParsedAttr::AS_CXX11, "pushforwardOf"},
+            {ParsedAttr::AS_CXX11, "clad::pushforwardOf"},
+            {ParsedAttr::AS_CXX11, "pullbackOf"}};
+        Spellings = S;
+        OptArgs = 2;
+      }
+      bool diagAppertainsToDecl(Sema& S, const ParsedAttr& attr,
+                                const Decl* D) const override {
+        D->dumpColor();
+        llvm::errs()<<"attr.getNumArgs(): "<<attr.getNumArgs()<<"\n";                                  
+        if (!isa<FunctionDecl>(D)) {
+          // S.Diag(attr.getLoc(), diag::warn_attribute_wrong_decl_type_str)
+          //     << attr << "functions";
+          return false;
+        }
+        return true;
+      }
+
+      AttrHandling handleDeclAttribute(Sema& S, Decl* D,
+                                       const ParsedAttr& attr) const override {
+        SmallVector<Expr*, 16> ArgsBuf;
+        llvm::errs()<<"NumArgs: "<<attr.getNumArgs()<<"\n";
+        for (unsigned i = 0; i < attr.getNumArgs(); i++) {
+          attr.getArgAsExpr(i)->dumpColor();
+          ArgsBuf.push_back(attr.getArgAsExpr(i));
+        }
+        // D->addAttr(AnnotateAttr::Create(S.Context, "example", ArgsBuf.data(),
+        //                                 ArgsBuf.size(), attr.getRange()));
+        return AttributeApplied;
+      }
+    };
   } // end namespace plugin
 } // end namespace clad
 
 using namespace clad::plugin;
 // register the PluginASTAction in the registry.
-static clang::FrontendPluginRegistry::Add<Action<CladPlugin> >
-X("clad", "Produces derivatives or arbitrary functions");
+static clang::FrontendPluginRegistry::Add<Action<CladPlugin>>
+    X("clad", "Produces derivatives or arbitrary functions");
 
 static PragmaHandlerRegistry::Add<CladPragmaHandler>
     Y("clad", "Clad pragma directives handler.");
@@ -289,3 +330,5 @@ static PragmaHandlerRegistry::Add<CladPragmaHandler>
 // instantiate our error estimation model registry so that we can register
 // custom models passed by users as a shared lib
 LLVM_INSTANTIATE_REGISTRY(ErrorEstimationModelRegistry)
+
+static ParsedAttrInfoRegistry::Add<PushforwardOfAttrInfo> Z("example", "");
