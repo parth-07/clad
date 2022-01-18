@@ -10,9 +10,10 @@
 
 #include "llvm/Support/SaveAndRestore.h"
 
+#include "clad/Differentiator/ASTHelper.h"
 #include "clad/Differentiator/CladUtils.h"
 #include "clad/Differentiator/Compatibility.h"
-
+#include "clad/Differentiator/DerivedTypeEssentials.h"
 using namespace clang;
 
 namespace clad {
@@ -281,11 +282,14 @@ namespace clad {
     }
   }
 
-  DiffCollector::DiffCollector(DeclGroupRef DGR, DiffInterval& Interval,
-                               const DerivativesSet& Derivatives,
-                               DiffSchedule& plans, clang::Sema& S)
-    : m_Interval(Interval), m_GeneratedDerivatives(Derivatives),
-      m_DiffPlans(plans), m_TopMostFD(nullptr), m_Sema(S) {
+  DiffCollector::DiffCollector(
+      DeclGroupRef DGR, DiffInterval& Interval,
+      const DerivativesSet& Derivatives, DiffSchedule& plans,
+      llvm::SmallVector<clang::ClassTemplateSpecializationDecl*, 16>& derivedTypeRequests,
+      clang::Sema& S)
+      : m_Interval(Interval), m_GeneratedDerivatives(Derivatives),
+        m_DiffPlans(plans), m_TopMostFD(nullptr),
+        m_DerivedTypeRequests(derivedTypeRequests), m_Sema(S) {
 
     if (Interval.empty())
       return;
@@ -324,6 +328,44 @@ namespace clad {
         return true;
     }
     return false;
+  }
+
+  static void FillDerivedType(Sema& semaRef, CXXRecordDecl* derivedRD,
+                              QualType YType, CXXRecordDecl* XRD) {
+    for (auto field : XRD->fields()) {
+      auto& C = semaRef.getASTContext();
+      auto& newFieldId = C.Idents.get("d_" + field->getNameAsString());
+      auto newField = FieldDecl::Create(C, derivedRD, noLoc, noLoc, &newFieldId,
+                                        YType,
+                                        C.getTrivialTypeSourceInfo(YType,
+                                                                   noLoc),
+                                        nullptr, false, InClassInitStyle::ICIS_NoInit);
+      newField->setAccess(AS_public);
+      derivedRD->addDecl(newField);
+    }
+  }
+
+  bool DiffCollector::VisitCXXRecordDecl(CXXRecordDecl* RD) {
+    if (!RD->getName().startswith("__clad_")) {
+      return true;
+    }
+    if (RD->hasDefinition())
+      return true;
+    // m_DerivedTypeRequests.push_back(RD);
+    return true;
+  }
+
+  bool DiffCollector::VisitVarDecl(VarDecl* E) {
+    QualType qType = E->getType();
+    if (auto RD = qType->getAsCXXRecordDecl()) {
+      if (auto TS = dyn_cast<ClassTemplateSpecializationDecl>(RD)) {
+        auto baseTemplateDecl = TS->getSpecializedTemplate();
+        if (baseTemplateDecl->getNameAsString() == "BuildTangentType") {
+          m_DerivedTypeRequests.push_back(TS);
+        }
+      }
+    }
+    return true;
   }
 
   bool DiffCollector::VisitCallExpr(CallExpr* E) {

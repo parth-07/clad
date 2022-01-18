@@ -8,17 +8,20 @@
 #define CLAD_DERIVATIVE_BUILDER_H
 
 #include "Compatibility.h"
+#include "clad/Differentiator/DerivedTypesHandler.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/AST/StmtVisitor.h"
 #include "clang/Sema/Sema.h"
-
+#include "clad/Differentiator/DerivedTypeEssentials.h"
 #include <array>
+#include <map>
 #include <stack>
 #include <unordered_map>
 
 namespace clang {
   class ASTContext;
   class CXXOperatorCallExpr;
+  class CXXRecordDecl;
   class DeclRefExpr;
   class FunctionDecl;
   class MemberExpr;
@@ -57,6 +60,7 @@ namespace clad {
 
 namespace clad {
   class ErrorEstimationHandler;
+  class DerivedTypesHandler;
   class FPErrorEstimationModel;
   // A pointer to a the handler to be used for estimation requests.
   extern std::unique_ptr<ErrorEstimationHandler> errorEstHandler;
@@ -93,6 +97,7 @@ namespace clad {
     clang::Sema& m_Sema;
     plugin::CladPlugin& m_CladPlugin;
     clang::ASTContext& m_Context;
+    DerivedTypesHandler& m_DTH;
     std::unique_ptr<utils::StmtClone> m_NodeCloner;
     clang::NamespaceDecl* m_BuiltinDerivativesNSD;
     /// A reference to the model to use for error estimation (if any).
@@ -101,6 +106,11 @@ namespace clad {
     /// A flag to keep track of whether error diagnostics are requested by user
     /// for numerical differentiation.
     bool m_PrintNumericalDiffErrorDiag = false;
+    /// Stores mapping of derived type names and the corresponding derived
+    /// types.
+    ///
+    /// Derived types are the types that are used to store the derivatives.
+    std::map<std::string, clang::QualType> m_DerivedTypes;
     DeclWithContext cloneFunction(const clang::FunctionDecl* FD,
                                   clad::VisitorBase VB, clang::DeclContext* DC,
                                   clang::Sema& m_Sema,
@@ -142,7 +152,7 @@ namespace clad {
     }
 
   public:
-    DerivativeBuilder(clang::Sema& S, plugin::CladPlugin& P);
+    DerivativeBuilder(clang::Sema& S, plugin::CladPlugin& P, DerivedTypesHandler& DTH);
     ~DerivativeBuilder();
     /// Reset the model use for error estimation (if any).
     /// \param[in] estModel The error estimation model, can be either
@@ -172,6 +182,8 @@ namespace clad {
     ///
     OverloadedDeclWithContext Derive(const clang::FunctionDecl* FD,
                                      const DiffRequest& request);
+    void AddDerivedType(llvm::StringRef typeName, clang::QualType qType);
+    clang::QualType GetDerivedType(llvm::StringRef typeName) const;
   };
 
 } // end namespace clad

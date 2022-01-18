@@ -28,7 +28,7 @@ namespace clad {
     unsigned m_IndependentVarIndex = ~0;
     unsigned m_DerivativeOrder = ~0;
     unsigned m_ArgIndex = ~0;
-
+    clang::QualType m_IndependentVarQType;
   public:
     ForwardModeVisitor(DerivativeBuilder& builder);
     ~ForwardModeVisitor();
@@ -80,7 +80,7 @@ namespace clad {
 
     StmtDiff VisitSwitchStmt(const clang::SwitchStmt* SS);
     StmtDiff VisitBreakStmt(const clang::BreakStmt* BS);
-    
+    StmtDiff VisitCXXConstructExpr(const clang::CXXConstructExpr* CE);
   private:
     /// Helper function for differentiating the switch statement body.
     ///
@@ -98,6 +98,11 @@ namespace clad {
     /// \return active switch case label after processing `stmt`
     clang::SwitchCase* DeriveSwitchStmtBodyHelper(const clang::Stmt* stmt,
                                                   clang::SwitchCase* activeSC);
+
+    clang::QualType ComputeDerivedType(clang::QualType yType,
+                                       clang::QualType xType, bool computePointerType = false);
+
+    clang::QualType ComputeDerivedFnType() const;                                       
   };
 } // end namespace clad
 

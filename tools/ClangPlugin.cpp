@@ -6,9 +6,11 @@
 
 #include "ClangPlugin.h"
 
+#include "clad/Differentiator/ASTHelper.h"
+#include "clad/Differentiator/CladUtils.h"
 #include "clad/Differentiator/DerivativeBuilder.h"
 #include "clad/Differentiator/EstimationModel.h"
-
+#include "clad/Differentiator/DerivedTypesHandler.h"
 #include "clad/Differentiator/Version.h"
 
 #include "clang/AST/ASTConsumer.h"
@@ -28,6 +30,9 @@
 #include "llvm/Support/raw_ostream.h"
 
 #include "clad/Differentiator/Compatibility.h"
+
+#include <map>
+#include <string>
 
 using namespace clang;
 
@@ -98,19 +103,40 @@ namespace clad {
     };
 
     CladPlugin::CladPlugin(CompilerInstance& CI, DifferentiationOptions& DO)
-      : m_CI(CI), m_DO(DO), m_HasRuntime(false) { }
+        : m_CI(CI), m_DO(DO), m_HasRuntime(false) {}
     CladPlugin::~CladPlugin() {}
 
     // We cannot use HandleTranslationUnit because codegen already emits code on
     // HandleTopLevelDecl calls and makes updateCall with no effect.
     bool CladPlugin::HandleTopLevelDecl(DeclGroupRef DGR) {
+      // llvm::errs()<<"Print declarations:\n";
+      // for (auto it=DGR.begin(); it != DGR.end(); ++it) {
+      //   auto DC = (*it)->getDeclContext();
+      //   if (auto ND = dyn_cast<NamespaceDecl>(DC)) {
+      //     if (ND->getNameAsString() == "clad") {
+      //       continue;
+      //     } else {
+      //       llvm::errs()<<"ND: "<<ND->getNameAsString()<<"\n";
+      //     }
+      //   }
+      //   // (*it)->dumpColor();
+      //   if (auto ND = dyn_cast<NamedDecl>(*it)) {
+      //     llvm::errs()<<ND->getNameAsString()<<"\n";
+      //   }
+      //   llvm::errs()<<"\n";
+      // }
+      // llvm::errs()<<"END\n\n";
+
       if (!CheckBuiltins())
         return true;
 
       Sema& S = m_CI.getSema();
 
+      if (!m_DTH)
+        m_DTH.reset(new DerivedTypesHandler(m_CI.getASTConsumer(), m_CI.getSema()));
+
       if (!m_DerivativeBuilder)
-        m_DerivativeBuilder.reset(new DerivativeBuilder(m_CI.getSema(), *this));
+        m_DerivativeBuilder.reset(new DerivativeBuilder(m_CI.getSema(), *this, *m_DTH));
 
       // if HandleTopLevelDecl was called through clad we don't need to process
       // it for diff requests
@@ -118,8 +144,9 @@ namespace clad {
         return true;
 
       DiffSchedule requests{};
+      llvm::SmallVector<ClassTemplateSpecializationDecl*, 16> derivedTypeRequests;
       DiffCollector collector(DGR, CladEnabledRange, m_Derivatives, requests,
-                              m_CI.getSema());
+                              derivedTypeRequests, m_CI.getSema());
 
       // FIXME: Remove the PerformPendingInstantiations altogether. We should
       // somehow make the relevant functions referenced.
@@ -131,8 +158,14 @@ namespace clad {
         m_PendingInstantiationsInFlight = false;
       }
 
-      for (DiffRequest& request : requests)
+      for (auto RD : derivedTypeRequests) {
+        ProcessDerivedTypeRequest(RD);
+      }
+
+      for (DiffRequest& request : requests) {
         ProcessDiffRequest(request);
+      }
+      
       return true; // Happiness
     }
 
@@ -141,7 +174,12 @@ namespace clad {
       m_CI.getASTConsumer().HandleTopLevelDecl(DeclGroupRef(D));
       m_HandleTopLevelDeclInternal = false;
     }
-
+    void CladPlugin::ProcessDerivedTypeRequest(ClassTemplateSpecializationDecl* TS) {
+      auto& semaRef = m_CI.getSema();
+      auto yQType = TS->getTemplateArgs().get(0).getAsType();
+      auto xQType = TS->getTemplateArgs().get(1).getAsType();
+      m_DTH->InitialiseDerivedType(yQType, xQType);
+    }
     FunctionDecl* CladPlugin::ProcessDiffRequest(DiffRequest& request) {
       const FunctionDecl* FD = request.Function;
       // set up printing policy
@@ -202,7 +240,10 @@ namespace clad {
                  OverloadedDerivativeDecl) =
             m_DerivativeBuilder->Derive(FD, request);
       }
-
+      if (OverloadedDerivativeDecl) {
+        llvm::errs()<<"Dumping OverloadedDerivativeDecl:\n";
+        OverloadedDerivativeDecl->print(llvm::errs(), Policy);
+      }
       if (DerivativeDecl) {
         auto I = m_Derivatives.insert(DerivativeDecl);
         (void)I;

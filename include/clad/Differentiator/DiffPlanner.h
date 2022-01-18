@@ -2,6 +2,10 @@
 
 #include "llvm/ADT/SmallSet.h"
 
+#include "clad/Differentiator/DerivedTypeEssentials.h"
+
+#include <map>
+#include <string>
 namespace clang {
   class ASTContext;
   class CallExpr;
@@ -82,14 +86,19 @@ namespace clad {
     /// add them for implicit diff.
     ///
     const clang::FunctionDecl* m_TopMostFD = nullptr;
+
+    llvm::SmallVector<clang::ClassTemplateSpecializationDecl*, 16>& m_DerivedTypeRequests;
     clang::Sema& m_Sema;
 
   public:
-    DiffCollector(clang::DeclGroupRef DGR, DiffInterval& Interval,
-                  const DerivativesSet& Derivatives,
-                  DiffSchedule& plans, clang::Sema& S);
+    DiffCollector(
+        clang::DeclGroupRef DGR, DiffInterval& Interval,
+        const DerivativesSet& Derivatives, DiffSchedule& plans,
+        llvm::SmallVector<clang::ClassTemplateSpecializationDecl*, 16>& derivedTypeRequests,
+        clang::Sema& S);
     bool VisitCallExpr(clang::CallExpr* E);
-
+    bool VisitCXXRecordDecl(clang::CXXRecordDecl* RD);
+    bool VisitVarDecl(clang::VarDecl* VD);
   private:
     bool isInInterval(clang::SourceLocation Loc) const;
   };

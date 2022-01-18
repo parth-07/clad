@@ -16,6 +16,7 @@
 #include "clad/Differentiator/StmtClone.h"
 
 #include "clang/AST/ASTContext.h"
+#include "clang/AST/Decl.h"
 #include "clang/AST/TemplateBase.h"
 #include "clang/Sema/Sema.h"
 #include "clang/Sema/Scope.h"
@@ -34,9 +35,9 @@ namespace clad {
 
   std::unique_ptr<ErrorEstimationHandler> errorEstHandler = nullptr;
 
-  DerivativeBuilder::DerivativeBuilder(clang::Sema& S, plugin::CladPlugin& P)
+  DerivativeBuilder::DerivativeBuilder(clang::Sema& S, plugin::CladPlugin& P, DerivedTypesHandler& DTH)
     : m_Sema(S), m_CladPlugin(P), m_Context(S.getASTContext()),
-      m_NodeCloner(new utils::StmtClone(m_Sema, m_Context)),
+      m_NodeCloner(new utils::StmtClone(m_Sema, m_Context)), m_DTH(DTH),
       m_BuiltinDerivativesNSD(nullptr), m_NumericalDiffNSD(nullptr) {}
 
   DerivativeBuilder::~DerivativeBuilder() {}
@@ -180,5 +181,16 @@ namespace clad {
       registerDerivative(OFD, m_Sema);
 
     return result;
+  }
+
+  void DerivativeBuilder::AddDerivedType(llvm::StringRef typeName, QualType qType) {
+    m_DerivedTypes[typeName.str()] = qType;
+  }
+
+  QualType DerivativeBuilder::GetDerivedType(llvm::StringRef typeName) const {
+    auto iter = m_DerivedTypes.find(typeName.str());
+    if (iter != m_DerivedTypes.end())
+      return iter->second;
+    return QualType();
   }
 }// end namespace clad
