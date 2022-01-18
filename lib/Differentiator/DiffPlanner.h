@@ -1,8 +1,8 @@
 #ifndef CLAD_DIFF_PLANNER_H
 #define CLAD_DIFF_PLANNER_H
 
-#include "clad/Differentiator/DiffMode.h"
-#include "clad/Differentiator/ParseDiffArgsTypes.h"
+#include "DiffMode.h"
+#include "ParseDiffArgsTypes.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "llvm/ADT/SmallSet.h"
 

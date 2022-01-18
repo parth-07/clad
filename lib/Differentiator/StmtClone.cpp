@@ -5,13 +5,13 @@
 //
 // File originates from the Scout project (http://scout.zih.tu-dresden.de/)
 
-#include "clad/Differentiator/StmtClone.h"
+#include "StmtClone.h"
 
 #include "clang/Sema/Lookup.h"
 
 #include "llvm/ADT/SmallVector.h"
 
-#include "clad/Differentiator/Compatibility.h"
+#include "Compatibility.h"
 
 using namespace clang;
 

@@ -1,7 +1,7 @@
 #include "clad/Differentiator/ErrorEstimator.h"
-#include "clad/Differentiator/DerivativeBuilder.h"
-#include "clad/Differentiator/DiffPlanner.h"
-#include "clad/Differentiator/ReverseModeVisitor.h"
+#include "DerivativeBuilder.h"
+#include "DiffPlanner.h"
+#include "ReverseModeVisitor.h"
 
 #include "clang/AST/Decl.h"
 

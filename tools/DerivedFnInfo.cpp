@@ -1,6 +1,6 @@
 #include "DerivedFnInfo.h"
 
-#include "clad/Differentiator/DiffPlanner.h"
+#include "DiffPlanner.h"
 
 using namespace clang;
 

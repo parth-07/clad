@@ -1,9 +1,9 @@
-#include "clad/Differentiator/CladUtils.h"
+#include "CladUtils.h"
+#include "Compatibility.h"
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
 #include "clang/Basic/SourceLocation.h"
-#include "clad/Differentiator/Compatibility.h"
 #include "llvm/ADT/SmallVector.h"
 
 using namespace clang;

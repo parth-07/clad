@@ -4,14 +4,14 @@
 // author:  Vassil Vassilev <vvasilev-at-cern.ch>
 //------------------------------------------------------------------------------
 
-#include "clad/Differentiator/ForwardModeVisitor.h"
+#include "ForwardModeVisitor.h"
 
 #include "ConstantFolder.h"
 
-#include "clad/Differentiator/CladUtils.h"
-#include "clad/Differentiator/DiffPlanner.h"
+#include "CladUtils.h"
+#include "DiffPlanner.h"
 #include "clad/Differentiator/ErrorEstimator.h"
-#include "clad/Differentiator/StmtClone.h"
+#include "StmtClone.h"
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Expr.h"
@@ -28,7 +28,7 @@
 
 #include <algorithm>
 
-#include "clad/Differentiator/Compatibility.h"
+#include "Compatibility.h"
 
 using namespace clang;
 

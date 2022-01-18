@@ -4,11 +4,11 @@
 // author:  Vassil Vassilev <vvasilev-at-cern.ch>
 //------------------------------------------------------------------------------
 
-#include "clad/Differentiator/HessianModeVisitor.h"
+#include "HessianModeVisitor.h"
 
-#include "clad/Differentiator/DiffPlanner.h"
+#include "DiffPlanner.h"
 #include "clad/Differentiator/ErrorEstimator.h"
-#include "clad/Differentiator/StmtClone.h"
+#include "StmtClone.h"
 
 #include "clang/AST/Expr.h"
 #include "clang/AST/TemplateBase.h"
@@ -22,7 +22,7 @@
 
 #include <algorithm>
 
-#include "clad/Differentiator/Compatibility.h"
+#include "Compatibility.h"
 
 using namespace clang;
 

@@ -8,9 +8,9 @@
 #define CLAD_CLANG_PLUGIN
 
 #include "DerivedFnInfo.h"
-#include "clad/Differentiator/DerivativeBuilder.h"
-#include "clad/Differentiator/DiffMode.h"
-#include "clad/Differentiator/DiffPlanner.h"
+#include "DerivativeBuilder.h"
+#include "DiffMode.h"
+#include "DiffPlanner.h"
 #include "clad/Differentiator/Version.h"
 
 #include "clang/AST/ASTConsumer.h"

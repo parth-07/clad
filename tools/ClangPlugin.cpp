@@ -6,7 +6,7 @@
 
 #include "ClangPlugin.h"
 
-#include "clad/Differentiator/DerivativeBuilder.h"
+#include "DerivativeBuilder.h"
 #include "clad/Differentiator/EstimationModel.h"
 
 #include "clad/Differentiator/Version.h"
@@ -26,7 +26,7 @@
 #include "llvm/Support/Timer.h"
 #include "llvm/Support/raw_ostream.h"
 
-#include "clad/Differentiator/Compatibility.h"
+#include "Compatibility.h"
 
 #include <algorithm>
 

@@ -1,4 +1,4 @@
-#include "clad/Differentiator/DiffPlanner.h"
+#include "DiffPlanner.h"
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/RecursiveASTVisitor.h"
@@ -10,8 +10,8 @@
 
 #include "llvm/Support/SaveAndRestore.h"
 
-#include "clad/Differentiator/CladUtils.h"
-#include "clad/Differentiator/Compatibility.h"
+#include "CladUtils.h"
+#include "Compatibility.h"
 
 #include <algorithm>
 

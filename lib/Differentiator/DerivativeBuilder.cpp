@@ -4,16 +4,16 @@
 // author:  Vassil Vassilev <vvasilev-at-cern.ch>
 //------------------------------------------------------------------------------
 
-#include "clad/Differentiator/DerivativeBuilder.h"
+#include "DerivativeBuilder.h"
 
 #include "clad/Differentiator/ErrorEstimator.h"
-#include "clad/Differentiator/ForwardModeVisitor.h"
-#include "clad/Differentiator/HessianModeVisitor.h"
-#include "clad/Differentiator/JacobianModeVisitor.h"
-#include "clad/Differentiator/ReverseModeVisitor.h"
+#include "ForwardModeVisitor.h"
+#include "HessianModeVisitor.h"
+#include "JacobianModeVisitor.h"
+#include "ReverseModeVisitor.h"
 
-#include "clad/Differentiator/DiffPlanner.h"
-#include "clad/Differentiator/StmtClone.h"
+#include "DiffPlanner.h"
+#include "StmtClone.h"
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/TemplateBase.h"
@@ -26,7 +26,7 @@
 
 #include <algorithm>
 
-#include "clad/Differentiator/Compatibility.h"
+#include "Compatibility.h"
 
 using namespace clang;
 

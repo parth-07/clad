@@ -2,8 +2,8 @@
 #define CLAD_DERIVED_FN_H
 
 #include "clang/AST/Decl.h"
-#include "clad/Differentiator/DiffMode.h"
-#include "clad/Differentiator/ParseDiffArgsTypes.h"
+#include "DiffMode.h"
+#include "ParseDiffArgsTypes.h"
 
 namespace clad {
   class DiffRequest;

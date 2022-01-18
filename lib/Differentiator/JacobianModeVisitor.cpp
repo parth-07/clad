@@ -4,12 +4,12 @@
 // author:  Vassil Vassilev <vvasilev-at-cern.ch>
 //------------------------------------------------------------------------------
 
-#include "clad/Differentiator/JacobianModeVisitor.h"
+#include "JacobianModeVisitor.h"
 
-#include "clad/Differentiator/DiffPlanner.h"
+#include "DiffPlanner.h"
 #include "clad/Differentiator/ErrorEstimator.h"
-#include "clad/Differentiator/ReverseModeVisitor.h"
-#include "clad/Differentiator/StmtClone.h"
+#include "ReverseModeVisitor.h"
+#include "StmtClone.h"
 
 #include "clang/Sema/Lookup.h"
 #include "clang/Sema/Overload.h"
@@ -22,7 +22,7 @@
 #include <algorithm>
 #include <numeric>
 
-#include "clad/Differentiator/Compatibility.h"
+#include "Compatibility.h"
 
 using namespace clang;
 
