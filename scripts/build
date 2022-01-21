@@ -1,0 +1,127 @@
+#!/usr/bin/env python3
+import subprocess as sp
+import argparse
+from pathlib import Path
+import yaml
+
+def create_parser():
+    parser = argparse.ArgumentParser(
+        description="Script for conveniently building and running files with clad enabled"
+    )
+    parser.add_argument("source", help="source file")
+    parser.add_argument("--output", "-o", help="output file")
+
+    parser.add_argument(
+        "--plugin-arg",
+        nargs="+",
+    )
+
+    parser.add_argument(
+        "--plugin-arg-clad", nargs="+", help="Arguments to pass to the clad plugin"
+    )
+
+    parser.add_argument(
+        "--std",
+        default="c++11",
+        choices=["c++11", "c++14", "c++17"],
+        help="C++ standard to use",
+    )
+
+    parser.add_argument("--run", action="store_true")
+    return parser
+
+def basename_without_extension(file_path):
+    file_name = file_path.name
+    pos = file_name.rfind(".")
+    return file_name[0:pos]
+
+def preprocess_and_validate_args(args):
+    try:
+        args.source = Path(args.source)
+        if not args.source.exists():
+          raise ValueError("Specified source file do not exists")
+
+        args.clang_exec = args.llvm_home/'bin/clang++'
+        if not args.clang_exec.exists():
+          raise ValueError("Clang executable not found.")
+
+        args.clad_so = args.clad_home/'lib/clad.so'
+        if not args.clad_so.exists():
+          raise ValueError("Clad shared object not found.")  
+
+        if not args.output:
+            args.output = basename_without_extension(args.source)
+
+        args.output = Path(args.output)
+
+        if args.std not in ("c++11", "c++14", "c++17"):
+            raise ValueError("Invalid C++ standard specified")
+
+    except ValueError as ve:
+        raise
+
+
+def build_compile_command(args):
+    command = [
+        str(args.clang_exec),
+        "-g",
+        "-Xclang",
+        "-add-plugin",
+        "-Xclang",
+        "clad",
+        "-Xclang",
+        "-load",
+        "-Xclang",
+        str(args.clad_so),
+    ]
+
+    if args.plugin_arg:
+        for arg in args.plugin_arg:
+            command.extend(["-Xclang", "-" + arg])
+
+    if args.plugin_arg_clad:
+        for arg in args.plugin_arg_clad:
+            command.extend(["-Xclang", "-plugin-arg-clad", "-Xclang", "-" + arg])
+
+    command.extend(
+        [
+            "-I" + str(args.clad_home / "include"),
+            "-x",
+            "c++",
+            "-std=" + args.std,
+            str(args.source),
+            "-o",
+            str(args.output),
+        ]
+    )
+    if args.run:
+        out = str(args.output)
+        if str(args.output.parent) == '.':
+          out = './' + out
+        command.extend(["&&", out])
+    return command
+
+
+if __name__ == "__main__":
+    parser = create_parser()
+    args = parser.parse_args()
+
+    DIR = Path(__file__).parent
+
+    with open(DIR/'.cladconfig.yaml') as f:
+      try: 
+        config = yaml.safe_load(f)
+        if 'LLVM_HOME' not in config or 'CLAD_HOME' not in config:
+          raise ValueError(".cladconfig.yaml file is missing one or more required values.")
+        args.clad_home = Path(config['CLAD_HOME'])
+        args.llvm_home = Path(config['LLVM_HOME'])
+      except yaml.YAMLError as e:
+        print(e)
+      except ValueError as ve:
+        print(ve)
+
+    preprocess_and_validate_args(args)
+    command = build_compile_command(args)
+    print("Selected Clang executable: {}".format(str(args.clang_exec)))
+    print("Selected Clad shared object: {}".format(str(args.clad_so)))
+    sp.run(" ".join(command), shell=True)
