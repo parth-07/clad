@@ -18,6 +18,7 @@ namespace clad {
 #include "clang/Sema/Sema.h"
 
 #include <array>
+#include <functional>
 #include <stack>
 #include <unordered_map>
 
@@ -495,6 +496,13 @@ namespace clad {
     void CallExprDiffDiagnostics(llvm::StringRef funcName,
                                  clang::SourceLocation srcLoc,
                                  bool isDerived);
+
+    DeclWithContext BuildFunction(
+        clang::DeclContext* DC, clang::DeclarationNameInfo DNI,
+        clang::QualType T, const clang::FunctionDecl* originalFD,
+        std::function<llvm::ArrayRef<clang::ParmVarDecl*>(clang::FunctionDecl*)>
+            buildFnParams,
+        std::function<clang::Stmt*(clang::FunctionDecl*)> buildFnBody);
 
   public:
     /// Rebuild a sequence of nested namespaces ending with DC.

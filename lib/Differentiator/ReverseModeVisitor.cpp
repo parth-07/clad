@@ -239,7 +239,7 @@ namespace clad {
       args.pop_back();
 
     IdentifierInfo* II = &m_Context.Idents.get(gradientName);
-    DeclarationNameInfo name(II, noLoc);
+    DeclarationNameInfo gradientDNI(II, noLoc);
 
     // A vector of types of the gradient function parameters.
     llvm::SmallVector<QualType, 16> paramTypes;
@@ -293,209 +293,199 @@ namespace clad {
         // Cast to function pointer.
         originalFnType->getExtProtoInfo());
 
-    // Create the gradient function declaration.
-    llvm::SaveAndRestore<DeclContext*> SaveContext(m_Sema.CurContext);
-    llvm::SaveAndRestore<Scope*> SaveScope(m_CurScope);
     DeclContext* DC = const_cast<DeclContext*>(m_Function->getDeclContext());
-    m_Sema.CurContext = DC;
-    DeclWithContext result = m_Builder.cloneFunction(m_Function,
-                                                     *this,
-                                                     DC,
-                                                     m_Sema,
-                                                     m_Context,
-                                                     noLoc,
-                                                     name,
-                                                     gradientFunctionType);
-    FunctionDecl* gradientFD = result.first;
-    m_Derivative = gradientFD;
+    llvm::SmallVector<ParmVarDecl*, 4> params, nonDiffParams, outputParams;
 
-    // Function declaration scope
-    beginScope(Scope::FunctionPrototypeScope | Scope::FunctionDeclarationScope |
-               Scope::DeclScope);
-    m_Sema.PushFunctionScope();
-    m_Sema.PushDeclContext(getCurrentScope(), m_Derivative);
+    auto buildFnParams =
+        [&, this](FunctionDecl* gradientFD) -> llvm::ArrayRef<ParmVarDecl*> {
+      // Create parameter declarations.
+      params.reserve(m_Function->getNumParams() + args.size() + numExtraParam);
+      for (auto* PVD : m_Function->parameters()) {
+        Expr* PVDDefArg =
+            PVD->hasDefaultArg() ? Clone(PVD->getDefaultArg()) : nullptr;
+        auto VD = ParmVarDecl::Create(
+            m_Context, gradientFD, noLoc, noLoc, PVD->getIdentifier(),
+            PVD->getType(), PVD->getTypeSourceInfo(), PVD->getStorageClass(),
+            // Clone default arg if present.
+            PVDDefArg);
+        params.push_back(VD);
 
-    // Create parameter declarations.
-    llvm::SmallVector<ParmVarDecl*, 4> params;
-    llvm::SmallVector<ParmVarDecl*, 4> outputParams;
-    params.reserve(m_Function->getNumParams() + args.size() + numExtraParam);
-    for (auto* PVD : m_Function->parameters()) {
-      Expr* PVDDefArg =
-          PVD->hasDefaultArg() ? Clone(PVD->getDefaultArg()) : nullptr;
-      auto VD =
-          ParmVarDecl::Create(m_Context, gradientFD, noLoc, noLoc,
-                              PVD->getIdentifier(), PVD->getType(),
-                              PVD->getTypeSourceInfo(), PVD->getStorageClass(),
-                              // Clone default arg if present.
-                              PVDDefArg);
-      if (VD->getIdentifier())
-        m_Sema.PushOnScopeChains(VD, getCurrentScope(),
-                                 /*AddToContext=*/false);
-      params.push_back(VD);
+        // Create the diff params in the derived function for independent
+        // variables
+        auto it = std::find(std::begin(args), std::end(args), PVD);
+        if (it != std::end(args)) {
+          *it = VD;
 
-      // Create the diff params in the derived function for independent
-      // variables
-      auto it = std::find(std::begin(args), std::end(args), PVD);
-      if (it != std::end(args)) {
-        *it = VD;
+          if (!isVectorValued) {
+            IdentifierInfo* DVDII =
+                &m_Context.Idents.get("_d_" + PVD->getNameAsString());
 
-        if (!isVectorValued) {
-          IdentifierInfo* DVDII =
-              &m_Context.Idents.get("_d_" + PVD->getNameAsString());
-
-          auto DVD = ParmVarDecl::
-              Create(m_Context, gradientFD, noLoc, noLoc, DVDII,
-                     DerivedOutputParamType,
-                     m_Context.getTrivialTypeSourceInfo(DerivedOutputParamType,
-                                                        noLoc),
-                     PVD->getStorageClass(),
-                     // Clone default arg if present.
-                     /*DefArg=*/nullptr);
-          if (DVD->getIdentifier())
-            m_Sema.PushOnScopeChains(DVD, getCurrentScope(),
-                                     /*AddToContext=*/false);
-          outputParams.push_back(DVD);
-          if (isArrayOrPointerType(PVD->getType())) {
-            m_Variables[*it] = (Expr*)BuildDeclRef(DVD);
-          } else {
-            m_Variables[*it] =
-                BuildOp(UO_Deref, BuildDeclRef(DVD), m_Function->getLocation());
+            auto DVD = ParmVarDecl::Create(m_Context, gradientFD, noLoc, noLoc,
+                                           DVDII, DerivedOutputParamType,
+                                           m_Context.getTrivialTypeSourceInfo(
+                                               DerivedOutputParamType, noLoc),
+                                           PVD->getStorageClass(),
+                                           // Clone default arg if present.
+                                           /*DefArg=*/nullptr);
+            outputParams.push_back(DVD);
+            // if (isArrayOrPointerType(PVD->getType())) {
+            //   m_Variables[*it] = (Expr*)BuildDeclRef(DVD);
+            // } else {
+            //   m_Variables[*it] = BuildOp(UO_Deref, BuildDeclRef(DVD),
+            //                              m_Function->getLocation());
+            // }
           }
         }
       }
-    }
-    auto nonDiffParams = params;
-    if (isVectorValued) {
-      TypeSourceInfo* paramTSI =
-          m_Context.getTrivialTypeSourceInfo(DerivedOutputParamType, noLoc);
-      // The output parameter "_jacobianMatrix".
-      params.push_back(
-          ParmVarDecl::Create(m_Context, gradientFD, noLoc, noLoc,
-                              &m_Context.Idents.get("jacobianMatrix"),
-                              DerivedOutputParamType, paramTSI,
-                              params.front()->getStorageClass(),
-                              /*DefArg=*/nullptr));
-      if (params.back()->getIdentifier())
-        m_Sema.PushOnScopeChains(params.back(), getCurrentScope(),
-                                 /*AddToContext=*/false);
-    } else {
-      params.insert(params.end(), outputParams.begin(), outputParams.end());
-      m_IndependentVars.insert(m_IndependentVars.end(), args.begin(),
-                               args.end());
-    }
-    // If in error estimation mode, create the error parameter
-    if (m_ErrorEstimationEnabled) {
-      // Repeat the above but for the error ouput var "_final_error"
-      ParmVarDecl *errorVarDecl = ParmVarDecl::Create(
-          m_Context, gradientFD, noLoc, noLoc,
-          &m_Context.Idents.get("_final_error"), paramTypes.back(),
-          m_Context.getTrivialTypeSourceInfo(paramTypes.back(), noLoc),
-          params.front()->getStorageClass(),
-          /*DefArg=*/nullptr);
-      params.push_back(errorVarDecl);
-      m_Sema.PushOnScopeChains(params.back(), getCurrentScope(),
-                               /*AddToContext=*/false);
-    }
-    llvm::ArrayRef<ParmVarDecl*> paramsRef =
-        llvm::makeArrayRef(params.data(), params.size());
-    gradientFD->setParams(paramsRef);
-    gradientFD->setBody(nullptr);
-
-    if (isVectorValued) {
-      // Reference to the output parameter.
-      m_Result = BuildDeclRef(params.back());
-      numParams = args.size();
-
-      // Creates the ArraySubscriptExprs for the independent variables
-      size_t idx = 0;
-      for (auto arg : args) {
-        // FIXME: fix when adding array inputs, now we are just skipping all
-        // array/pointer inputs (not treating them as independent variables).
-        if (isArrayOrPointerType(arg->getType())) {
-          if (arg->getName() == "p")
-            m_Variables[arg] = m_Result;
-          idx += 1;
-          continue;
-        }
-        auto size_type = m_Context.getSizeType();
-        unsigned size_type_bits = m_Context.getIntWidth(size_type);
-        // Create the idx literal.
-        auto i =
-            IntegerLiteral::Create(m_Context, llvm::APInt(size_type_bits, idx),
-                                   size_type, noLoc);
-        // Create the jacobianMatrix[idx] expression.
-        auto result_at_i =
-            m_Sema.CreateBuiltinArraySubscriptExpr(m_Result, noLoc, i, noLoc)
-                .get();
-        m_Variables[arg] = result_at_i;
-        idx += 1;
-        m_IndependentVars.push_back(arg);
+      nonDiffParams = params;
+      if (isVectorValued) {
+        TypeSourceInfo* paramTSI =
+            m_Context.getTrivialTypeSourceInfo(DerivedOutputParamType, noLoc);
+        // The output parameter "_jacobianMatrix".
+        params.push_back(ParmVarDecl::Create(
+            m_Context, gradientFD, noLoc, noLoc,
+            &m_Context.Idents.get("jacobianMatrix"), DerivedOutputParamType,
+            paramTSI, params.front()->getStorageClass(),
+            /*DefArg=*/nullptr));
+      } else {
+        params.insert(params.end(), outputParams.begin(), outputParams.end());
+        m_IndependentVars.insert(m_IndependentVars.end(), args.begin(),
+                                 args.end());
       }
-    }
-    // Reference to the final error statement
-    if (m_ErrorEstimationEnabled)
-      errorEstHandler->SetFinalErrorExpr(BuildDeclRef(params.back()));
-    // Function body scope.
-    beginScope(Scope::FnScope | Scope::DeclScope);
-    m_DerivativeFnScope = getCurrentScope();
-    beginBlock();
-    // create derived variables for parameters which are not part of
-    // independent variables (args).
-    for (ParmVarDecl* param : nonDiffParams) {
-      // derived variables are already created for independent variables.
-      if (m_Variables.count(param))
-        continue;
-      // in vector mode last non diff parameter is output parameter.
-      if (isVectorValued && param == nonDiffParams.back())
-        continue;
-      auto VDDerivedType = param->getType();
-      // We cannot initialize derived variable for pointer types because
-      // we do not know the correct size.
-      if (isArrayOrPointerType(VDDerivedType))
-        continue;
-      auto VDDerived =
-          BuildVarDecl(VDDerivedType, "_d_" + param->getNameAsString(),
-                       getZeroInit(VDDerivedType));
-      m_Variables[param] = BuildDeclRef(VDDerived);
-      addToBlock(BuildDeclStmt(VDDerived), m_Globals);
-    }
-    // Start the visitation process which outputs the statements in the current
-    // block.
-    StmtDiff BodyDiff = Visit(FD->getBody());
-    Stmt* Forward = BodyDiff.getStmt();
-    Stmt* Reverse = BodyDiff.getStmt_dx();
-    // Create the body of the function.
-    // Firstly, all "global" Stmts are put into fn's body.
-    for (Stmt* S : m_Globals)
-      addToCurrentBlock(S, forward);
-    // Forward pass.
-    if (auto CS = dyn_cast<CompoundStmt>(Forward))
-      for (Stmt* S : CS->body())
-        addToCurrentBlock(S, forward);
-    else
-      addToCurrentBlock(Forward, forward);
-    // Reverse pass.
-    if (auto RCS = dyn_cast<CompoundStmt>(Reverse))
-      for (Stmt* S : RCS->body())
-        addToCurrentBlock(S, forward);
-    else
-      addToCurrentBlock(Reverse, forward);
+      // If in error estimation mode, create the error parameter
+      if (m_ErrorEstimationEnabled) {
+        // Repeat the above but for the error ouput var "_final_error"
+        ParmVarDecl* errorVarDecl = ParmVarDecl::Create(
+            m_Context, gradientFD, noLoc, noLoc,
+            &m_Context.Idents.get("_final_error"), paramTypes.back(),
+            m_Context.getTrivialTypeSourceInfo(paramTypes.back(), noLoc),
+            params.front()->getStorageClass(),
+            /*DefArg=*/nullptr);
+        params.push_back(errorVarDecl);
+      }
+      llvm::ArrayRef<ParmVarDecl*> paramsRef =
+          llvm::makeArrayRef(params.data(), params.size());
+      return paramsRef;
+    };
 
-    // Since 'return' is not an assignment, add its error to _final_error
-    // given it is not a DeclRefExpr.
-    if (m_ErrorEstimationEnabled)
-      errorEstHandler->EmitFinalErrorStmts(params, m_Function->getNumParams());
-    Stmt* gradientBody = endBlock();
-    m_Derivative->setBody(gradientBody);
-    endScope(); // Function body scope
-    m_Sema.PopFunctionScopeInfo();
-    m_Sema.PopDeclContext();
-    endScope(); // Function decl scope
+    auto buildFnBody = [&, this](FunctionDecl* gradientFD) {
+      // return m_Sema.ActOnReturnStmt(
+      //     noLoc,
+      //     nullptr,
+      //     getCurrentScope()).get();
+      if (!isVectorValued) {
+        for (unsigned i = 0, counter = 0; i < params.size(); ++i) {
+          auto it = std::find(std::begin(args), std::end(args), params[i]);
+          if (it != std::end(args)) {
+            if (isArrayOrPointerType(params[i]->getType())) {
+              m_Variables[params[i]] =
+                  static_cast<Expr*>(BuildDeclRef(outputParams[counter]));
+            } else {
+              m_Variables[params[i]] =
+                  BuildOp(UO_Deref, BuildDeclRef(outputParams[counter]),
+                          m_Function->getLocation());
+            }
+            ++counter;
+          }
+        }
+      }
+      m_Derivative = gradientFD;
+      if (isVectorValued) {
+        // Reference to the output parameter.
+        m_Result = BuildDeclRef(params.back());
+        numParams = args.size();
+
+        // Creates the ArraySubscriptExprs for the independent variables
+        size_t idx = 0;
+        for (auto arg : args) {
+          // FIXME: fix when adding array inputs, now we are just skipping all
+          // array/pointer inputs (not treating them as independent variables).
+          if (isArrayOrPointerType(arg->getType())) {
+            if (arg->getName() == "p")
+              m_Variables[arg] = m_Result;
+            idx += 1;
+            continue;
+          }
+          auto size_type = m_Context.getSizeType();
+          unsigned size_type_bits = m_Context.getIntWidth(size_type);
+          // Create the idx literal.
+          auto i = IntegerLiteral::Create(
+              m_Context, llvm::APInt(size_type_bits, idx), size_type, noLoc);
+          // Create the jacobianMatrix[idx] expression.
+          auto result_at_i =
+              m_Sema.CreateBuiltinArraySubscriptExpr(m_Result, noLoc, i, noLoc)
+                  .get();
+          m_Variables[arg] = result_at_i;
+          idx += 1;
+          m_IndependentVars.push_back(arg);
+        }
+      }
+      // Reference to the final error statement
+      if (m_ErrorEstimationEnabled)
+        errorEstHandler->SetFinalErrorExpr(BuildDeclRef(params.back()));
+      // Function body scope.
+      beginScope(Scope::FnScope | Scope::DeclScope);
+      m_DerivativeFnScope = getCurrentScope();
+      beginBlock();
+      // create derived variables for parameters which are not part of
+      // independent variables (args).
+      for (ParmVarDecl* param : nonDiffParams) {
+        // derived variables are already created for independent variables.
+        if (m_Variables.count(param))
+          continue;
+        // in vector mode last non diff parameter is output parameter.
+        if (isVectorValued && param == nonDiffParams.back())
+          continue;
+        auto VDDerivedType = param->getType();
+        // We cannot initialize derived variable for pointer types because
+        // we do not know the correct size.
+        if (isArrayOrPointerType(VDDerivedType))
+          continue;
+        auto VDDerived =
+            BuildVarDecl(VDDerivedType, "_d_" + param->getNameAsString(),
+                         getZeroInit(VDDerivedType));
+        m_Variables[param] = BuildDeclRef(VDDerived);
+        addToBlock(BuildDeclStmt(VDDerived), m_Globals);
+      }
+      // Start the visitation process which outputs the statements in the
+      // current block.
+      StmtDiff BodyDiff = Visit(FD->getBody());
+      Stmt* Forward = BodyDiff.getStmt();
+      Stmt* Reverse = BodyDiff.getStmt_dx();
+      // Create the body of the function.
+      // Firstly, all "global" Stmts are put into fn's body.
+      for (Stmt* S : m_Globals)
+        addToCurrentBlock(S, forward);
+      // Forward pass.
+      if (auto CS = dyn_cast<CompoundStmt>(Forward))
+        for (Stmt* S : CS->body())
+          addToCurrentBlock(S, forward);
+      else
+        addToCurrentBlock(Forward, forward);
+      // Reverse pass.
+      if (auto RCS = dyn_cast<CompoundStmt>(Reverse))
+        for (Stmt* S : RCS->body())
+          addToCurrentBlock(S, forward);
+      else
+        addToCurrentBlock(Reverse, forward);
+
+      // Since 'return' is not an assignment, add its error to _final_error
+      // given it is not a DeclRefExpr.
+      if (m_ErrorEstimationEnabled)
+        errorEstHandler->EmitFinalErrorStmts(params,
+                                             m_Function->getNumParams());
+      Stmt* gradientBody = endBlock();
+      return gradientBody;
+    };
+
+    DeclWithContext result =
+        BuildFunction(DC, gradientDNI, gradientFunctionType, m_Function,
+                      buildFnParams, buildFnBody);
 
     FunctionDecl* gradientOverloadFD = nullptr;
     if (shouldCreateOverload) {
       gradientOverloadFD =
-          CreateGradientOverload(paramTypes, params, name, gradientFD);
+          CreateGradientOverload(paramTypes, params, gradientDNI, result.first);
     }
 
     return OverloadedDeclWithContext{result.first, result.second,
@@ -938,11 +928,14 @@ namespace clad {
       addToCurrentBlock(S, forward);
     // Since returned expression may have some side effects affecting reverse
     // computation (e.g. assignments), we also have to emit it to execute it.
-    Expr* retDeclRefExpr = StoreAndRef(ExprDiff.getExpr(), forward,
-                                       utils::ComputeEffectiveFnName(
-                                           m_Function) +
-                                           "_return",
-                                       /*forceDeclCreation=*/true);
+    Expr* retDeclRefExpr = GlobalStoreAndRef(
+        ExprDiff.getExpr(),
+        utils::ComputeEffectiveFnName(m_Function) + "_return", /*force=*/true).getExpr();
+    // Expr* retDeclRefExpr = StoreAndRef(ExprDiff.getExpr(), forward,
+    //                                    utils::ComputeEffectiveFnName(
+    //                                        m_Function) +
+    //                                        "_return",
+    //                                    /*forceDeclCreation=*/true);
     // If the return expression is not a DeclRefExpression and is of type
     // float, we should add it to the error estimate because returns are
     // similiar to implicit assigns.
@@ -1178,7 +1171,11 @@ namespace clad {
           cast<VarDecl>(cast<DeclRefExpr>(dArg)->getDecl()));
       // Visit using uninitialized reference.
       StmtDiff ArgDiff = Visit(Arg, dArg);
-
+      // llvm::errs()<<"Arg Info:\n";
+      // Arg->dumpColor();
+      // llvm::errs()<<"\n";
+      // ArgDiff.getExpr()->dumpColor();
+      // llvm::errs()<<"\n\n";
       // Save cloned arg in a "global" variable, so that it is accessible from
       // the reverse pass.
       CallArgDx.push_back(ArgDiff.getExpr_dx());
@@ -1186,7 +1183,12 @@ namespace clad {
       CallArgs.push_back(ArgDiff.getExpr());
       DerivedCallArgs.push_back(ArgDiff.getExpr_dx());
     }
-
+    // llvm::errs()<<"Dumping callArgs:\n";
+    // for (auto i=0; i<CallArgs.size(); ++i) {
+    //   CallArgs[i]->dumpColor();
+    //   llvm::errs()<<"\n";
+    // }
+    // llvm::errs()<<"\n\n\n";
     VarDecl* ResultDecl = nullptr;
     Expr* Result = nullptr;
     Expr* ResultExpr = nullptr;

@@ -26,7 +26,7 @@
 #include <numeric>
 
 #include "clad/Differentiator/Compatibility.h"
-
+#include "llvm/Support/SaveAndRestore.h"
 using namespace clang;
 
 namespace clad {
@@ -674,5 +674,36 @@ namespace clad {
                                /*AddToContext=*/false);
     }
     return newPVD;
+  }
+
+  DeclWithContext VisitorBase::BuildFunction(
+      clang::DeclContext* DC, clang::DeclarationNameInfo DNI, clang::QualType T,
+      const FunctionDecl* originalFD,
+      std::function<llvm::ArrayRef<clang::ParmVarDecl*>(clang::FunctionDecl*)>
+          buildFnParams,
+      std::function<clang::Stmt*(clang::FunctionDecl*)> buildFnBody) {
+    llvm::SaveAndRestore<DeclContext*> saveContext(m_Sema.CurContext);
+    llvm::SaveAndRestore<Scope*> saveScope(m_CurScope);
+    beginScope(Scope::FunctionPrototypeScope | Scope::FunctionDeclarationScope |
+               Scope::DeclScope);
+    m_Sema.CurContext = DC;
+
+    Sema::SkipBodyInfo SBI;
+
+    DeclWithContext fnCloneResult = m_Builder.cloneFunction(
+        originalFD, *this, DC, m_Sema, m_Context, noLoc, DNI, T);
+    FunctionDecl* FD = fnCloneResult.first;
+    auto fnParams = buildFnParams(FD);
+    FD->setParams(fnParams);
+    beginScope(Scope::FnScope | Scope::DeclScope | Scope::CompoundStmtScope);
+
+    m_Sema.ActOnStartOfFunctionDef(getCurrentScope(), FD, &SBI);
+
+    Stmt* body = buildFnBody(FD);
+
+    endScope();
+    endScope();
+    m_Sema.ActOnFinishFunctionBody(FD, body);
+    return fnCloneResult;
   }
 } // end namespace clad
