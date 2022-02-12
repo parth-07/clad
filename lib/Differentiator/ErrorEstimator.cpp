@@ -149,6 +149,11 @@ void ErrorEstimationHandler::EmitNestedFunctionParamError(
   for (size_t i = 0; i < numArgs; i++) {
     if (!fnDecl->getParamDecl(0)->getType()->isLValueReferenceType())
       continue;
+    // FIXME: Argument passed by reference do not have any corresponding
+    // `ArgResultDecl`. Handle arguments passed by reference in error
+    // estimation.
+    if (utils::IsReferenceOrPointerType(fnDecl->getParamDecl(i)->getType()))
+      continue;
     Expr* errorExpr = m_EstModel->AssignError(
         {CallArgs[i], m_RMV->BuildDeclRef(ArgResultDecls[i])});
     Expr* errorStmt = m_RMV->BuildOp(BO_AddAssign, m_FinalError, errorExpr);
