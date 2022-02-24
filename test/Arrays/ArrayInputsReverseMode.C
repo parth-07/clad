@@ -132,33 +132,33 @@ float func2(float* a) {
   return sum;
 }
 
-// CHECK: void func2_grad(float *a, clad::array_ref<float> _d_a) {
-// CHECK-NEXT:     float _d_sum = 0;
-// CHECK-NEXT:     unsigned long _t0;
-// CHECK-NEXT:     int _d_i = 0;
-// CHECK-NEXT:     clad::tape<int> _t1 = {};
-// CHECK-NEXT:     clad::tape<float> _t3 = {};
-// CHECK-NEXT:     float sum = 0;
-// CHECK-NEXT:     _t0 = 0;
-// CHECK-NEXT:     for (int i = 0; i < 3; i++) {
-// CHECK-NEXT:         _t0++;
-// CHECK-NEXT:         sum += helper(clad::push(_t3, a[clad::push(_t1, i)]));
-// CHECK-NEXT:     }
-// CHECK-NEXT:     float func2_return = sum;
-// CHECK-NEXT:     goto _label0;
-// CHECK-NEXT:   _label0:
-// CHECK-NEXT:     _d_sum += 1;
-// CHECK-NEXT:     for (; _t0; _t0--) {
-// CHECK-NEXT:         float _r_d0 = _d_sum;
-// CHECK-NEXT:         _d_sum += _r_d0;
-// CHECK-NEXT:         float _grad0 = 0.F;
-// CHECK-NEXT:         helper_pullback(clad::pop(_t3), _r_d0, &_grad0);
-// CHECK-NEXT:         float _r0 = _grad0;
-// CHECK-NEXT:         int _t2 = clad::pop(_t1);
-// CHECK-NEXT:         _d_a[_t2] += _r0;
-// CHECK-NEXT:         _d_sum -= _r_d0;
-// CHECK-NEXT:     }
-// CHECK-NEXT: }
+//CHECK: void func2_grad(float *a, clad::array_ref<float> _d_a) {
+//CHECK-NEXT:     float _d_sum = 0;
+//CHECK-NEXT:     unsigned long _t0;
+//CHECK-NEXT:     int _d_i = 0;
+//CHECK-NEXT:     clad::tape<int> _t1 = {};
+//CHECK-NEXT:     clad::tape<float> _t3 = {};
+//CHECK-NEXT:     float sum = 0;
+//CHECK-NEXT:     _t0 = 0;
+//CHECK-NEXT:     for (int i = 0; i < 3; i++) {
+//CHECK-NEXT:         _t0++;
+//CHECK-NEXT:         sum += helper(clad::push(_t3, a[clad::push(_t1, i)]));
+//CHECK-NEXT:     }
+//CHECK-NEXT:     float func2_return = sum;
+//CHECK-NEXT:     goto _label0;
+//CHECK-NEXT:   _label0:
+//CHECK-NEXT:     _d_sum += 1;
+//CHECK-NEXT:     for (; _t0; _t0--) {
+//CHECK-NEXT:         float _r_d0 = _d_sum;
+//CHECK-NEXT:         _d_sum += _r_d0;
+//CHECK-NEXT:         float _grad0 = 0.F;
+//CHECK-NEXT:         helper_pullback(clad::pop(_t3), _r_d0, &_grad0);
+//CHECK-NEXT:         float _r0 = _grad0;
+//CHECK-NEXT:         int _t2 = clad::pop(_t1);
+//CHECK-NEXT:         _d_a[_t2] += _r0;
+//CHECK-NEXT:         _d_sum -= _r_d0;
+//CHECK-NEXT:     }
+//CHECK-NEXT: }
 
 float func3(float* a, float* b) {
   float sum = 0;

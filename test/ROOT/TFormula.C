@@ -175,19 +175,19 @@ void TFormula_example_grad_1(Double_t* x, Double_t* p, Double_t* _d_p);
 //CHECK-NEXT:           _d__t0 += _r1;
 //CHECK-NEXT:           double _r2 = 1 * _t1;
 //CHECK-NEXT:           double _r3 = _t2 * 1;
-//CHECK-NEXT:           Double_t _grad0 = 0.;
-//CHECK-NEXT:           Double_t _grad1 = 0.;
-//CHECK-NEXT:           Exp_pushforward_pullback(_t3, -1, 1, &_grad0, &_grad1);
-//CHECK-NEXT:           Double_t _r4 = _grad0;
-//CHECK-NEXT:           _d_p[0] += -_r4;
-//CHECK-NEXT:           Double_t _r5 = _grad1;
-//CHECK-NEXT:           Double_t _grad2 = 0.;
-//CHECK-NEXT:           Double_t _grad3 = 0.;
-//CHECK-NEXT:           Abs_pushforward_pullback(_t4, 0, 1, &_grad2, &_grad3);
-//CHECK-NEXT:           Double_t _r6 = _grad2;
-//CHECK-NEXT:           _d_p[1] += _r6;
-//CHECK-NEXT:           Double_t _r7 = _grad3;
-//CHECK-NEXT:       }
+// CHECK-NEXT:          Double_t _grad0 = 0.;
+// CHECK-NEXT:          Double_t _grad1 = 0.;
+// CHECK-NEXT:          Exp_pushforward_pullback(_t3, -1, 1, &_grad0, &_grad1);
+// CHECK-NEXT:          Double_t _r4 = _grad0;
+// CHECK-NEXT:          _d_p[0] += -_r4;
+// CHECK-NEXT:          Double_t _r5 = _grad1;
+// CHECK-NEXT:          Double_t _grad2 = 0.;
+// CHECK-NEXT:          Double_t _grad3 = 0.;
+// CHECK-NEXT:          Abs_pushforward_pullback(_t4, 0, 1, &_grad2, &_grad3);
+// CHECK-NEXT:          Double_t _r6 = _grad2;
+// CHECK-NEXT:          _d_p[1] += _r6;
+// CHECK-NEXT:          Double_t _r7 = _grad3;
+// CHECK-NEXT:      }
 //CHECK-NEXT:       {
 //CHECK-NEXT:           _d_p[0] += _d__t0;
 //CHECK-NEXT:           _d_p[1] += _d__t0;
@@ -222,19 +222,19 @@ void TFormula_example_grad_1(Double_t* x, Double_t* p, Double_t* _d_p);
 //CHECK-NEXT:           _d__t0 += _r1;
 //CHECK-NEXT:           double _r2 = 1 * _t1;
 //CHECK-NEXT:           double _r3 = _t2 * 1;
-//CHECK-NEXT:           Double_t _grad0 = 0.;
-//CHECK-NEXT:           Double_t _grad1 = 0.;
-//CHECK-NEXT:           Exp_pushforward_pullback(_t3, -0, 1, &_grad0, &_grad1);
-//CHECK-NEXT:           Double_t _r4 = _grad0;
-//CHECK-NEXT:           _d_p[0] += -_r4;
-//CHECK-NEXT:           Double_t _r5 = _grad1;
-//CHECK-NEXT:           Double_t _grad2 = 0.;
-//CHECK-NEXT:           Double_t _grad3 = 0.;
-//CHECK-NEXT:           Abs_pushforward_pullback(_t4, 1, 1, &_grad2, &_grad3);
-//CHECK-NEXT:           Double_t _r6 = _grad2;
-//CHECK-NEXT:           _d_p[1] += _r6;
-//CHECK-NEXT:           Double_t _r7 = _grad3;
-//CHECK-NEXT:       }
+// CHECK-NEXT:          Double_t _grad0 = 0.;
+// CHECK-NEXT:          Double_t _grad1 = 0.;
+// CHECK-NEXT:          Exp_pushforward_pullback(_t3, -0, 1, &_grad0, &_grad1);
+// CHECK-NEXT:          Double_t _r4 = _grad0;
+// CHECK-NEXT:          _d_p[0] += -_r4;
+// CHECK-NEXT:          Double_t _r5 = _grad1;
+// CHECK-NEXT:          Double_t _grad2 = 0.;
+// CHECK-NEXT:          Double_t _grad3 = 0.;
+// CHECK-NEXT:          Abs_pushforward_pullback(_t4, 1, 1, &_grad2, &_grad3);
+// CHECK-NEXT:          Double_t _r6 = _grad2;
+// CHECK-NEXT:          _d_p[1] += _r6;
+// CHECK-NEXT:          Double_t _r7 = _grad3;
+// CHECK-NEXT:      }
 //CHECK-NEXT:       {
 //CHECK-NEXT:           _d_p[0] += _d__t0;
 //CHECK-NEXT:           _d_p[1] += _d__t0;
@@ -269,19 +269,19 @@ void TFormula_example_grad_1(Double_t* x, Double_t* p, Double_t* _d_p);
 //CHECK-NEXT:           _d__t0 += _r1;
 //CHECK-NEXT:           double _r2 = 1 * _t1;
 //CHECK-NEXT:           double _r3 = _t2 * 1;
-//CHECK-NEXT:           Double_t _grad0 = 0.;
-//CHECK-NEXT:           Double_t _grad1 = 0.;
-//CHECK-NEXT:           Exp_pushforward_pullback(_t3, -0, 1, &_grad0, &_grad1);
-//CHECK-NEXT:           Double_t _r4 = _grad0;
-//CHECK-NEXT:           _d_p[0] += -_r4;
-//CHECK-NEXT:           Double_t _r5 = _grad1;
-//CHECK-NEXT:           Double_t _grad2 = 0.;
-//CHECK-NEXT:           Double_t _grad3 = 0.;
-//CHECK-NEXT:           Abs_pushforward_pullback(_t4, 0, 1, &_grad2, &_grad3);
-//CHECK-NEXT:           Double_t _r6 = _grad2;
-//CHECK-NEXT:           _d_p[1] += _r6;
-//CHECK-NEXT:           Double_t _r7 = _grad3;
-//CHECK-NEXT:       }
+// CHECK-NEXT:          Double_t _grad0 = 0.;
+// CHECK-NEXT:          Double_t _grad1 = 0.;
+// CHECK-NEXT:          Exp_pushforward_pullback(_t3, -0, 1, &_grad0, &_grad1);
+// CHECK-NEXT:          Double_t _r4 = _grad0;
+// CHECK-NEXT:          _d_p[0] += -_r4;
+// CHECK-NEXT:          Double_t _r5 = _grad1;
+// CHECK-NEXT:          Double_t _grad2 = 0.;
+// CHECK-NEXT:          Double_t _grad3 = 0.;
+// CHECK-NEXT:          Abs_pushforward_pullback(_t4, 0, 1, &_grad2, &_grad3);
+// CHECK-NEXT:          Double_t _r6 = _grad2;
+// CHECK-NEXT:          _d_p[1] += _r6;
+// CHECK-NEXT:          Double_t _r7 = _grad3;
+// CHECK-NEXT:      }
 //CHECK-NEXT:       {
 //CHECK-NEXT:           _d_p[0] += _d__t0;
 //CHECK-NEXT:           _d_p[1] += _d__t0;

@@ -309,28 +309,28 @@ float f5(float x) {
 // CHECK-NEXT: }
 
 // CHECK: void f5_darg0_grad(float x, clad::array_ref<float> _d_x) {
-// CHECK-NEXT:     float _d__d_x = 0;
-// CHECK-NEXT:     float _t0;
-// CHECK-NEXT:     float _t1;
-// CHECK-NEXT:     float _d_x0 = 1;
-// CHECK-NEXT:     _t0 = x;
-// CHECK-NEXT:     _t1 = _d_x0;
-// CHECK-NEXT:     decltype(::std::pow(float(), float())) f5_darg0_return = clad::custom_derivatives{{(::std)?}}::pow_pushforward(2.F, _t0, 0.F, _t1);
-// CHECK-NEXT:     goto _label0;
+// CHECK-NEXT:   float _d__d_x = 0;
+// CHECK-NEXT:   float _t0;
+// CHECK-NEXT:   float _t1;
+// CHECK-NEXT:   float _d_x0 = 1;
+// CHECK-NEXT:   _t0 = x;
+// CHECK-NEXT:   _t1 = _d_x0;
+// CHECK-NEXT:   decltype(::std::pow(float(), float())) f5_darg0_return = clad::custom_derivatives{{(::std)?}}::pow_pushforward(2.F, _t0, 0.F, _t1);
+// CHECK-NEXT:   goto _label0;
 // CHECK-NEXT:   _label0:
-// CHECK-NEXT:     {
-// CHECK-NEXT:         decltype(::std::pow(float(), float())) _grad0 = 0.F;
-// CHECK-NEXT:         decltype(::std::pow(float(), float())) _grad1 = 0.F;
-// CHECK-NEXT:         decltype(::std::pow(float(), float())) _grad2 = 0.F;
-// CHECK-NEXT:         decltype(::std::pow(float(), float())) _grad3 = 0.F;
-// CHECK-NEXT:         pow_pushforward_pullback(2.F, _t0, 0.F, _t1, 1, &_grad0, &_grad1, &_grad2, &_grad3);
-// CHECK-NEXT:         decltype(::std::pow(float(), float())) _r0 = _grad0;
-// CHECK-NEXT:         decltype(::std::pow(float(), float())) _r1 = _grad1;
-// CHECK-NEXT:         * _d_x += _r1;
-// CHECK-NEXT:         decltype(::std::pow(float(), float())) _r2 = _grad2;
-// CHECK-NEXT:         decltype(::std::pow(float(), float())) _r3 = _grad3;
-// CHECK-NEXT:         _d__d_x += _r3;
-// CHECK-NEXT:     }
+// CHECK-NEXT:   {
+// CHECK-NEXT:       decltype(::std::pow(float(), float())) _grad0 = 0.F;
+// CHECK-NEXT:       decltype(::std::pow(float(), float())) _grad1 = 0.F;
+// CHECK-NEXT:       decltype(::std::pow(float(), float())) _grad2 = 0.F;
+// CHECK-NEXT:       decltype(::std::pow(float(), float())) _grad3 = 0.F;
+// CHECK-NEXT:       pow_pushforward_pullback(2.F, _t0, 0.F, _t1, 1, &_grad0, &_grad1, &_grad2, &_grad3);
+// CHECK-NEXT:       decltype(::std::pow(float(), float())) _r0 = _grad0;
+// CHECK-NEXT:       decltype(::std::pow(float(), float())) _r1 = _grad1;
+// CHECK-NEXT:       * _d_x += _r1;
+// CHECK-NEXT:       decltype(::std::pow(float(), float())) _r2 = _grad2;
+// CHECK-NEXT:       decltype(::std::pow(float(), float())) _r3 = _grad3;
+// CHECK-NEXT:       _d__d_x += _r3;
+// CHECK-NEXT:   }
 // CHECK-NEXT: }
 
 // CHECK: void f5_hessian(float x, clad::array_ref<float> hessianMatrix) {

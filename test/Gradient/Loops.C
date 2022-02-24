@@ -218,21 +218,21 @@ double f_sum(double *p, int n) {
 //CHECK-NEXT: }
 
 double sq(double x) { return x * x; }
-// CHECK: void sq_pullback(double x, double _d_y, clad::array_ref<double> _d_x) {
-// CHECK-NEXT:     double _t0;
-// CHECK-NEXT:     double _t1;
-// CHECK-NEXT:     _t1 = x;
-// CHECK-NEXT:     _t0 = x;
-// CHECK-NEXT:     double sq_return = _t1 * _t0;
-// CHECK-NEXT:     goto _label0;
-// CHECK-NEXT:   _label0:
-// CHECK-NEXT:     {
-// CHECK-NEXT:         double _r0 = _d_y * _t0;
-// CHECK-NEXT:         * _d_x += _r0;
-// CHECK-NEXT:         double _r1 = _t1 * _d_y;
-// CHECK-NEXT:         * _d_x += _r1;
-// CHECK-NEXT:     }
-// CHECK-NEXT: }
+//CHECK:   void sq_pullback(double x, double _d_y, clad::array_ref<double> _d_x) {
+//CHECK-NEXT:       double _t0;
+//CHECK-NEXT:       double _t1;
+//CHECK-NEXT:       _t1 = x;
+//CHECK-NEXT:       _t0 = x;
+//CHECK-NEXT:       double sq_return = _t1 * _t0;
+//CHECK-NEXT:       goto _label0;
+//CHECK-NEXT:     _label0:
+//CHECK-NEXT:       {
+//CHECK-NEXT:           double _r0 = _d_y * _t0;
+//CHECK-NEXT:           * _d_x += _r0;
+//CHECK-NEXT:           double _r1 = _t1 * _d_y;
+//CHECK-NEXT:           * _d_x += _r1;
+//CHECK-NEXT:       }
+//CHECK-NEXT:   }
 
 double f_sum_squares(double *p, int n) {
   double s = 0;
