@@ -89,9 +89,13 @@ namespace clad {
           DC2 = DC2->getParent();  
           continue;
         }
+        // Silently return nullptr if DC2 contains any CXXRecord declaration
+        // context. 
+        if (isa<CXXRecordDecl>(DC2))
+          return nullptr;
         assert(isa<NamespaceDecl>(DC2) &&
-               "DC2 should only contain namespace (and "
-               "translation unit) declaration.");
+               "DC2 should only consists of namespace, CXXRecord and "
+               "translation unit declaration context.");
         contexts.push_back(DC2);
         DC2 = DC2->getParent();
       }
@@ -164,6 +168,8 @@ namespace clad {
     }
 
     bool HasAnyReferenceOrPointerArgument(const clang::FunctionDecl* FD) {
+      if (IsInstanceMethod(FD))
+        return true;
       for (auto PVD : FD->parameters()) {
         if (PVD->getType()->isReferenceType() ||
             isArrayOrPointerType(PVD->getType()))
@@ -225,9 +231,10 @@ namespace clad {
     clang::ParmVarDecl*
     BuildParmVarDecl(clang::Sema& semaRef, clang::DeclContext* DC,
                      clang::IdentifierInfo* II, clang::QualType T,
-                     clang::StorageClass SC, clang::Expr* defArg) {
+                     clang::StorageClass SC, clang::Expr* defArg, clang::TypeSourceInfo* TSI) {
       ASTContext& C = semaRef.getASTContext();
-      TypeSourceInfo* TSI = C.getTrivialTypeSourceInfo(T, noLoc);
+      if (!TSI)
+        TSI = C.getTrivialTypeSourceInfo(T, noLoc);
       ParmVarDecl* PVD =
           ParmVarDecl::Create(C, DC, noLoc, noLoc, II, T, TSI, SC, defArg);
       return PVD;
@@ -235,10 +242,14 @@ namespace clad {
 
     clang::QualType GetValueType(clang::QualType T) {
       QualType valueType = T;
-      if (isArrayOrPointerType(T)) {
+      if (T->isPointerType())
+        valueType = T->getPointeeType();
+      else if (T->isReferenceType()) 
+        valueType = T.getNonReferenceType();
+      // FIXME: `QualType::getPointeeOrArrayElementType` loses type qualifiers.
+      else if (T->isArrayType()) 
         valueType =
             T->getPointeeOrArrayElementType()->getCanonicalTypeInternal();
-      }
       return valueType;
     }
 
@@ -252,6 +263,13 @@ namespace clad {
           C.getSizeType(), C, CAT->getSize().getZExtValue());
       llvm::SmallVector<Expr*, 2> args = {constArrE, sizeE};
       return semaRef.ActOnInitList(noLoc, args, noLoc).get();
+    }
+
+    bool IsInstanceMethod(const clang::FunctionDecl* FD) {
+      if (auto MD = dyn_cast<CXXMethodDecl>(FD)) {
+        return MD->isInstance();
+      }
+      return false;
     }
   } // namespace utils
 } // namespace clad

@@ -185,15 +185,20 @@ namespace clad {
     ///
     /// This function is just a convenient routine that internally calls
     /// `clang::ParmVarDecl::Create`.
+    ///
+    /// \note `TSI` parameter only needs to be provided if the type should be
+    /// represented exactly how it was represented in the source code.
     clang::ParmVarDecl*
     BuildParmVarDecl(clang::Sema& semaRef, clang::DeclContext* DC,
                      clang::IdentifierInfo* II, clang::QualType T,
                      clang::StorageClass SC = clang::StorageClass::SC_None,
-                     clang::Expr* defArg = nullptr);
+                     clang::Expr* defArg = nullptr,
+                     clang::TypeSourceInfo* TSI = nullptr);
 
     /// If `T` represents an array or a pointer type then returns the
-    /// corresponding array element or the pointee type. Otherwise, if `T` is
-    /// neither an array nor a pointer type, then simply returns `T`.
+    /// corresponding array element or the pointee type. If `T` is a reference
+    /// type then return the corresponding non-reference type. Otherwise, if `T`
+    /// is neither an array nor a pointer type, then simply returns `T`.
     clang::QualType GetValueType(clang::QualType T);
 
     /// Builds and returns the init expression to initialise `clad::array` and
@@ -203,6 +208,10 @@ namespace clad {
     /// `{arr, arrSize}`
     clang::Expr* BuildCladArrayInitByConstArray(clang::Sema& semaRef,
                                                 clang::Expr* constArrE);
+
+    /// Returns true if `FD` is a class instance method; otherwise returns
+    /// false.
+    bool IsInstanceMethod(const clang::FunctionDecl* FD);
   } // namespace utils
 }
 

@@ -5,6 +5,7 @@
 #include "clad/Differentiator/Differentiator.h"
 #include "../TestUtils.h"
 #include <utility>
+#include <complex>
 
 using pairdd = std::pair<double, double>;
 
@@ -36,12 +37,19 @@ double fn1(pairdd p, double i) {
 // CHECK-NEXT: }
 
 struct Tangent {
-    Tangent() {}
-    double data[5] = {};
-    void updateTo(double d) {
-        for (int i=0; i<5; ++i)
-            data[i] = d;
-    }
+  Tangent() {}
+  double data[5] = {};
+  void updateTo(double d) {
+    for (int i = 0; i < 5; ++i)
+      data[i] = d;
+  }
+
+  double someMemFn(double i, double j) {
+    return data[0] * i + data[1] * j + 3 * data[2] + data[3] * data[4];
+  }
+  double someMemFn2(double i, double j) const {
+      return data[0]*i + data[1]*i*j;
+  }
 };
 
 double sum(Tangent& t) {
@@ -240,6 +248,97 @@ double fn4(double i, double j) {
 // CHECK-NEXT:     }
 // CHECK-NEXT: }
 
+// CHECK: void someMemFn_grad(double i, double j, clad::array_ref<Tangent> _d_this, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j) {
+// CHECK-NEXT:     double _t0;
+// CHECK-NEXT:     double _t1;
+// CHECK-NEXT:     double _t2;
+// CHECK-NEXT:     double _t3;
+// CHECK-NEXT:     double _t4;
+// CHECK-NEXT:     double _t5;
+// CHECK-NEXT:     double _t6;
+// CHECK-NEXT:     _t1 = this->data[0];
+// CHECK-NEXT:     _t0 = i;
+// CHECK-NEXT:     _t3 = this->data[1];
+// CHECK-NEXT:     _t2 = j;
+// CHECK-NEXT:     _t4 = this->data[2];
+// CHECK-NEXT:     _t6 = this->data[3];
+// CHECK-NEXT:     _t5 = this->data[4];
+// CHECK-NEXT:     double someMemFn_return = _t1 * _t0 + _t3 * _t2 + 3 * _t4 + _t6 * _t5;
+// CHECK-NEXT:     goto _label0;
+// CHECK-NEXT:   _label0:
+// CHECK-NEXT:     {
+// CHECK-NEXT:         double _r0 = 1 * _t0;
+// CHECK-NEXT:         (* _d_this).data[0] += _r0;
+// CHECK-NEXT:         double _r1 = _t1 * 1;
+// CHECK-NEXT:         * _d_i += _r1;
+// CHECK-NEXT:         double _r2 = 1 * _t2;
+// CHECK-NEXT:         (* _d_this).data[1] += _r2;
+// CHECK-NEXT:         double _r3 = _t3 * 1;
+// CHECK-NEXT:         * _d_j += _r3;
+// CHECK-NEXT:         double _r4 = 1 * _t4;
+// CHECK-NEXT:         double _r5 = 3 * 1;
+// CHECK-NEXT:         (* _d_this).data[2] += _r5;
+// CHECK-NEXT:         double _r6 = 1 * _t5;
+// CHECK-NEXT:         (* _d_this).data[3] += _r6;
+// CHECK-NEXT:         double _r7 = _t6 * 1;
+// CHECK-NEXT:         (* _d_this).data[4] += _r7;
+// CHECK-NEXT:     }
+// CHECK-NEXT: }
+
+double fn5(const Tangent& t, double i) {
+    return t.someMemFn2(i, i);
+}
+
+// CHECK: void someMemFn2_pullback(double i, double j, double _d_y, clad::array_ref<Tangent> _d_this, clad::array_ref<double> _d_i, clad::array_ref<double> _d_j) const {
+// CHECK-NEXT:     double _t0;
+// CHECK-NEXT:     double _t1;
+// CHECK-NEXT:     double _t2;
+// CHECK-NEXT:     double _t3;
+// CHECK-NEXT:     double _t4;
+// CHECK-NEXT:     double _t5;
+// CHECK-NEXT:     _t1 = this->data[0];
+// CHECK-NEXT:     _t0 = i;
+// CHECK-NEXT:     _t4 = this->data[1];
+// CHECK-NEXT:     _t3 = i;
+// CHECK-NEXT:     _t5 = _t4 * _t3;
+// CHECK-NEXT:     _t2 = j;
+// CHECK-NEXT:     double someMemFn2_return = _t1 * _t0 + _t5 * _t2;
+// CHECK-NEXT:     goto _label0;
+// CHECK-NEXT:   _label0:
+// CHECK-NEXT:     {
+// CHECK-NEXT:         double _r0 = _d_y * _t0;
+// CHECK-NEXT:         (* _d_this).data[0] += _r0;
+// CHECK-NEXT:         double _r1 = _t1 * _d_y;
+// CHECK-NEXT:         * _d_i += _r1;
+// CHECK-NEXT:         double _r2 = _d_y * _t2;
+// CHECK-NEXT:         double _r3 = _r2 * _t3;
+// CHECK-NEXT:         (* _d_this).data[1] += _r3;
+// CHECK-NEXT:         double _r4 = _t4 * _r2;
+// CHECK-NEXT:         * _d_i += _r4;
+// CHECK-NEXT:         double _r5 = _t5 * _d_y;
+// CHECK-NEXT:         * _d_j += _r5;
+// CHECK-NEXT:     }
+// CHECK-NEXT: }
+
+// CHECK: void fn5_grad(const Tangent &t, double i, clad::array_ref<Tangent> _d_t, clad::array_ref<double> _d_i) {
+// CHECK-NEXT:     double _t0;
+// CHECK-NEXT:     double _t1;
+// CHECK-NEXT:     _t0 = i;
+// CHECK-NEXT:     _t1 = i;
+// CHECK-NEXT:     double fn5_return = t.someMemFn2(_t0, _t1);
+// CHECK-NEXT:     goto _label0;
+// CHECK-NEXT:   _label0:
+// CHECK-NEXT:     {
+// CHECK-NEXT:         double _grad0 = 0.;
+// CHECK-NEXT:         double _grad1 = 0.;
+// CHECK-NEXT:         t.someMemFn2_pullback(_t0, _t1, 1, &(* _d_t), &_grad0, &_grad1);
+// CHECK-NEXT:         double _r0 = _grad0;
+// CHECK-NEXT:         * _d_i += _r0;
+// CHECK-NEXT:         double _r1 = _grad1;
+// CHECK-NEXT:         * _d_i += _r1;
+// CHECK-NEXT:     }
+// CHECK-NEXT: }
+
 namespace std {
 void print(const pairdd& p) { printf("%.2f, %.2f", p.first, p.second); }
 } // namespace std
@@ -256,14 +355,21 @@ int main() {
     pairdd p(3, 5), d_p;
     double i = 3, d_i, d_j;
     Tangent t, d_t;
+    auto memFn1 = &Tangent::someMemFn;
 
     INIT_GRADIENT(fn1);
     INIT_GRADIENT(fn2);
     INIT_GRADIENT(fn3);
     INIT_GRADIENT(fn4);
+    INIT_GRADIENT(memFn1);
+    INIT_GRADIENT(fn5);
 
     TEST_GRADIENT(fn1, /*numOfDerivativeArgs=*/2, p, i, &d_p, &d_i);    // CHECK-EXEC: {1.00, 2.00, 3.00}
     TEST_GRADIENT(fn2, /*numOfDerivativeArgs=*/2, t, i, &d_t, &d_i);    // CHECK-EXEC: {4.00, 2.00, 2.00, 2.00, 2.00, 1.00}
     TEST_GRADIENT(fn3, /*numOfDerivativeArgs=*/2, 3, 5, &d_i, &d_j);    // CHECK-EXEC: {7.00, 3.00}
     TEST_GRADIENT(fn4, /*numOfDerivativeArgs=*/2, 3, 5, &d_i, &d_j);    // CHECK-EXEC: {8.00, 8.00}
+    t.updateTo(5);
+    TEST_GRADIENT(memFn1, /*numOfDerivativeArgs=*/3, t, 3, 5, &d_t, &d_i, &d_j);   // CHECK-EXEC: {3.00, 5.00, 3.00, 5.00, 5.00, 5.00, 5.00}
+    t.updateTo(5);
+    TEST_GRADIENT(fn5, /*numOfDerivativeArgs=*/2, t, 3, &d_t, &d_i);    // CHECK-EXEC: {3.00, 9.00, 0.00, 0.00, 0.00, 35.00}
 }

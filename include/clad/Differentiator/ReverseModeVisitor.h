@@ -10,6 +10,7 @@
 #include "clad/Differentiator/Compatibility.h"
 #include "clad/Differentiator/VisitorBase.h"
 #include "clad/Differentiator/ReverseModeVisitorDirectionKinds.h"
+#include "clad/Differentiator/ParseDiffArgsTypes.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/AST/StmtVisitor.h"
 #include "clang/Sema/Sema.h"
@@ -61,6 +62,11 @@ namespace clad {
     unsigned outputArrayCursor = 0;
     unsigned numParams = 0;
     bool isVectorValued = false;
+    /// Stores derivative expression of the implicit `this` pointer.
+    ///
+    /// \note `this` pointer derivative expression is always of the class object
+    /// type rather than the pointer type.
+    clang::Expr* m_ThisExprDerivative = nullptr;
     // FIXME: Should we make this an object instead of a pointer?
     // Downside of making it an object: We will need to include
     // 'MultiplexExternalRMVSource.h' file
@@ -549,6 +555,24 @@ namespace clad {
     /// multiple times.
     ///\paramp[in] source An external RMV source
     void AddExternalSource(ExternalRMVSource& source);
+
+    /// Computes and returns the sequence of derived function parameter types.
+    ///
+    /// Information about the original function and the differentiation mode
+    /// are taken from the data member variables. In particular, `m_Function`,
+    /// `m_Mode` data members should be correctly set before using this
+    /// function.
+    llvm::SmallVector<clang::QualType, 8> ComputeParamTypes(const DiffParams& diffParams);
+
+    /// Builds and returns the sequence of derived function parameters.
+    ///
+    /// Information about the original function, derived function, derived
+    /// function parameter types and the differentiation mode are implicitly
+    /// taken from the data member variables. In particular, `m_Function`,
+    /// `m_Mode` and `m_Derivative` should be correctly set before using this
+    /// function.
+    llvm::SmallVector<clang::ParmVarDecl*, 8>
+    BuildParams(DiffParams& diffParams);
   };
 } // end namespace clad
 
