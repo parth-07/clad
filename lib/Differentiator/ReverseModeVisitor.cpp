@@ -1711,6 +1711,16 @@ namespace clad {
         m_ExternalSource->ActBeforeFinalisingPostIncDecOp(diff);
     } else if (opCode == UO_PreInc || opCode == UO_PreDec) {
       diff = Visit(UnOp->getSubExpr(), dfdx());
+    } else if (opCode == UnaryOperatorKind::UO_Real ||
+               opCode == UnaryOperatorKind::UO_Imag) {
+      diff = VisitWithExplicitNoDfDx(UnOp->getSubExpr());
+      ResultRef = BuildOp(opCode, diff.getExpr_dx());
+      /// Create and add `__real r += dfdx()` expression.
+      if (dfdx()) {
+        Expr* add_assign = BuildOp(BO_AddAssign, ResultRef, dfdx());
+        // Add it to the body statements.
+        addToCurrentBlock(add_assign, direction::reverse);
+      }
     } else {
       // We should not output any warning on visiting boolean conditions
       // FIXME: We should support boolean differentiation or ignore it

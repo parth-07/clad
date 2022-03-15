@@ -339,8 +339,163 @@ double fn5(const Tangent& t, double i) {
 // CHECK-NEXT:     }
 // CHECK-NEXT: }
 
+using dcomplex = std::complex<double>;
+
+double fn6(dcomplex c, double i) {
+    c.real(5*i);
+    double res = c.real() + 3*c.imag() + 6*i;
+    res += 4*c.real();
+    return res;
+}
+
+// CHECK: void real_pullback({{.*}} [[__val:.*]], clad::array_ref<complex<double> > _d_this, clad::array_ref<double> [[_d___val:[a-zA-Z_]*]]){{.*}} {
+// CHECK-NEXT:     {{(__real)?}} this->[[_M_value:.*]] = [[__val]];
+// CHECK-NEXT:     {
+// CHECK-NEXT:         double _r_d0 ={{( __real)?}} (* _d_this).[[_M_value]];
+// CHECK-NEXT:         * [[_d___val]] += _r_d0;
+// CHECK-NEXT:         {{(__real)?}} (* _d_this).[[_M_value]] -= _r_d0;
+// CHECK-NEXT:     }
+// CHECK-NEXT: }
+
+// CHECK: constexpr void real_pullback(double _d_y, clad::array_ref<complex<double> > _d_this){{.*}} {
+// CHECK-NEXT:     double real_return ={{( __real)?}} this->[[_M_value:.*]];
+// CHECK-NEXT:     goto _label0;
+// CHECK-NEXT:   _label0:
+// CHECK-NEXT:     {{(__real)?}} (* _d_this).[[_M_value]] += _d_y;
+// CHECK-NEXT: }
+
+// CHECK: constexpr void imag_pullback(double _d_y, clad::array_ref<complex<double> > _d_this){{.*}} {
+// CHECK-NEXT:     double imag_return ={{( __imag)?}} this->[[_M_value:.*]];
+// CHECK-NEXT:     goto _label0;
+// CHECK-NEXT:   _label0:
+// CHECK-NEXT:     {{(__imag)?}} (* _d_this).[[_M_value]] += _d_y;
+// CHECK-NEXT: }
+
+// CHECK: void fn6_grad(dcomplex c, double i, clad::array_ref<dcomplex> _d_c, clad::array_ref<double> _d_i) {
+// CHECK-NEXT:     double _t0;
+// CHECK-NEXT:     double _t1;
+// CHECK-NEXT:     double _t2;
+// CHECK-NEXT:     double _t3;
+// CHECK-NEXT:     double _d_res = 0;
+// CHECK-NEXT:     double _t4;
+// CHECK-NEXT:     _t0 = i;
+// CHECK-NEXT:     _t1 = 5 * _t0;
+// CHECK-NEXT:     c.real(_t1);
+// CHECK-NEXT:     _t2 = c.imag();
+// CHECK-NEXT:     _t3 = i;
+// CHECK-NEXT:     double res = c.real() + 3 * _t2 + 6 * _t3;
+// CHECK-NEXT:     _t4 = c.real();
+// CHECK-NEXT:     res += 4 * _t4;
+// CHECK-NEXT:     double fn6_return = res;
+// CHECK-NEXT:     goto _label0;
+// CHECK-NEXT:   _label0:
+// CHECK-NEXT:     _d_res += 1;
+// CHECK-NEXT:     {
+// CHECK-NEXT:         double _r_d0 = _d_res;
+// CHECK-NEXT:         _d_res += _r_d0;
+// CHECK-NEXT:         double _r7 = _r_d0 * _t4;
+// CHECK-NEXT:         double _r8 = 4 * _r_d0;
+// CHECK-NEXT:         c.real_pullback(_r8, &(* _d_c));
+// CHECK-NEXT:         _d_res -= _r_d0;
+// CHECK-NEXT:     }
+// CHECK-NEXT:     {
+// CHECK-NEXT:         c.real_pullback(_d_res, &(* _d_c));
+// CHECK-NEXT:         double _r3 = _d_res * _t2;
+// CHECK-NEXT:         double _r4 = 3 * _d_res;
+// CHECK-NEXT:         c.imag_pullback(_r4, &(* _d_c));
+// CHECK-NEXT:         double _r5 = _d_res * _t3;
+// CHECK-NEXT:         double _r6 = 6 * _d_res;
+// CHECK-NEXT:         * _d_i += _r6;
+// CHECK-NEXT:     }
+// CHECK-NEXT:     {
+// CHECK-NEXT:         double _grad0 = 0.;
+// CHECK-NEXT:         c.real_pullback(_t1, &(* _d_c), &_grad0);
+// CHECK-NEXT:         double _r0 = _grad0;
+// CHECK-NEXT:         double _r1 = _r0 * _t0;
+// CHECK-NEXT:         double _r2 = 5 * _r0;
+// CHECK-NEXT:         * _d_i += _r2;
+// CHECK-NEXT:     }
+// CHECK-NEXT: }
+
+double fn7(dcomplex c1, dcomplex c2) {
+    c1.real(c2.imag() + 5*c2.real());
+    return c1.real() + 3*c1.imag();
+}
+
+// CHECK: void fn7_grad(dcomplex c1, dcomplex c2, clad::array_ref<dcomplex> _d_c1, clad::array_ref<dcomplex> _d_c2) {
+// CHECK-NEXT:     double _t0;
+// CHECK-NEXT:     double _t1;
+// CHECK-NEXT:     double _t2;
+// CHECK-NEXT:     _t0 = c2.real();
+// CHECK-NEXT:     _t1 = c2.imag() + 5 * _t0;
+// CHECK-NEXT:     c1.real(_t1);
+// CHECK-NEXT:     _t2 = c1.imag();
+// CHECK-NEXT:     double fn7_return = c1.real() + 3 * _t2;
+// CHECK-NEXT:     goto _label0;
+// CHECK-NEXT:   _label0:
+// CHECK-NEXT:     {
+// CHECK-NEXT:         c1.real_pullback(1, &(* _d_c1));
+// CHECK-NEXT:         double _r3 = 1 * _t2;
+// CHECK-NEXT:         double _r4 = 3 * 1;
+// CHECK-NEXT:         c1.imag_pullback(_r4, &(* _d_c1));
+// CHECK-NEXT:     }
+// CHECK-NEXT:     {
+// CHECK-NEXT:         double _grad0 = 0.;
+// CHECK-NEXT:         c1.real_pullback(_t1, &(* _d_c1), &_grad0);
+// CHECK-NEXT:         double _r0 = _grad0;
+// CHECK-NEXT:         c2.imag_pullback(_r0, &(* _d_c2));
+// CHECK-NEXT:         double _r1 = _r0 * _t0;
+// CHECK-NEXT:         double _r2 = 5 * _r0;
+// CHECK-NEXT:         c2.real_pullback(_r2, &(* _d_c2));
+// CHECK-NEXT:     }
+// CHECK-NEXT: }
+
+double fn8(Tangent t, dcomplex c) {
+  t.updateTo(c.real());
+  return sum(t);
+}
+
+// CHECK: void updateTo_pullback(double d, clad::array_ref<Tangent> _d_this, clad::array_ref<double> _d_d) {
+// CHECK-NEXT:     unsigned long _t0;
+// CHECK-NEXT:     int _d_i = 0;
+// CHECK-NEXT:     clad::tape<int> _t1 = {};
+// CHECK-NEXT:     _t0 = 0;
+// CHECK-NEXT:     for (int i = 0; i < 5; ++i) {
+// CHECK-NEXT:         _t0++;
+// CHECK-NEXT:         this->data[clad::push(_t1, i)] = d;
+// CHECK-NEXT:     }
+// CHECK-NEXT:     for (; _t0; _t0--) {
+// CHECK-NEXT:         int _t2 = clad::pop(_t1);
+// CHECK-NEXT:         double _r_d0 = (* _d_this).data[_t2];
+// CHECK-NEXT:         * _d_d += _r_d0;
+// CHECK-NEXT:         (* _d_this).data[_t2] -= _r_d0;
+// CHECK-NEXT:     }
+// CHECK-NEXT: }
+
+// CHECK: void fn8_grad(Tangent t, dcomplex c, clad::array_ref<Tangent> _d_t, clad::array_ref<dcomplex> _d_c) {
+// CHECK-NEXT:     double _t0;
+// CHECK-NEXT:     Tangent _t1;
+// CHECK-NEXT:     _t0 = c.real();
+// CHECK-NEXT:     t.updateTo(_t0);
+// CHECK-NEXT:     _t1 = t;
+// CHECK-NEXT:     double fn8_return = sum(t);
+// CHECK-NEXT:     goto _label0;
+// CHECK-NEXT:   _label0:
+// CHECK-NEXT:     {
+// CHECK-NEXT:         sum_pullback(_t1, 1, &(* _d_t));
+// CHECK-NEXT:         Tangent _r1 = (* _d_t);
+// CHECK-NEXT:     }
+// CHECK-NEXT:     {
+// CHECK-NEXT:         double _grad0 = 0.;
+// CHECK-NEXT:         t.updateTo_pullback(_t0, &(* _d_t), &_grad0);
+// CHECK-NEXT:         double _r0 = _grad0;
+// CHECK-NEXT:         c.real_pullback(_r0, &(* _d_c));
+// CHECK-NEXT:     }
+// CHECK-NEXT: }
+
 namespace std {
 void print(const pairdd& p) { printf("%.2f, %.2f", p.first, p.second); }
+void print(const dcomplex& c) {printf("%.2f, %.2f", c.real(), c.imag());}
 } // namespace std
 
 void print(const Tangent& t) {
@@ -355,6 +510,7 @@ int main() {
     pairdd p(3, 5), d_p;
     double i = 3, d_i, d_j;
     Tangent t, d_t;
+    dcomplex c1, c2, d_c1, d_c2;
     auto memFn1 = &Tangent::someMemFn;
 
     INIT_GRADIENT(fn1);
@@ -363,6 +519,9 @@ int main() {
     INIT_GRADIENT(fn4);
     INIT_GRADIENT(memFn1);
     INIT_GRADIENT(fn5);
+    INIT_GRADIENT(fn6);
+    INIT_GRADIENT(fn7);
+    INIT_GRADIENT(fn8);
 
     TEST_GRADIENT(fn1, /*numOfDerivativeArgs=*/2, p, i, &d_p, &d_i);    // CHECK-EXEC: {1.00, 2.00, 3.00}
     TEST_GRADIENT(fn2, /*numOfDerivativeArgs=*/2, t, i, &d_t, &d_i);    // CHECK-EXEC: {4.00, 2.00, 2.00, 2.00, 2.00, 1.00}
@@ -372,4 +531,7 @@ int main() {
     TEST_GRADIENT(memFn1, /*numOfDerivativeArgs=*/3, t, 3, 5, &d_t, &d_i, &d_j);   // CHECK-EXEC: {3.00, 5.00, 3.00, 5.00, 5.00, 5.00, 5.00}
     t.updateTo(5);
     TEST_GRADIENT(fn5, /*numOfDerivativeArgs=*/2, t, 3, &d_t, &d_i);    // CHECK-EXEC: {3.00, 9.00, 0.00, 0.00, 0.00, 35.00}
+    TEST_GRADIENT(fn6, /*numOfDerivativeArgs=*/2, c1, 3, &d_c1, &d_i);  // CHECK-EXEC: {0.00, 3.00, 31.00}
+    TEST_GRADIENT(fn7, /*numOfDerivativeArgs=*/2, c1, c2, &d_c1, &d_c2);// CHECK-EXEC: {0.00, 3.00, 5.00, 1.00}
+    TEST_GRADIENT(fn8, /*numOfDerivativeArgs=*/2, t, c1, &d_t, &d_c1);  // CHECK-EXEC: {0.00, 0.00, 0.00, 0.00, 0.00, 5.00, 0.00}
 }
