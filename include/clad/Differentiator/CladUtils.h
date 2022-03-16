@@ -166,6 +166,10 @@ namespace clad {
                                        clang::Expr* base,
                                        llvm::StringRef memberName);
 
+    clang::MemberExpr* BuildMemberExpr(clang::Sema& semaRef, clang::Scope* S,
+                                       clang::Expr* base,
+                                       clang::OverloadedOperatorKind opKind);
+
     bool isDifferentiableType(clang::QualType T);
 
     /// Returns a valid `SourceLocation` to be used in places where clang

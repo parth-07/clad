@@ -202,6 +202,23 @@ namespace clad {
       return ME;
     }
 
+    MemberExpr* BuildMemberExpr(Sema& semaRef, Scope* S, Expr* base,
+                                clang::OverloadedOperatorKind opKind) {
+      UnqualifiedId id;
+      SourceLocation invalidLocs[3] = {noLoc, noLoc, noLoc};
+      id.setOperatorFunctionId(noLoc, opKind, invalidLocs);
+      CXXScopeSpec SS;
+      bool isArrow = base->getType()->isPointerType();
+      auto ME =
+          semaRef
+              .ActOnMemberAccessExpr(S, base, noLoc,
+                                     isArrow ? tok::TokenKind::arrow
+                                             : tok::TokenKind::period,
+                                     SS, noLoc, id, /*ObjCImpDecl=*/nullptr)
+              .getAs<MemberExpr>();
+      return ME;
+    }
+
     bool isDifferentiableType(QualType T) {
       // FIXME: Handle arbitrary depth pointer types and arbitrary dimension
       // array type as well.

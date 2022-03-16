@@ -1191,11 +1191,34 @@ namespace clad {
     // https://github.com/vgvassilev/clad/issues/385 for more details.
     if (CEType->isVoidType())
       CEType = m_Context.DoubleTy;
+    llvm::SmallVector<const Expr*, 4> callArgs;
+
+    if (isa<CXXOperatorCallExpr>(CE) && utils::IsInstanceMethod(FD)) {
+      callArgs.insert(callArgs.begin(), CE->getArgs()+1, CE->getArgs() + CE->getNumArgs());
+    } else {
+      callArgs.insert(callArgs.begin(), CE->getArgs(), CE->getArgs() + CE->getNumArgs());
+    }
+
+    StmtDiff baseDiff;
+    const Expr* originalBaseE = nullptr;
+    if (utils::IsInstanceMethod(FD)) {
+      if (isa<CXXOperatorCallExpr>(CE))
+        originalBaseE = CE->getArg(0)->IgnoreParenImpCasts();
+      else if (auto MCE = dyn_cast<CXXMemberCallExpr>(CE))
+        originalBaseE = MCE->getImplicitObjectArgument()->IgnoreParenImpCasts();
+    }
+
+    if (originalBaseE) {
+      // FIXME: Handle correctly if baseDiff expressions are
+      // clad::push/clad::pop respectively.
+      baseDiff = Visit(originalBaseE);
+    }
+
     // FIXME: We should add instructions for handling non-differentiable
     // arguments. Currently we are implicitly assuming function call only
     // contains differentiable arguments.
-    for (std::size_t i = 0, e = CE->getNumArgs(); i != e; ++i) {
-      const Expr* arg = CE->getArg(i);
+    for (std::size_t i = 0, e = callArgs.size(); i != e; ++i) {
+      const Expr* arg = callArgs[i];
       auto PVD = FD->getParamDecl(i);
       StmtDiff argDiff{};
       bool passByRef = utils::IsReferenceOrPointerType(PVD->getType());
@@ -1394,9 +1417,8 @@ namespace clad {
 
       /// Add base derivative expression in the derived call output args list if
       /// `CE` is a call to an instance member function.
-      if (auto MCE = dyn_cast<CXXMemberCallExpr>(CE)) {
-        auto baseDiff =
-            VisitWithExplicitNoDfDx(MCE->getImplicitObjectArgument());
+      if (baseDiff.getExpr()) {
+        assert(baseDiff.getExpr_dx() && "Derivative of base not found!!");
         Expr* derivedBase =
             BuildOp(UnaryOperatorKind::UO_AddrOf, baseDiff.getExpr_dx());
         DerivedCallOutputArgs.push_back(derivedBase);
@@ -1499,12 +1521,12 @@ namespace clad {
           ArgDeclStmts.push_back(BuildDeclStmt(gradVarDecl));
         idx++;
       }
-      // FIXME: Remove this restriction.
-      if (!FD->getReturnType()->isVoidType()) {
-        assert((dfdx() && !FD->getReturnType()->isVoidType()) &&
-               "Call to function returning non-void type with no dfdx() is not "
-               "supported!");
-      }
+      // // FIXME: Remove this restriction.
+      // if (!FD->getReturnType()->isVoidType()) {
+      //   assert((dfdx() && !FD->getReturnType()->isVoidType()) &&
+      //          "Call to function returning non-void type with no dfdx() is not "
+      //          "supported!");
+      // }
 
       if (FD->getReturnType()->isVoidType()) {
         assert(dfdx() == nullptr && FD->getReturnType()->isVoidType() &&
@@ -1518,8 +1540,20 @@ namespace clad {
       pullbackCallArgs = DerivedCallArgs;
 
       if (dfdx())
-        pullbackCallArgs.insert(pullbackCallArgs.begin() + CE->getNumArgs(),
+        pullbackCallArgs.insert(pullbackCallArgs.begin() + callArgs.size(),
                                 dfdx());
+      if (!FD->getReturnType()->isVoidType() && !dfdx()) {
+        QualType returnType = FD->getReturnType().getNonReferenceType();
+        TypeSourceInfo* TSI = m_Context.getTrivialTypeSourceInfo(returnType);
+        Expr* init = m_Sema.BuildInitList(noLoc, MultiExprArg(), noLoc).get();
+        VarDecl* pullbackVD =
+            BuildVarDecl(returnType, "_t", init, false, nullptr,
+                         VarDecl::InitializationStyle::CallInit);
+        addToCurrentBlock(BuildDeclStmt(pullbackVD), direction::reverse);
+        Expr* pullbackE = BuildDeclRef(pullbackVD);
+        pullbackCallArgs.insert(pullbackCallArgs.begin() + callArgs.size(),
+                                pullbackE);
+      }
 
       // Try to find it in builtin derivatives
       OverloadedDerivedFn =
@@ -1598,9 +1632,7 @@ namespace clad {
             usingNumericalDiff = true;
           }
         } else if (pullbackFD) {
-          if (auto MCE = dyn_cast<CXXMemberCallExpr>(CE)) {
-            StmtDiff baseDiff = VisitWithExplicitNoDfDx(
-                MCE->getImplicitObjectArgument()->IgnoreParenImpCasts());
+          if (baseDiff.getExpr()) {
             Expr* baseE = baseDiff.getExpr();
             OverloadedDerivedFn = BuildCallExprToMemFn(
                 baseE, pullbackFD->getName(), pullbackCallArgs, pullbackFD);
@@ -1676,10 +1708,23 @@ namespace clad {
                    std::end(CallArgs),
                    std::begin(CallArgs),
                    [this](Expr* E) { return Clone(E); });
+    Expr* callee = nullptr;
+    if (isa<CXXOperatorCallExpr>(CE) && baseDiff.getExpr()) {
+      Expr* baseE = Clone(baseDiff.getExpr());
+      const CXXOperatorCallExpr* OCE = cast<CXXOperatorCallExpr>(CE);
+      auto opDName =
+          m_Context.DeclarationNames.getCXXOperatorName(OCE->getOperator());
+      callee = utils::BuildMemberExpr(m_Sema, getCurrentScope(), baseE,
+                                      OCE->getOperator());
+    } else {
+      callee = Clone(CE->getCallee());
+    }
+    // llvm::errs()<<"Dumping Callee:\n";
+    // CE->getCallee()->dumpColor();                   
     // Recreate the original call expression.
     Expr* call = m_Sema
                      .ActOnCallExpr(getCurrentScope(),
-                                    Clone(CE->getCallee()),
+                                    callee,
                                     noLoc,
                                     CallArgs,
                                     noLoc)
@@ -2798,9 +2843,9 @@ namespace clad {
     if (m_Mode == DiffMode::reverse)
       assert(yType->isRealType() &&
              "yType should be a non-reference builtin-numerical scalar type!!");
-    else if (m_Mode == DiffMode::experimental_pullback)
-      assert(yType.getNonReferenceType()->isRealType() &&
-             "yType should be a builtin-numerical scalar type!!");
+    // else if (m_Mode == DiffMode::experimental_pullback)
+    //   assert(yType.getNonReferenceType()->isRealType() &&
+    //          "yType should be a builtin-numerical scalar type!!");
     QualType xValueType = utils::GetValueType(xType);
     // derivative variables should always be of non-const type.
     xValueType.removeLocalConst();
@@ -2835,7 +2880,8 @@ namespace clad {
         if (effectiveReturnType->isVoidType())
           effectiveReturnType = m_Context.DoubleTy;
         else
-          paramTypes.push_back(m_Function->getReturnType());
+          paramTypes.push_back(
+              m_Function->getReturnType().getNonReferenceType());
       }
 
       if (auto MD = dyn_cast<CXXMethodDecl>(m_Function)) {
@@ -2889,14 +2935,25 @@ namespace clad {
     }
 
     for (auto PVD : m_Function->parameters()) {
+      IdentifierInfo* II = PVD->getIdentifier();
+      bool identifierMissing = false;
+      if (!II || II->getLength() == 0) {
+        II = CreateUniqueIdentifier("param");
+        identifierMissing = true;
+      }
       auto newPVD = utils::BuildParmVarDecl(
-          m_Sema, m_Derivative, PVD->getIdentifier(), PVD->getType(),
+          m_Sema, m_Derivative, II, PVD->getType(),
           PVD->getStorageClass(), /*defArg=*/nullptr, PVD->getTypeSourceInfo());
       params.push_back(newPVD);
+
+      if (identifierMissing)
+        m_DeclReplacements[PVD] = newPVD;
 
       if (newPVD->getIdentifier())
         m_Sema.PushOnScopeChains(newPVD, getCurrentScope(),
                                  /*AddToContext=*/false);
+
+      
 
       auto it = std::find(std::begin(diffParams), std::end(diffParams), PVD);
       if (it != std::end(diffParams)) {
