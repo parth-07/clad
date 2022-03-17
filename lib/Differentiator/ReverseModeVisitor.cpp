@@ -1103,9 +1103,14 @@ namespace clad {
         }
         // Create the (_d_param[idx] += dfdx) statement.
         if (dfdx()) {
-          Expr* add_assign = BuildOp(BO_AddAssign, it->second, dfdx());
-          // Add it to the body statements.
-          addToCurrentBlock(add_assign, direction::reverse);
+          auto derivativeE = it->second;
+          if (derivativeE->getType()->isRecordType()) {
+
+          } else {
+            Expr* add_assign = BuildOp(BO_AddAssign, it->second, dfdx());
+            // Add it to the body statements.
+            addToCurrentBlock(add_assign, direction::reverse);
+          }
         }
         return StmtDiff(clonedDRE, it->second);
       }
@@ -1213,7 +1218,7 @@ namespace clad {
       // clad::push/clad::pop respectively.
       baseDiff = Visit(originalBaseE);
     }
-
+    llvm::SmallVector<bool, 4> passedbyRef;
     // FIXME: We should add instructions for handling non-differentiable
     // arguments. Currently we are implicitly assuming function call only
     // contains differentiable arguments.
@@ -1221,11 +1226,20 @@ namespace clad {
       const Expr* arg = callArgs[i];
       auto PVD = FD->getParamDecl(i);
       StmtDiff argDiff{};
-      bool passByRef = utils::IsReferenceOrPointerType(PVD->getType());
+      bool passByRef = utils::IsReferenceOrPointerType(PVD->getType()) &&
+                       arg->IgnoreImplicit()->isGLValue();
+      llvm::errs()<<"Dumping arg:\n";
+      arg->dumpColor();
+      llvm::errs()<<"isGLValue: "<<arg->IgnoreImplicit()->isGLValue()<<"\n";
+      llvm::errs()<<"passByRef: "<<passByRef<<"\n";
       // We do not need to create result arg for arguments passed by reference
       // because the derivatives of arguments passed by reference are directly
       // modified by the derived callee function.
+      passedbyRef.push_back(passByRef);
       if (passByRef) {
+        // llvm::errs()<<"Inside passByRef if block:\n";
+        // arg->dumpColor();
+        // llvm::errs()<<"\n";
         argDiff = Visit(arg);
         QualType argResultValueType =
             utils::GetValueType(argDiff.getExpr()->getType())
@@ -1273,6 +1287,11 @@ namespace clad {
         ArgResultDecls.push_back(
             cast<VarDecl>(cast<DeclRefExpr>(dArg)->getDecl()));
         // Visit using uninitialized reference.
+        llvm::errs()<<"Visiting: arg, dArg:\n";
+        arg->dumpColor();
+        llvm::errs()<<"\n";
+        dArg->dumpColor();
+        llvm::errs()<<"\n\n";
         argDiff = Visit(arg, dArg);
       }
 
@@ -1423,7 +1442,7 @@ namespace clad {
             BuildOp(UnaryOperatorKind::UO_AddrOf, baseDiff.getExpr_dx());
         DerivedCallOutputArgs.push_back(derivedBase);
       }
-
+      std::size_t tindex=0;
       for (auto argDerivative : CallArgDx) {
         gradVarDecl = nullptr;
         gradVarExpr = nullptr;
@@ -1432,15 +1451,16 @@ namespace clad {
 
         auto PVD = FD->getParamDecl(idx);
         bool passByRef = utils::IsReferenceOrPointerType(PVD->getType());
-        if (passByRef) {
+        if (passedbyRef[tindex]) {
           // If derivative type is constant array type instead of
           // `clad::array_ref` or `clad::array` type, then create an
           // `clad::array_ref` variable that references this constant array. It
           // is required because the pullback function expects `clad::array_ref`
           // type for representing array derivatives. Currently, only constant
           // array data members have derivatives of constant array types.
-          if (auto CAT =
-                  dyn_cast<ConstantArrayType>(argDerivative->getType())) {
+          if (isa<ConstantArrayType>(argDerivative->getType())) {
+            auto CAT =
+                  dyn_cast<ConstantArrayType>(argDerivative->getType());
             Expr* init =
                 utils::BuildCladArrayInitByConstArray(m_Sema, argDerivative);
             auto derivativeArrayRefVD = BuildVarDecl(
@@ -1509,7 +1529,7 @@ namespace clad {
           // Declare: diffArgType _grad = 0;
           gradVarDecl = BuildVarDecl(
               CEType, gradVarII,
-              ConstantFolder::synthesizeLiteral(CEType, m_Context, 0));
+              getZeroInit(CEType));
           // Pass the address of the declared variable
           gradVarExpr = BuildDeclRef(gradVarDecl);
           gradArgExpr =
@@ -1520,6 +1540,7 @@ namespace clad {
         if (gradVarDecl)
           ArgDeclStmts.push_back(BuildDeclStmt(gradVarDecl));
         idx++;
+        tindex++;
       }
       // // FIXME: Remove this restriction.
       // if (!FD->getReturnType()->isVoidType()) {
@@ -1543,6 +1564,9 @@ namespace clad {
         pullbackCallArgs.insert(pullbackCallArgs.begin() + callArgs.size(),
                                 dfdx());
       if (!FD->getReturnType()->isVoidType() && !dfdx()) {
+        llvm::errs()<<"Entering in creating dummy pullback!! : CE\n";
+        CE->dumpColor();
+        llvm::errs()<<"\n";
         QualType returnType = FD->getReturnType().getNonReferenceType();
         TypeSourceInfo* TSI = m_Context.getTrivialTypeSourceInfo(returnType);
         Expr* init = m_Sema.BuildInitList(noLoc, MultiExprArg(), noLoc).get();
@@ -2803,6 +2827,7 @@ namespace clad {
   ReverseModeVisitor::VisitCXXConstructExpr(const CXXConstructExpr* CE) {
     llvm::SmallVector<Expr*, 4> clonedArgs;
     for (auto arg : CE->arguments()) {
+      // perhaps do Visit(arg, dfdx()) here.
       auto argDiff = Visit(arg);
       clonedArgs.push_back(argDiff.getExpr());
     }
@@ -2834,7 +2859,7 @@ namespace clad {
       const clang::MaterializeTemporaryExpr* MTE) {
     // `MaterializeTemporaryExpr` node will be created automatically if it is
     // required by `ActOn`/`Build` Sema functions.
-    StmtDiff MTEDiff = Visit(clad_compat::GetSubExpr(MTE));
+    StmtDiff MTEDiff = Visit(clad_compat::GetSubExpr(MTE), dfdx());
     return MTEDiff;
   }
 
