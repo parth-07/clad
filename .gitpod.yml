@@ -1,5 +1,9 @@
 # List the start up tasks. Learn more https://www.gitpod.io/docs/config-start-tasks/
 image:
   file: .gitpod.dockerfile
+
+tasks:
+  - name: "Build Clad for LLVM-10"
+    init: build_clad.sh 10
   
 
