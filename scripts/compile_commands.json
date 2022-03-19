@@ -1,0 +1,107 @@
+[
+{
+  "directory": "/workspace/clad/build",
+  "command": "/usr/bin/clang++-11 -DCLAD_INSTDIR_INCL=\\\"/workspace/clad/build/include\\\" -DCLAD_SRCDIR_INCL=\\\"/workspace/clad/include\\\" -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -I/workspace/clad/build/lib/Differentiator -I/workspace/clad/lib/Differentiator -I/workspace/clad/include -I/workspace/clad/build/include -I/usr/lib/llvm-11/include  -fPIC -fvisibility-inlines-hidden -Werror=date-time -Werror=unguarded-availability-new -w -fdiagnostics-color -fno-common -Woverloaded-virtual -Wcast-qual -fno-strict-aliasing -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings -g   -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS  -fno-exceptions -std=gnu++14 -o lib/Differentiator/CMakeFiles/cladDifferentiator.dir/CladUtils.cpp.o -c /workspace/clad/lib/Differentiator/CladUtils.cpp",
+  "file": "/workspace/clad/lib/Differentiator/CladUtils.cpp"
+},
+{
+  "directory": "/workspace/clad/build",
+  "command": "/usr/bin/clang++-11 -DCLAD_INSTDIR_INCL=\\\"/workspace/clad/build/include\\\" -DCLAD_SRCDIR_INCL=\\\"/workspace/clad/include\\\" -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -I/workspace/clad/build/lib/Differentiator -I/workspace/clad/lib/Differentiator -I/workspace/clad/include -I/workspace/clad/build/include -I/usr/lib/llvm-11/include  -fPIC -fvisibility-inlines-hidden -Werror=date-time -Werror=unguarded-availability-new -w -fdiagnostics-color -fno-common -Woverloaded-virtual -Wcast-qual -fno-strict-aliasing -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings -g   -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS  -fno-exceptions -std=gnu++14 -o lib/Differentiator/CMakeFiles/cladDifferentiator.dir/ConstantFolder.cpp.o -c /workspace/clad/lib/Differentiator/ConstantFolder.cpp",
+  "file": "/workspace/clad/lib/Differentiator/ConstantFolder.cpp"
+},
+{
+  "directory": "/workspace/clad/build",
+  "command": "/usr/bin/clang++-11 -DCLAD_INSTDIR_INCL=\\\"/workspace/clad/build/include\\\" -DCLAD_SRCDIR_INCL=\\\"/workspace/clad/include\\\" -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -I/workspace/clad/build/lib/Differentiator -I/workspace/clad/lib/Differentiator -I/workspace/clad/include -I/workspace/clad/build/include -I/usr/lib/llvm-11/include  -fPIC -fvisibility-inlines-hidden -Werror=date-time -Werror=unguarded-availability-new -w -fdiagnostics-color -fno-common -Woverloaded-virtual -Wcast-qual -fno-strict-aliasing -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings -g   -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS  -fno-exceptions -std=gnu++14 -o lib/Differentiator/CMakeFiles/cladDifferentiator.dir/DerivativeBuilder.cpp.o -c /workspace/clad/lib/Differentiator/DerivativeBuilder.cpp",
+  "file": "/workspace/clad/lib/Differentiator/DerivativeBuilder.cpp"
+},
+{
+  "directory": "/workspace/clad/build",
+  "command": "/usr/bin/clang++-11 -DCLAD_INSTDIR_INCL=\\\"/workspace/clad/build/include\\\" -DCLAD_SRCDIR_INCL=\\\"/workspace/clad/include\\\" -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -I/workspace/clad/build/lib/Differentiator -I/workspace/clad/lib/Differentiator -I/workspace/clad/include -I/workspace/clad/build/include -I/usr/lib/llvm-11/include  -fPIC -fvisibility-inlines-hidden -Werror=date-time -Werror=unguarded-availability-new -w -fdiagnostics-color -fno-common -Woverloaded-virtual -Wcast-qual -fno-strict-aliasing -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings -g   -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS  -fno-exceptions -std=gnu++14 -o lib/Differentiator/CMakeFiles/cladDifferentiator.dir/DiffPlanner.cpp.o -c /workspace/clad/lib/Differentiator/DiffPlanner.cpp",
+  "file": "/workspace/clad/lib/Differentiator/DiffPlanner.cpp"
+},
+{
+  "directory": "/workspace/clad/build",
+  "command": "/usr/bin/clang++-11 -DCLAD_INSTDIR_INCL=\\\"/workspace/clad/build/include\\\" -DCLAD_SRCDIR_INCL=\\\"/workspace/clad/include\\\" -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -I/workspace/clad/build/lib/Differentiator -I/workspace/clad/lib/Differentiator -I/workspace/clad/include -I/workspace/clad/build/include -I/usr/lib/llvm-11/include  -fPIC -fvisibility-inlines-hidden -Werror=date-time -Werror=unguarded-availability-new -w -fdiagnostics-color -fno-common -Woverloaded-virtual -Wcast-qual -fno-strict-aliasing -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings -g   -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS  -fno-exceptions -std=gnu++14 -o lib/Differentiator/CMakeFiles/cladDifferentiator.dir/ForwardModeVisitor.cpp.o -c /workspace/clad/lib/Differentiator/ForwardModeVisitor.cpp",
+  "file": "/workspace/clad/lib/Differentiator/ForwardModeVisitor.cpp"
+},
+{
+  "directory": "/workspace/clad/build",
+  "command": "/usr/bin/clang++-11 -DCLAD_INSTDIR_INCL=\\\"/workspace/clad/build/include\\\" -DCLAD_SRCDIR_INCL=\\\"/workspace/clad/include\\\" -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -I/workspace/clad/build/lib/Differentiator -I/workspace/clad/lib/Differentiator -I/workspace/clad/include -I/workspace/clad/build/include -I/usr/lib/llvm-11/include  -fPIC -fvisibility-inlines-hidden -Werror=date-time -Werror=unguarded-availability-new -w -fdiagnostics-color -fno-common -Woverloaded-virtual -Wcast-qual -fno-strict-aliasing -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings -g   -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS  -fno-exceptions -std=gnu++14 -o lib/Differentiator/CMakeFiles/cladDifferentiator.dir/HessianModeVisitor.cpp.o -c /workspace/clad/lib/Differentiator/HessianModeVisitor.cpp",
+  "file": "/workspace/clad/lib/Differentiator/HessianModeVisitor.cpp"
+},
+{
+  "directory": "/workspace/clad/build",
+  "command": "/usr/bin/clang++-11 -DCLAD_INSTDIR_INCL=\\\"/workspace/clad/build/include\\\" -DCLAD_SRCDIR_INCL=\\\"/workspace/clad/include\\\" -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -I/workspace/clad/build/lib/Differentiator -I/workspace/clad/lib/Differentiator -I/workspace/clad/include -I/workspace/clad/build/include -I/usr/lib/llvm-11/include  -fPIC -fvisibility-inlines-hidden -Werror=date-time -Werror=unguarded-availability-new -w -fdiagnostics-color -fno-common -Woverloaded-virtual -Wcast-qual -fno-strict-aliasing -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings -g   -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS  -fno-exceptions -std=gnu++14 -o lib/Differentiator/CMakeFiles/cladDifferentiator.dir/JacobianModeVisitor.cpp.o -c /workspace/clad/lib/Differentiator/JacobianModeVisitor.cpp",
+  "file": "/workspace/clad/lib/Differentiator/JacobianModeVisitor.cpp"
+},
+{
+  "directory": "/workspace/clad/build",
+  "command": "/usr/bin/clang++-11 -DCLAD_INSTDIR_INCL=\\\"/workspace/clad/build/include\\\" -DCLAD_SRCDIR_INCL=\\\"/workspace/clad/include\\\" -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -I/workspace/clad/build/lib/Differentiator -I/workspace/clad/lib/Differentiator -I/workspace/clad/include -I/workspace/clad/build/include -I/usr/lib/llvm-11/include  -fPIC -fvisibility-inlines-hidden -Werror=date-time -Werror=unguarded-availability-new -w -fdiagnostics-color -fno-common -Woverloaded-virtual -Wcast-qual -fno-strict-aliasing -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings -g   -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS  -fno-exceptions -std=gnu++14 -o lib/Differentiator/CMakeFiles/cladDifferentiator.dir/MultiplexExternalRMVSource.cpp.o -c /workspace/clad/lib/Differentiator/MultiplexExternalRMVSource.cpp",
+  "file": "/workspace/clad/lib/Differentiator/MultiplexExternalRMVSource.cpp"
+},
+{
+  "directory": "/workspace/clad/build",
+  "command": "/usr/bin/clang++-11 -DCLAD_INSTDIR_INCL=\\\"/workspace/clad/build/include\\\" -DCLAD_SRCDIR_INCL=\\\"/workspace/clad/include\\\" -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -I/workspace/clad/build/lib/Differentiator -I/workspace/clad/lib/Differentiator -I/workspace/clad/include -I/workspace/clad/build/include -I/usr/lib/llvm-11/include  -fPIC -fvisibility-inlines-hidden -Werror=date-time -Werror=unguarded-availability-new -w -fdiagnostics-color -fno-common -Woverloaded-virtual -Wcast-qual -fno-strict-aliasing -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings -g   -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS  -fno-exceptions -std=gnu++14 -o lib/Differentiator/CMakeFiles/cladDifferentiator.dir/ReverseModeVisitor.cpp.o -c /workspace/clad/lib/Differentiator/ReverseModeVisitor.cpp",
+  "file": "/workspace/clad/lib/Differentiator/ReverseModeVisitor.cpp"
+},
+{
+  "directory": "/workspace/clad/build",
+  "command": "/usr/bin/clang++-11 -DCLAD_INSTDIR_INCL=\\\"/workspace/clad/build/include\\\" -DCLAD_SRCDIR_INCL=\\\"/workspace/clad/include\\\" -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -I/workspace/clad/build/lib/Differentiator -I/workspace/clad/lib/Differentiator -I/workspace/clad/include -I/workspace/clad/build/include -I/usr/lib/llvm-11/include  -fPIC -fvisibility-inlines-hidden -Werror=date-time -Werror=unguarded-availability-new -w -fdiagnostics-color -fno-common -Woverloaded-virtual -Wcast-qual -fno-strict-aliasing -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings -g   -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS  -fno-exceptions -std=gnu++14 -o lib/Differentiator/CMakeFiles/cladDifferentiator.dir/ErrorEstimator.cpp.o -c /workspace/clad/lib/Differentiator/ErrorEstimator.cpp",
+  "file": "/workspace/clad/lib/Differentiator/ErrorEstimator.cpp"
+},
+{
+  "directory": "/workspace/clad/build",
+  "command": "/usr/bin/clang++-11 -DCLAD_INSTDIR_INCL=\\\"/workspace/clad/build/include\\\" -DCLAD_SRCDIR_INCL=\\\"/workspace/clad/include\\\" -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -I/workspace/clad/build/lib/Differentiator -I/workspace/clad/lib/Differentiator -I/workspace/clad/include -I/workspace/clad/build/include -I/usr/lib/llvm-11/include  -fPIC -fvisibility-inlines-hidden -Werror=date-time -Werror=unguarded-availability-new -w -fdiagnostics-color -fno-common -Woverloaded-virtual -Wcast-qual -fno-strict-aliasing -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings -g   -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS  -fno-exceptions -std=gnu++14 -o lib/Differentiator/CMakeFiles/cladDifferentiator.dir/EstimationModel.cpp.o -c /workspace/clad/lib/Differentiator/EstimationModel.cpp",
+  "file": "/workspace/clad/lib/Differentiator/EstimationModel.cpp"
+},
+{
+  "directory": "/workspace/clad/build",
+  "command": "/usr/bin/clang++-11 -DCLAD_INSTDIR_INCL=\\\"/workspace/clad/build/include\\\" -DCLAD_SRCDIR_INCL=\\\"/workspace/clad/include\\\" -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -I/workspace/clad/build/lib/Differentiator -I/workspace/clad/lib/Differentiator -I/workspace/clad/include -I/workspace/clad/build/include -I/usr/lib/llvm-11/include  -fPIC -fvisibility-inlines-hidden -Werror=date-time -Werror=unguarded-availability-new -w -fdiagnostics-color -fno-common -Woverloaded-virtual -Wcast-qual -fno-strict-aliasing -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings -g   -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS  -fno-exceptions -std=gnu++14 -o lib/Differentiator/CMakeFiles/cladDifferentiator.dir/StmtClone.cpp.o -c /workspace/clad/lib/Differentiator/StmtClone.cpp",
+  "file": "/workspace/clad/lib/Differentiator/StmtClone.cpp"
+},
+{
+  "directory": "/workspace/clad/build",
+  "command": "/usr/bin/clang++-11 -DCLAD_INSTDIR_INCL=\\\"/workspace/clad/build/include\\\" -DCLAD_SRCDIR_INCL=\\\"/workspace/clad/include\\\" -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -DCLAD_CLANG_COMPAT_REVISION=\\\"release_90\\\" -DHAVE_VCS_VERSION_INC -I/workspace/clad/build/lib/Differentiator -I/workspace/clad/lib/Differentiator -I/workspace/clad/include -I/workspace/clad/build/include -I/usr/lib/llvm-11/include  -fPIC -fvisibility-inlines-hidden -Werror=date-time -Werror=unguarded-availability-new -w -fdiagnostics-color -fno-common -Woverloaded-virtual -Wcast-qual -fno-strict-aliasing -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings -g   -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS  -fno-exceptions -std=gnu++14 -o lib/Differentiator/CMakeFiles/cladDifferentiator.dir/Version.cpp.o -c /workspace/clad/lib/Differentiator/Version.cpp",
+  "file": "/workspace/clad/lib/Differentiator/Version.cpp"
+},
+{
+  "directory": "/workspace/clad/build",
+  "command": "/usr/bin/clang++-11 -DCLAD_INSTDIR_INCL=\\\"/workspace/clad/build/include\\\" -DCLAD_SRCDIR_INCL=\\\"/workspace/clad/include\\\" -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -I/workspace/clad/build/lib/Differentiator -I/workspace/clad/lib/Differentiator -I/workspace/clad/include -I/workspace/clad/build/include -I/usr/lib/llvm-11/include  -fPIC -fvisibility-inlines-hidden -Werror=date-time -Werror=unguarded-availability-new -w -fdiagnostics-color -fno-common -Woverloaded-virtual -Wcast-qual -fno-strict-aliasing -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings -g   -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS  -fno-exceptions -std=gnu++14 -o lib/Differentiator/CMakeFiles/cladDifferentiator.dir/VisitorBase.cpp.o -c /workspace/clad/lib/Differentiator/VisitorBase.cpp",
+  "file": "/workspace/clad/lib/Differentiator/VisitorBase.cpp"
+},
+{
+  "directory": "/workspace/clad/build",
+  "command": "/usr/bin/clang++-11 -DCLAD_INSTDIR_INCL=\\\"/workspace/clad/build/include\\\" -DCLAD_SRCDIR_INCL=\\\"/workspace/clad/include\\\" -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -I/workspace/clad/build/tools -I/workspace/clad/tools -I/workspace/clad/include -I/workspace/clad/build/include -I/usr/lib/llvm-11/include  -fPIC -fvisibility-inlines-hidden -Werror=date-time -Werror=unguarded-availability-new -w -fdiagnostics-color -fno-common -Woverloaded-virtual -Wcast-qual -fno-strict-aliasing -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings -g   -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS  -fno-exceptions -std=gnu++14 -o tools/CMakeFiles/cladPlugin.dir/ClangPlugin.cpp.o -c /workspace/clad/tools/ClangPlugin.cpp",
+  "file": "/workspace/clad/tools/ClangPlugin.cpp"
+},
+{
+  "directory": "/workspace/clad/build",
+  "command": "/usr/bin/clang++-11 -DCLAD_INSTDIR_INCL=\\\"/workspace/clad/build/include\\\" -DCLAD_SRCDIR_INCL=\\\"/workspace/clad/include\\\" -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -I/workspace/clad/build/tools -I/workspace/clad/tools -I/workspace/clad/include -I/workspace/clad/build/include -I/usr/lib/llvm-11/include  -fPIC -fvisibility-inlines-hidden -Werror=date-time -Werror=unguarded-availability-new -w -fdiagnostics-color -fno-common -Woverloaded-virtual -Wcast-qual -fno-strict-aliasing -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings -g   -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS  -fno-exceptions -std=gnu++14 -o tools/CMakeFiles/cladPlugin.dir/DerivedFnInfo.cpp.o -c /workspace/clad/tools/DerivedFnInfo.cpp",
+  "file": "/workspace/clad/tools/DerivedFnInfo.cpp"
+},
+{
+  "directory": "/workspace/clad/build",
+  "command": "/usr/bin/clang++-11 -DCLAD_INSTDIR_INCL=\\\"/workspace/clad/build/include\\\" -DCLAD_SRCDIR_INCL=\\\"/workspace/clad/include\\\" -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -I/workspace/clad/build/tools -I/workspace/clad/tools -I/workspace/clad/include -I/workspace/clad/build/include -I/usr/lib/llvm-11/include  -fPIC -fvisibility-inlines-hidden -Werror=date-time -Werror=unguarded-availability-new -w -fdiagnostics-color -fno-common -Woverloaded-virtual -Wcast-qual -fno-strict-aliasing -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings -g   -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS  -fno-exceptions -std=gnu++14 -o tools/CMakeFiles/cladPlugin.dir/RequiredSymbols.cpp.o -c /workspace/clad/tools/RequiredSymbols.cpp",
+  "file": "/workspace/clad/tools/RequiredSymbols.cpp"
+},
+{
+  "directory": "/workspace/clad/build",
+  "command": "/usr/bin/clang++-11 -DCLAD_INSTDIR_INCL=\\\"/workspace/clad/build/include\\\" -DCLAD_SRCDIR_INCL=\\\"/workspace/clad/include\\\" -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -I/workspace/clad/build/tools -I/workspace/clad/tools -I/workspace/clad/include -I/workspace/clad/build/include -I/usr/lib/llvm-11/include  -fPIC -fvisibility-inlines-hidden -Werror=date-time -Werror=unguarded-availability-new -w -fdiagnostics-color -fno-common -Woverloaded-virtual -Wcast-qual -fno-strict-aliasing -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings -g -fPIC   -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS  -fno-exceptions -std=gnu++14 -o tools/CMakeFiles/clad.dir/ClangPlugin.cpp.o -c /workspace/clad/tools/ClangPlugin.cpp",
+  "file": "/workspace/clad/tools/ClangPlugin.cpp"
+},
+{
+  "directory": "/workspace/clad/build",
+  "command": "/usr/bin/clang++-11 -DCLAD_INSTDIR_INCL=\\\"/workspace/clad/build/include\\\" -DCLAD_SRCDIR_INCL=\\\"/workspace/clad/include\\\" -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -I/workspace/clad/build/tools -I/workspace/clad/tools -I/workspace/clad/include -I/workspace/clad/build/include -I/usr/lib/llvm-11/include  -fPIC -fvisibility-inlines-hidden -Werror=date-time -Werror=unguarded-availability-new -w -fdiagnostics-color -fno-common -Woverloaded-virtual -Wcast-qual -fno-strict-aliasing -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings -g -fPIC   -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS  -fno-exceptions -std=gnu++14 -o tools/CMakeFiles/clad.dir/DerivedFnInfo.cpp.o -c /workspace/clad/tools/DerivedFnInfo.cpp",
+  "file": "/workspace/clad/tools/DerivedFnInfo.cpp"
+},
+{
+  "directory": "/workspace/clad/build",
+  "command": "/usr/bin/clang++-11 -DCLAD_INSTDIR_INCL=\\\"/workspace/clad/build/include\\\" -DCLAD_SRCDIR_INCL=\\\"/workspace/clad/include\\\" -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -I/workspace/clad/build/tools -I/workspace/clad/tools -I/workspace/clad/include -I/workspace/clad/build/include -I/usr/lib/llvm-11/include  -fPIC -fvisibility-inlines-hidden -Werror=date-time -Werror=unguarded-availability-new -w -fdiagnostics-color -fno-common -Woverloaded-virtual -Wcast-qual -fno-strict-aliasing -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings -g -fPIC   -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS  -fno-exceptions -std=gnu++14 -o tools/CMakeFiles/clad.dir/RequiredSymbols.cpp.o -c /workspace/clad/tools/RequiredSymbols.cpp",
+  "file": "/workspace/clad/tools/RequiredSymbols.cpp"
+},
+{
+  "directory": "/workspace/clad/build",
+  "command": "/usr/bin/clang++-11 -DCLAD_INSTDIR_INCL=\\\"/workspace/clad/build/include\\\" -DCLAD_SRCDIR_INCL=\\\"/workspace/clad/include\\\" -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -DcladCustomModelPlugin_EXPORTS -I/workspace/clad/build/demos/ErrorEstimation/CustomModel -I/workspace/clad/demos/ErrorEstimation/CustomModel -I/workspace/clad/include -I/workspace/clad/build/include -I/usr/lib/llvm-11/include  -fPIC -fvisibility-inlines-hidden -Werror=date-time -Werror=unguarded-availability-new -w -fdiagnostics-color -fno-common -Woverloaded-virtual -Wcast-qual -fno-strict-aliasing -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings -g -fPIC   -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -fno-rtti -std=gnu++14 -o demos/ErrorEstimation/CustomModel/CMakeFiles/cladCustomModelPlugin.dir/CustomModel.cpp.o -c /workspace/clad/demos/ErrorEstimation/CustomModel/CustomModel.cpp",
+  "file": "/workspace/clad/demos/ErrorEstimation/CustomModel/CustomModel.cpp"
+}
+]
