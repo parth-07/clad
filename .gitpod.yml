@@ -5,7 +5,5 @@
 tasks:
   - init: export PATH=${PATH}:/workspace/clad/scripts
     command: echo 'install llvm-10'
-    env:
-      PATH: "${PATH}:/workspace/clad/scripts"
   
 
