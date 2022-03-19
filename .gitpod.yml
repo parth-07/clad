@@ -1,9 +1,9 @@
 # List the start up tasks. Learn more https://www.gitpod.io/docs/config-start-tasks/
-image:
-  file: .gitpod.dockerfile
+# image:
+#   file: .gitpod.dockerfile
 
 tasks:
-  - init: sudo apt-get update && sudo apt-get -y install clang-10 libclang-10-dev llvm-10-tools llvm-10-dev
+  - init: echo "Hello World"
     command: echo 'install llvm-10'
   
 
