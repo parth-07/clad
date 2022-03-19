@@ -3,7 +3,7 @@
 #   file: .gitpod.dockerfile
 
 tasks:
-  - init: echo "Hello World"
+  - init: export PATH=${PATH}:/workspace/clad/scripts
     command: echo 'install llvm-10'
     env:
       PATH: "${PATH}:/workspace/clad/scripts"
