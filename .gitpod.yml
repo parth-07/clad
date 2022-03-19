@@ -3,7 +3,10 @@ image:
   file: .gitpod.dockerfile
 
 tasks:
-  - init: ls
-    command: echo 'install llvm-10'
+  - name: Build clad with LLVM-10
+  - init: |
+      ./scripts/install_dependencies.sh 10
+      ./scripts/build_clad.sh 10
+      exit 0
   
 
