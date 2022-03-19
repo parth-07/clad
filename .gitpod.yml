@@ -1,0 +1,17 @@
+# List the start up tasks. Learn more https://www.gitpod.io/docs/config-start-tasks/
+image:
+  file: .gitpod.dockerfile
+
+tasks:
+  - name: "Initialise"
+    init: |
+      cp -r /workspace/clad/scripts /workspace/
+      build_clad.sh 11
+      mkdir .vscode
+      cp /workspace/clad/scripts/.vscode/* /workspace/clad/.vscode/
+      cp /workspace/clad/scripts/compile_commands.json /workspace/clad/
+      rm -f /workspace/clad/cmake-variants.json
+
+gitConfig:
+  core.editor: "vim"
+

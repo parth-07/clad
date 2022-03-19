@@ -1,0 +1,10 @@
+{
+    "workbench.editor.showTabs": true,
+    "cmake.configureSettings": {
+      "Clang_DIR": "/usr/lib/llvm-11",
+      "LLVM_DIR": "/usr/lib/llvm-11",
+      "LLVM_EXTERNAL_LIT": "/usr/local/bin/lit",
+      "CMAKE_BUILD_TYPE": "Debug"
+    },
+    "cmake.copyCompileCommands": "${workspaceFolder}/compile_commands.json",
+  }
