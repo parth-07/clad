@@ -110,6 +110,11 @@ namespace clad {
     VectorOutputs m_VectorOutput;
     /// The functor type that is currently being differentiated, if any.
     const clang::CXXRecordDecl* m_Functor = nullptr;
+    /// Stores derivative expression of the implicit `this` pointer.
+    ///
+    /// \note `this` pointer derivative expression is always of the class object
+    /// type rather than the pointer type.
+    clang::Expr* m_ThisExprDerivative = nullptr;
     /// A function used to wrap result of visiting E in a lambda. Returns a call
     /// to the built lambda. Func is a functor that will be invoked inside
     /// lambda scope and block. Statements inside lambda are expected to be

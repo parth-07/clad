@@ -214,6 +214,18 @@ namespace clad {
     /// Returns true if `FD` is a class static method; otherwise returns
     /// false.
     bool IsStaticMethod(const clang::FunctionDecl* FD);
+
+    /// Returns a valid `clang::SourceRange` to be used in places
+    /// where clang requires a valid source sange.
+    clang::SourceRange GetValidSRange(clang::Sema& semaRef);
+
+    /// Builds and returns `CXXNewExpr`
+    ///
+    /// This function is just a convenient routine that internally calls
+    /// `Sema::BuildCXXNew`.
+    clang::CXXNewExpr* BuildCXXNewExpr(clang::Sema& semaRef,
+                                       clang::QualType qType,
+                                       clang::Expr* initializer);
   } // namespace utils
 }
 

@@ -6,7 +6,7 @@
 
 struct Experiment {
   mutable double x, y;
-  Experiment(double p_x, double p_y) : x(p_x), y(p_y) {}
+  Experiment(double p_x=0, double p_y=0) : x(p_x), y(p_y) {}
   double operator()(double i, double j) {
     return x*i*j;
   }
@@ -17,6 +17,7 @@ struct Experiment {
   // CHECK: double operator_call_darg0(double i, double j) {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     Experiment _d_this;
   // CHECK-NEXT:     double _d_x = 0;
   // CHECK-NEXT:     double _d_y = 0;
   // CHECK-NEXT:     double &_t0 = this->x;
@@ -27,7 +28,7 @@ struct Experiment {
 
 struct ExperimentConst {
   mutable double x, y;
-  ExperimentConst(double p_x, double p_y) : x(p_x), y(p_y) {}
+  ExperimentConst(double p_x=0, double p_y=0) : x(p_x), y(p_y) {}
   double operator()(double i, double j) const {
     return x*i*j;
   }
@@ -38,6 +39,7 @@ struct ExperimentConst {
   // CHECK: double operator_call_darg0(double i, double j) const {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     const ExperimentConst _d_this;
   // CHECK-NEXT:     double _d_x = 0;
   // CHECK-NEXT:     double _d_y = 0;
   // CHECK-NEXT:     double &_t0 = this->x;
@@ -48,7 +50,7 @@ struct ExperimentConst {
 
 struct ExperimentVolatile {
   mutable double x, y;
-  ExperimentVolatile(double p_x, double p_y) : x(p_x), y(p_y) {}
+  ExperimentVolatile(double p_x=0, double p_y=0) : x(p_x), y(p_y) {}
   double operator()(double i, double j) volatile {
     return x*i*j;
   }
@@ -59,6 +61,7 @@ struct ExperimentVolatile {
   // CHECK: double operator_call_darg0(double i, double j) volatile {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     volatile ExperimentVolatile _d_this;
   // CHECK-NEXT:     double _d_x = 0;
   // CHECK-NEXT:     double _d_y = 0;
   // CHECK-NEXT:     volatile double &_t0 = this->x;
@@ -69,7 +72,7 @@ struct ExperimentVolatile {
 
 struct ExperimentConstVolatile {
   mutable double x, y;
-  ExperimentConstVolatile(double p_x, double p_y) : x(p_x), y(p_y) {}
+  ExperimentConstVolatile(double p_x=0, double p_y=0) : x(p_x), y(p_y) {}
   double operator()(double i, double j) const volatile {
     return x*i*j;
   }
@@ -80,6 +83,7 @@ struct ExperimentConstVolatile {
   // CHECK: double operator_call_darg0(double i, double j) const volatile {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     const volatile ExperimentConstVolatile _d_this;
   // CHECK-NEXT:     double _d_x = 0;
   // CHECK-NEXT:     double _d_y = 0;
   // CHECK-NEXT:     volatile double &_t0 = this->x;
@@ -92,7 +96,7 @@ namespace outer {
   namespace inner {
     struct ExperimentNNS {
       mutable double x, y;
-      ExperimentNNS(double p_x, double p_y) : x(p_x), y(p_y) {}
+      ExperimentNNS(double p_x=0, double p_y=0) : x(p_x), y(p_y) {}
       double operator()(double i, double j) {
         return x*i*j;
       }
@@ -103,6 +107,7 @@ namespace outer {
       // CHECK: double operator_call_darg0(double i, double j) {
       // CHECK-NEXT:     double _d_i = 1;
       // CHECK-NEXT:     double _d_j = 0;
+      // CHECK-NEXT:     outer::inner::ExperimentNNS _d_this;
       // CHECK-NEXT:     double _d_x = 0;
       // CHECK-NEXT:     double _d_y = 0;
       // CHECK-NEXT:     double &_t0 = this->x;
@@ -120,7 +125,7 @@ namespace outer {
 struct Widget {
   double i, j;
   const char* char_arr[10];
-  Widget(double p_i, double p_j) : i(p_i), j(p_j) {}
+  Widget(double p_i=0, double p_j=0) : i(p_i), j(p_j) {}
   double operator()() {
     j = i * i;
     j /= i;
@@ -128,6 +133,7 @@ struct Widget {
   }
 
   // CHECK:   double operator_call_darg0() {
+  // CHECK-NEXT:     Widget _d_this;
   // CHECK-NEXT:       double _d_i = 1;
   // CHECK-NEXT:       double _d_j = 0;
   // CHECK-NEXT:       double &_t0 = this->i;
@@ -156,7 +162,7 @@ struct WidgetConstVolatile {
   mutable double i, j;
   char** s;
   char* char_arr[10];
-  WidgetConstVolatile(double p_i, double p_j) : i(p_i), j(p_j) {}
+  WidgetConstVolatile(double p_i = 0, double p_j = 0) : i(p_i), j(p_j) {}
   double operator()() const volatile {
     j = i * i;
     j /= i;
@@ -164,6 +170,7 @@ struct WidgetConstVolatile {
   }
 
   // CHECK:   double operator_call_darg0() const volatile {
+  // CHECK-NEXT:     const volatile WidgetConstVolatile _d_this;
   // CHECK-NEXT:       double _d_i = 1;
   // CHECK-NEXT:       double _d_j = 0;
   // CHECK-NEXT:       volatile double &_t0 = this->i;
@@ -191,7 +198,7 @@ struct WidgetConstVolatile {
 struct WidgetArr {
   mutable double i, j;
   double arr[10];
-  WidgetArr(double p_i, double p_j) : i(p_i), j(p_j) {
+  WidgetArr(double p_i = 0, double p_j= 0) : i(p_i), j(p_j) {
     for (int i=0; i<10; ++i)
       arr[i] = i;
   }
@@ -207,6 +214,7 @@ struct WidgetArr {
   }
 
   // CHECK:   double operator_call_darg2_3() {
+  // CHECK-NEXT:     WidgetArr _d_this;
   // CHECK-NEXT:       double _d_i = 0;
   // CHECK-NEXT:       double _d_j = 0;
   // CHECK-NEXT:       double _d_arr[10] = {0, 0, 0, 1, 0, 0, 0, 0, 0, 0};
@@ -231,6 +239,7 @@ struct WidgetArr {
   // CHECK-NEXT:   }
 
   // CHECK:   double operator_call_darg2_5() {
+  // CHECK-NEXT:     WidgetArr _d_this;
   // CHECK-NEXT:       double _d_i = 0;
   // CHECK-NEXT:       double _d_j = 0;
   // CHECK-NEXT:       double _d_arr[10] = {0, 0, 0, 0, 0, 1, 0, 0, 0, 0};
@@ -266,7 +275,7 @@ struct WidgetArr {
 struct WidgetPointer {
   mutable double i, j;
   double* arr;
-  WidgetPointer(double p_i, double p_j) : i(p_i), j(p_j) {
+  WidgetPointer(double p_i=0, double p_j=0) : i(p_i), j(p_j) {
     arr = static_cast<double*>(malloc(sizeof(double)*10));
     for (int i=0; i<10; ++i) {
       arr[i] = i;
@@ -287,6 +296,7 @@ struct WidgetPointer {
   }
 
   // CHECK:   double operator_call_darg2_3() {
+  // CHECK-NEXT:     WidgetPointer _d_this;
   // CHECK-NEXT:       double _d_i = 0;
   // CHECK-NEXT:       double _d_j = 0;
   // CHECK-NEXT:       double *_d_arr = nullptr;
@@ -317,6 +327,7 @@ struct WidgetPointer {
   // CHECK-NEXT:   }
 
   // CHECK:   double operator_call_darg2_5() {
+  // CHECK-NEXT:     WidgetPointer _d_this;
   // CHECK-NEXT:       double _d_i = 0;
   // CHECK-NEXT:       double _d_j = 0;
   // CHECK-NEXT:       double *_d_arr = nullptr;

@@ -224,7 +224,7 @@ namespace clad {
       if (isArrayOrPointerType(T))
         T = T->getPointeeOrArrayElementType()->getCanonicalTypeInternal();
       T = T.getNonReferenceType();
-      if (T->isRealType() || T->isRecordType())
+      if (T->isRealType() || T->isStructureOrClassType())
         return true;
       return false;
     }
@@ -286,6 +286,24 @@ namespace clad {
       if (auto MD = dyn_cast<CXXMethodDecl>(FD))
         return MD->isStatic();
       return false;
+    }
+
+    clang::SourceRange GetValidSRange(clang::Sema& semaRef) {
+      SourceLocation validSL = GetValidSLoc(semaRef);
+      return SourceRange(validSL, validSL);
+    }
+
+    CXXNewExpr* BuildCXXNewExpr(Sema& semaRef, QualType qType,
+                                Expr* initializer) {
+      auto& C = semaRef.getASTContext();
+      auto newExpr = semaRef
+                         .BuildCXXNew(SourceRange(), false, noLoc,
+                                      MultiExprArg(), noLoc, SourceRange(),
+                                      qType, C.getTrivialTypeSourceInfo(qType),
+                                      clad_compat::EmptyOptional<Expr*>(),
+                                      GetValidSRange(semaRef), initializer)
+                         .getAs<CXXNewExpr>();
+      return newExpr;
     }
   } // namespace utils
 } // namespace clad

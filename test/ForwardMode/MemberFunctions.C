@@ -11,7 +11,7 @@
 extern "C" int printf(const char *fmt, ...);
 class SimpleFunctions {
 public:
-  SimpleFunctions(double p_x = 0, double p_y = 0) : x(p_x), y(p_y) {}
+  SimpleFunctions(double p_x = 0, double p_y = 0) noexcept : x(p_x), y(p_y) {}
   double x, y;
   double mem_fn(double i, double j)  { 
     return (x+y)*i + i*j*j; 
@@ -20,9 +20,10 @@ public:
   // CHECK: double mem_fn_darg0(double i, double j) {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double mem_fn_with_var_arg_list(double i, double j, ...)  { 
@@ -32,9 +33,10 @@ public:
   // CHECK: double mem_fn_with_var_arg_list_darg0(double i, double j, ...) {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double const_mem_fn(double i, double j) const { 
@@ -44,9 +46,10 @@ public:
   // CHECK: double const_mem_fn_darg0(double i, double j) const {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     const SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double const_mem_fn_with_var_arg_list(double i, double j, ...) const { 
@@ -56,9 +59,10 @@ public:
   // CHECK: double const_mem_fn_with_var_arg_list_darg0(double i, double j, ...) const {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     const SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double volatile_mem_fn(double i, double j) volatile { 
@@ -68,9 +72,10 @@ public:
   // CHECK: double volatile_mem_fn_darg0(double i, double j) volatile {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     volatile SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double volatile_mem_fn_with_var_arg_list(double i, double j, ...) volatile { 
@@ -80,9 +85,10 @@ public:
   // CHECK: double volatile_mem_fn_with_var_arg_list_darg0(double i, double j, ...) volatile {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     volatile SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double const_volatile_mem_fn(double i, double j) const volatile { 
@@ -92,9 +98,10 @@ public:
   // CHECK: double const_volatile_mem_fn_darg0(double i, double j) const volatile {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     const volatile SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double const_volatile_mem_fn_with_var_arg_list(double i, double j, ...) const volatile { 
@@ -104,9 +111,10 @@ public:
   // CHECK: double const_volatile_mem_fn_with_var_arg_list_darg0(double i, double j, ...) const volatile {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     const volatile SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double lval_ref_mem_fn(double i, double j) & { 
@@ -116,9 +124,10 @@ public:
   // CHECK: double lval_ref_mem_fn_darg0(double i, double j) & {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double lval_ref_mem_fn_with_var_arg_list(double i, double j, ...) & { 
@@ -128,9 +137,10 @@ public:
   // CHECK: double lval_ref_mem_fn_with_var_arg_list_darg0(double i, double j, ...) & {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double const_lval_ref_mem_fn(double i, double j) const & { 
@@ -140,9 +150,10 @@ public:
   // CHECK: double const_lval_ref_mem_fn_darg0(double i, double j) const & {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     const SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double const_lval_ref_mem_fn_with_var_arg_list(double i, double j, ...) const & { 
@@ -152,9 +163,10 @@ public:
   // CHECK: double const_lval_ref_mem_fn_with_var_arg_list_darg0(double i, double j, ...) const & {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     const SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double volatile_lval_ref_mem_fn(double i, double j) volatile & { 
@@ -164,9 +176,10 @@ public:
   // CHECK: double volatile_lval_ref_mem_fn_darg0(double i, double j) volatile & {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     volatile SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double volatile_lval_ref_mem_fn_with_var_arg_list(double i, double j, ...) volatile & { 
@@ -176,9 +189,10 @@ public:
   // CHECK: double volatile_lval_ref_mem_fn_with_var_arg_list_darg0(double i, double j, ...) volatile & {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     volatile SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double const_volatile_lval_ref_mem_fn(double i, double j) const volatile & { 
@@ -188,9 +202,10 @@ public:
   // CHECK: double const_volatile_lval_ref_mem_fn_darg0(double i, double j) const volatile & {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     const volatile SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double const_volatile_lval_ref_mem_fn_with_var_arg_list(double i, double j, ...) const volatile & { 
@@ -200,9 +215,10 @@ public:
   // CHECK: double const_volatile_lval_ref_mem_fn_with_var_arg_list_darg0(double i, double j, ...) const volatile & {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     const volatile SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double rval_ref_mem_fn(double i, double j) && { 
@@ -212,9 +228,10 @@ public:
   // CHECK: double rval_ref_mem_fn_darg0(double i, double j) && {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double rval_ref_mem_fn_with_var_arg_list(double i, double j, ...) && { 
@@ -224,9 +241,10 @@ public:
   // CHECK: double rval_ref_mem_fn_with_var_arg_list_darg0(double i, double j, ...) && {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double const_rval_ref_mem_fn(double i, double j) const && { 
@@ -236,9 +254,10 @@ public:
   // CHECK: double const_rval_ref_mem_fn_darg0(double i, double j) const && {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     const SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double const_rval_ref_mem_fn_with_var_arg_list(double i, double j, ...) const && { 
@@ -248,9 +267,10 @@ public:
   // CHECK: double const_rval_ref_mem_fn_with_var_arg_list_darg0(double i, double j, ...) const && {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     const SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double volatile_rval_ref_mem_fn(double i, double j) volatile && { 
@@ -260,9 +280,10 @@ public:
   // CHECK: double volatile_rval_ref_mem_fn_darg0(double i, double j) volatile && {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     volatile SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double volatile_rval_ref_mem_fn_with_var_arg_list(double i, double j, ...) volatile && { 
@@ -272,9 +293,10 @@ public:
   // CHECK: double volatile_rval_ref_mem_fn_with_var_arg_list_darg0(double i, double j, ...) volatile && {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     volatile SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double const_volatile_rval_ref_mem_fn(double i, double j) const volatile && { 
@@ -284,9 +306,10 @@ public:
   // CHECK: double const_volatile_rval_ref_mem_fn_darg0(double i, double j) const volatile && {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     const volatile SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double const_volatile_rval_ref_mem_fn_with_var_arg_list(double i, double j, ...) const volatile && { 
@@ -296,9 +319,10 @@ public:
   // CHECK: double const_volatile_rval_ref_mem_fn_with_var_arg_list_darg0(double i, double j, ...) const volatile && {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     const volatile SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double noexcept_mem_fn(double i, double j) noexcept { 
@@ -308,9 +332,10 @@ public:
   // CHECK: double noexcept_mem_fn_darg0(double i, double j) noexcept {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double noexcept_mem_fn_with_var_arg_list(double i, double j, ...) noexcept { 
@@ -320,9 +345,10 @@ public:
   // CHECK: double noexcept_mem_fn_with_var_arg_list_darg0(double i, double j, ...) noexcept {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double const_noexcept_mem_fn(double i, double j) const noexcept { 
@@ -332,9 +358,10 @@ public:
   // CHECK: double const_noexcept_mem_fn_darg0(double i, double j) const noexcept {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     const SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double const_noexcept_mem_fn_with_var_arg_list(double i, double j, ...) const noexcept { 
@@ -344,9 +371,10 @@ public:
   // CHECK: double const_noexcept_mem_fn_with_var_arg_list_darg0(double i, double j, ...) const noexcept {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     const SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double volatile_noexcept_mem_fn(double i, double j) volatile noexcept { 
@@ -356,9 +384,10 @@ public:
   // CHECK: double volatile_noexcept_mem_fn_darg0(double i, double j) volatile noexcept {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     volatile SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double volatile_noexcept_mem_fn_with_var_arg_list(double i, double j, ...) volatile noexcept { 
@@ -368,9 +397,10 @@ public:
   // CHECK: double volatile_noexcept_mem_fn_with_var_arg_list_darg0(double i, double j, ...) volatile noexcept {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     volatile SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double const_volatile_noexcept_mem_fn(double i, double j) const volatile noexcept { 
@@ -380,9 +410,10 @@ public:
   // CHECK: double const_volatile_noexcept_mem_fn_darg0(double i, double j) const volatile noexcept {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     const volatile SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double const_volatile_noexcept_mem_fn_with_var_arg_list(double i, double j, ...) const volatile noexcept { 
@@ -392,9 +423,10 @@ public:
   // CHECK: double const_volatile_noexcept_mem_fn_with_var_arg_list_darg0(double i, double j, ...) const volatile noexcept {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     const volatile SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double lval_ref_noexcept_mem_fn(double i, double j) & noexcept { 
@@ -404,9 +436,10 @@ public:
   // CHECK: double lval_ref_noexcept_mem_fn_darg0(double i, double j) & noexcept {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double lval_ref_noexcept_mem_fn_with_var_arg_list(double i, double j, ...) & noexcept { 
@@ -416,9 +449,10 @@ public:
   // CHECK: double lval_ref_noexcept_mem_fn_with_var_arg_list_darg0(double i, double j, ...) & noexcept {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double const_lval_ref_noexcept_mem_fn(double i, double j) const & noexcept { 
@@ -428,9 +462,10 @@ public:
   // CHECK: double const_lval_ref_noexcept_mem_fn_darg0(double i, double j) const & noexcept {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     const SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double const_lval_ref_noexcept_mem_fn_with_var_arg_list(double i, double j, ...) const & noexcept { 
@@ -440,9 +475,10 @@ public:
   // CHECK: double const_lval_ref_noexcept_mem_fn_with_var_arg_list_darg0(double i, double j, ...) const & noexcept {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     const SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double volatile_lval_ref_noexcept_mem_fn(double i, double j) volatile & noexcept { 
@@ -452,9 +488,10 @@ public:
   // CHECK: double volatile_lval_ref_noexcept_mem_fn_darg0(double i, double j) volatile & noexcept {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     volatile SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double volatile_lval_ref_noexcept_mem_fn_with_var_arg_list(double i, double j, ...) volatile & noexcept { 
@@ -464,9 +501,10 @@ public:
   // CHECK: double volatile_lval_ref_noexcept_mem_fn_with_var_arg_list_darg0(double i, double j, ...) volatile & noexcept {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     volatile SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double const_volatile_lval_ref_noexcept_mem_fn(double i, double j) const volatile & noexcept { 
@@ -476,9 +514,10 @@ public:
   // CHECK: double const_volatile_lval_ref_noexcept_mem_fn_darg0(double i, double j) const volatile & noexcept {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     const volatile SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double const_volatile_lval_ref_noexcept_mem_fn_with_var_arg_list(double i, double j, ...) const volatile & noexcept { 
@@ -488,9 +527,10 @@ public:
   // CHECK: double const_volatile_lval_ref_noexcept_mem_fn_with_var_arg_list_darg0(double i, double j, ...) const volatile & noexcept {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     const volatile SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double rval_ref_noexcept_mem_fn(double i, double j) && noexcept { 
@@ -500,9 +540,10 @@ public:
   // CHECK: double rval_ref_noexcept_mem_fn_darg0(double i, double j) && noexcept {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double rval_ref_noexcept_mem_fn_with_var_arg_list(double i, double j, ...) && noexcept { 
@@ -512,9 +553,10 @@ public:
   // CHECK: double rval_ref_noexcept_mem_fn_with_var_arg_list_darg0(double i, double j, ...) && noexcept {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double const_rval_ref_noexcept_mem_fn(double i, double j) const && noexcept { 
@@ -524,9 +566,10 @@ public:
   // CHECK: double const_rval_ref_noexcept_mem_fn_darg0(double i, double j) const && noexcept {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     const SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double const_rval_ref_noexcept_mem_fn_with_var_arg_list(double i, double j, ...) const && noexcept { 
@@ -536,9 +579,10 @@ public:
   // CHECK: double const_rval_ref_noexcept_mem_fn_with_var_arg_list_darg0(double i, double j, ...) const && noexcept {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     const SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double volatile_rval_ref_noexcept_mem_fn(double i, double j) volatile && noexcept { 
@@ -548,9 +592,10 @@ public:
   // CHECK: double volatile_rval_ref_noexcept_mem_fn_darg0(double i, double j) volatile && noexcept {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     volatile SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double volatile_rval_ref_noexcept_mem_fn_with_var_arg_list(double i, double j, ...) volatile && noexcept { 
@@ -560,9 +605,10 @@ public:
   // CHECK: double volatile_rval_ref_noexcept_mem_fn_with_var_arg_list_darg0(double i, double j, ...) volatile && noexcept {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     volatile SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double const_volatile_rval_ref_noexcept_mem_fn(double i, double j) const volatile && noexcept { 
@@ -572,9 +618,10 @@ public:
   // CHECK: double const_volatile_rval_ref_noexcept_mem_fn_darg0(double i, double j) const volatile && noexcept {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     const volatile SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double const_volatile_rval_ref_noexcept_mem_fn_with_var_arg_list(double i, double j, ...) const volatile && noexcept { 
@@ -584,9 +631,10 @@ public:
   // CHECK: double const_volatile_rval_ref_noexcept_mem_fn_with_var_arg_list_darg0(double i, double j, ...) const volatile && noexcept {
   // CHECK-NEXT:     double _d_i = 1;
   // CHECK-NEXT:     double _d_j = 0;
+  // CHECK-NEXT:     const volatile SimpleFunctions _d_this;
   // CHECK-NEXT:     double _t0 = (this->x + this->y);
   // CHECK-NEXT:     double _t1 = i * j;
-  // CHECK-NEXT:     return (0. + 0.) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
+  // CHECK-NEXT:     return (_d_this.x + _d_this.y) * i + _t0 * _d_i + (_d_i * j + i * _d_j) * j + _t1 * _d_j;
   // CHECK-NEXT: }
 
   double* arr[10];
@@ -600,9 +648,10 @@ public:
   // CHECK:   double use_mem_var_darg0(double i, double j) {
   // CHECK-NEXT:       double _d_i = 1;
   // CHECK-NEXT:       double _d_j = 0;
+  // CHECK-NEXT:       SimpleFunctions _d_this;
   // CHECK-NEXT:       double *_d_p;
   // CHECK-NEXT:       double *p;
-  // CHECK-NEXT:       _d_p = 0;
+  // CHECK-NEXT:       _d_p = _d_this.arr[1];
   // CHECK-NEXT:       p = this->arr[1];
   // CHECK-NEXT:       return _d_i;
   // CHECK-NEXT:   }
