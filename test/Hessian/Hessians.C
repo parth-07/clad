@@ -257,7 +257,7 @@ void f_power10_hessian(double x, clad::array_ref<double> hessianMatrix);
 
 struct Experiment {
   double x, y;
-  Experiment (double p_x, double p_y) : x(p_x), y(p_y) {}
+  Experiment (double p_x = 0, double p_y = 0) : x(p_x), y(p_y) {}
   double someMethod (double i, double j) {
     return i*i*j + j*j*i;
   }
@@ -272,15 +272,17 @@ struct Experiment {
                              clad::array_ref<double> _d_j);
 
   void someMethod_hessian(double x, clad::array_ref<double> hessianMatrix);
-  // CHECK:void someMethod_hessian(double i, double j, clad::array_ref<double> hessianMatrix) {
-  // CHECK-NEXT:  this->someMethod_darg0_grad(i, j, hessianMatrix.slice(0UL, 1UL), hessianMatrix.slice(1UL, 1UL));
-  // CHECK-NEXT:  this->someMethod_darg1_grad(i, j, hessianMatrix.slice(2UL, 1UL), hessianMatrix.slice(3UL, 1UL));
-  // CHECK-NEXT:}
+  // CHECK: void someMethod_hessian(double i, double j, clad::array_ref<double> hessianMatrix) {
+  // CHECK-NEXT:     Experiment _d_this;
+  // CHECK-NEXT:     this->someMethod_darg0_grad(i, j, &_d_this, hessianMatrix.slice(0UL, 1UL), hessianMatrix.slice(1UL, 1UL));
+  // CHECK-NEXT:     Experiment _d_this0;
+  // CHECK-NEXT:     this->someMethod_darg1_grad(i, j, &_d_this0, hessianMatrix.slice(2UL, 1UL), hessianMatrix.slice(3UL, 1UL));
+  // CHECK-NEXT: }
 };
 
 struct Widget {
   double x, y;
-  Widget(double p_x, double p_y) : x(p_x), y(p_y) {}
+  Widget(double p_x=0, double p_y=0) : x(p_x), y(p_y) {}
   double memFn_1(double i, double j) {
     return x*y*i*j;
   }
@@ -298,8 +300,10 @@ struct Widget {
                        double j,
                        clad::array_ref<double> hessianMatrix);
   // CHECK: void memFn_1_hessian(double i, double j, clad::array_ref<double> hessianMatrix) {
-  // CHECK-NEXT:     this->memFn_1_darg0_grad(i, j, hessianMatrix.slice(0UL, 1UL), hessianMatrix.slice(1UL, 1UL));
-  // CHECK-NEXT:     this->memFn_1_darg1_grad(i, j, hessianMatrix.slice(2UL, 1UL), hessianMatrix.slice(3UL, 1UL));
+  // CHECK-NEXT:     Widget _d_this;
+  // CHECK-NEXT:     this->memFn_1_darg0_grad(i, j, &_d_this, hessianMatrix.slice(0UL, 1UL), hessianMatrix.slice(1UL, 1UL));
+  // CHECK-NEXT:     Widget _d_this0;
+  // CHECK-NEXT:     this->memFn_1_darg1_grad(i, j, &_d_this0, hessianMatrix.slice(2UL, 1UL), hessianMatrix.slice(3UL, 1UL));
   // CHECK-NEXT: }
 
   double memFn_2(double i, double j) {
@@ -321,10 +325,22 @@ struct Widget {
                        double j,
                        clad::array_ref<double> hessianMatrix);
   // CHECK: void memFn_2_hessian(double i, double j, clad::array_ref<double> hessianMatrix) {
-  // CHECK-NEXT:     this->memFn_2_darg0_grad(i, j, hessianMatrix.slice(0UL, 1UL), hessianMatrix.slice(1UL, 1UL));
-  // CHECK-NEXT:     this->memFn_2_darg1_grad(i, j, hessianMatrix.slice(2UL, 1UL), hessianMatrix.slice(3UL, 1UL));
+  // CHECK-NEXT:     Widget _d_this;
+  // CHECK-NEXT:     this->memFn_2_darg0_grad(i, j, &_d_this, hessianMatrix.slice(0UL, 1UL), hessianMatrix.slice(1UL, 1UL));
+  // CHECK-NEXT:     Widget _d_this0;
+  // CHECK-NEXT:     this->memFn_2_darg1_grad(i, j, &_d_this0, hessianMatrix.slice(2UL, 1UL), hessianMatrix.slice(3UL, 1UL));
   // CHECK-NEXT: }
 };
+
+double fn_def_arg(double i=0, double j=0) {
+  return 2*i*j;
+}
+
+void fn_def_arg_darg0_grad(double, double, clad::array_ref<double>,
+                           clad::array_ref<double>);
+void fn_def_arg_darg1_grad(double, double, clad::array_ref<double>,
+                           clad::array_ref<double>);
+void fn_def_arg_hessian(double, double, clad::array_ref<double>);
 
 #define TEST1(F, x) { \
   result[0] = 0;\
@@ -378,4 +394,5 @@ int main() {
   TEST3(&Experiment::someMethod, E, 3, 5);  // CHECK-EXEC: Result is = {10.00, 16.00, 16.00, 6.00}
   TEST3(&Widget::memFn_1, W, 7, 9); // CHECK-EXEC: Result is = {0.00, 15.00, 15.00, 0.00}
   TEST3(&Widget::memFn_2, W, 7, 9); // CHECK-EXEC: Result is = {5400.00, 4200.00, 4200.00, 0.00}
+  TEST2(fn_def_arg, 3, 5);  // CHECK-EXEC: Result is = {0.00, 2.00, 2.00, 0.00}
 }
