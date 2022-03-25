@@ -111,16 +111,26 @@ namespace clad {
         m_Sema.PushOnScopeChains(derivedPVD, getCurrentScope(),
                                  /*AddToContext=*/false);
         derivedParams.push_back(derivedPVD);
-        m_ThisExprDerivative = BuildDeclRef(derivedPVD);
+        auto dThisRef = BuildDeclRef(derivedPVD);
+        m_ThisExprDerivative = BuildOp(UnaryOperatorKind::UO_Deref, dThisRef);
       }
     }
 
     std::size_t numParamsOriginalFn = m_Function->getNumParams();
     for (std::size_t i = 0; i < numParamsOriginalFn; ++i) {
       auto PVD = m_Function->getParamDecl(i);
-      auto newPVD = CloneParmVarDecl(PVD, PVD->getIdentifier(),
+      bool identifierMissing = false;
+      IdentifierInfo* PVDII = PVD->getIdentifier();
+      if (!PVDII || PVDII->getLength() == 0) {
+        PVDII = CreateUniqueIdentifier("param");
+        identifierMissing = true;
+      }
+      auto newPVD = CloneParmVarDecl(PVD, PVDII,
                                      /*pushOnScopeChains=*/true);
       params.push_back(newPVD);
+
+      if (identifierMissing)
+        m_DeclReplacements[PVD] = newPVD;
 
       QualType nonRefParamType = PVD->getType().getNonReferenceType();
       // FIXME: Add support for pointer and array parameters in the
@@ -128,7 +138,7 @@ namespace clad {
       if (!utils::isDifferentiableType(PVD->getType()) ||
           utils::isArrayOrPointerType(PVD->getType()))
         continue;
-      auto derivedPVDName = "_d_" + PVD->getNameAsString();
+      auto derivedPVDName = "_d_" + std::string(PVDII->getName());
       IdentifierInfo* derivedPVDII = CreateUniqueIdentifier(derivedPVDName);
       auto derivedPVD = CloneParmVarDecl(PVD, derivedPVDII,
                                          /*pushOnScopeChains=*/true);
@@ -721,6 +731,8 @@ namespace clad {
       auto field = ME->getMemberDecl();
       assert(!isa<FunctionDecl>(field) &&
              "Member functions are not supported yet!");
+      auto clonedME = utils::BuildMemberExpr(
+          m_Sema, getCurrentScope(), baseDiff.getExpr(), field->getName());
       // Here we are implicitly assuming that the derived type and the original
       // types are same. This may not be necessarily true in the future.
       auto derivedME = utils::BuildMemberExpr(
@@ -832,11 +844,15 @@ namespace clad {
     // Check if referenced Decl was "replaced" with another identifier inside
     // the derivative
     if (auto VD = dyn_cast<VarDecl>(DRE->getDecl())) {
+      llvm::errs()<<"Dumping VD: "<<VD->getNameAsString()<<"\n";
       auto it = m_DeclReplacements.find(VD);
       if (it != std::end(m_DeclReplacements))
         clonedDRE = BuildDeclRef(it->second);
       else
         clonedDRE = cast<DeclRefExpr>(Clone(DRE));
+      llvm::errs()<<"Dumping clonedDRE:\n";
+      clonedDRE->dumpColor();
+      llvm::errs()<<"\n";
       // If current context is different than the context of the original
       // declaration (e.g. we are inside lambda), rebuild the DeclRefExpr
       // with Sema::BuildDeclRefExpr. This is required in some cases, e.g.
@@ -1026,17 +1042,29 @@ namespace clad {
 
     StmtDiff baseDiff;
     // Add derivative of the implicit `this` pointer.
-    if (auto MCE = dyn_cast<CXXMemberCallExpr>(CE)) {
-      baseDiff = Visit(MCE->getImplicitObjectArgument());
-      Expr* baseDerivative = baseDiff.getExpr_dx();
-      if (!baseDerivative->getType()->isPointerType())
-        baseDerivative = BuildOp(UnaryOperatorKind::UO_AddrOf, baseDerivative);
-      diffArgs.push_back(baseDerivative);
+    if (auto MD = dyn_cast<CXXMethodDecl>(FD)) {
+      if (MD->isInstance()) {
+        const Expr* baseOriginalE = nullptr;
+        if (auto MCE = dyn_cast<CXXMemberCallExpr>(CE))
+          baseOriginalE = MCE->getImplicitObjectArgument();
+        else if (auto OCE = dyn_cast<CXXOperatorCallExpr>(CE))
+          baseOriginalE = OCE->getArg(0);
+        baseDiff = Visit(baseOriginalE);
+        Expr* baseDerivative = baseDiff.getExpr_dx();
+        if (!baseDerivative->getType()->isPointerType())
+          baseDerivative = BuildOp(UnaryOperatorKind::UO_AddrOf, baseDerivative);
+        diffArgs.push_back(baseDerivative);
+      }
     }
+
+    bool skipFirstArg = false;
+
+    if (isa<CXXOperatorCallExpr>(CE) && isa<CXXMethodDecl>(FD))
+      skipFirstArg = true;
 
     // For f(g(x)) = f'(x) * g'(x)
     Expr* Multiplier = nullptr;
-    for (size_t i = 0, e = CE->getNumArgs(); i < e; ++i) {
+    for (size_t i = skipFirstArg, e = CE->getNumArgs(); i < e; ++i) {
       const Expr* arg = CE->getArg(i);
       StmtDiff argDiff = Visit(arg);
       if (!Multiplier)
@@ -1052,13 +1080,27 @@ namespace clad {
         diffArgs.push_back(argDiff.getExpr_dx());
     }
 
-    Expr* call = m_Sema
-                     .ActOnCallExpr(getCurrentScope(),
-                                    Clone(CE->getCallee()),
-                                    noLoc,
-                                    llvm::MutableArrayRef<Expr*>(CallArgs),
-                                    noLoc)
-                     .get();
+    Expr* call = nullptr;
+
+    if (auto OCE = dyn_cast<CXXOperatorCallExpr>(CE)) {
+      Expr* L = nullptr;
+      Expr* R = nullptr;
+      if (isa<CXXMethodDecl>(FD)) {
+        L = baseDiff.getExpr();
+        R = CallArgs[0];
+      } else {
+        L = CallArgs[0];
+        R = CallArgs[1];
+      }
+      if (CE->getNumArgs() == 2) {
+        call = BuildOp(utils::GetCorrespondingBinOp(OCE->getOperator()), L, R);
+      }
+    } else
+      call =
+          m_Sema
+              .ActOnCallExpr(getCurrentScope(), Clone(CE->getCallee()), noLoc,
+                             llvm::MutableArrayRef<Expr*>(CallArgs), noLoc)
+              .get();
 
     llvm::SmallVector<Expr*, 16> pushforwardFnArgs;
     pushforwardFnArgs.insert(pushforwardFnArgs.end(), CallArgs.begin(),
@@ -1122,7 +1164,8 @@ namespace clad {
         if (Multiplier)
           callDiff = BuildOp(BO_Mul, callDiff, BuildParens(Multiplier));
       } else {
-        if (auto MCE = dyn_cast<CXXMemberCallExpr>(CE)) {
+        auto MD = dyn_cast<CXXMethodDecl>(FD);
+        if (MD && MD->isInstance()) {
           callDiff =
               BuildCallExprToMemFn(baseDiff.getExpr(), pushforwardFD->getName(),
                                    pushforwardFnArgs, pushforwardFD);
@@ -1161,7 +1204,17 @@ namespace clad {
     else if (opKind == UnaryOperatorKind::UO_Real ||
              opKind == UnaryOperatorKind::UO_Imag) {
       return StmtDiff(op, BuildOp(opKind, diff.getExpr_dx()));
-    } else {
+    } else if (opKind == UnaryOperatorKind::UO_Deref) {
+      if (isa<CXXThisExpr>(UnOp->getSubExpr()->IgnoreParenImpCasts())) {
+        return {op, diff.getExpr_dx()};
+      } else {
+        unsupportedOpWarn(UnOp->getEndLoc());
+        auto zero =
+            ConstantFolder::synthesizeLiteral(m_Context.IntTy, m_Context, 0);
+        return StmtDiff(op, zero);
+      }
+    }
+    else {
       unsupportedOpWarn(UnOp->getEndLoc());
       auto zero =
           ConstantFolder::synthesizeLiteral(m_Context.IntTy, m_Context, 0);
@@ -1353,16 +1406,6 @@ namespace clad {
     // Casts should be handled automatically when the result is used by
     // Sema::ActOn.../Build...
     return StmtDiff(subExprDiff.getExpr(), subExprDiff.getExpr_dx());
-  }
-
-  StmtDiff ForwardModeVisitor::VisitCXXOperatorCallExpr(
-      const CXXOperatorCallExpr* OpCall) {
-    // This operator gets emitted when there is a binary operation containing
-    // overloaded operators. Eg. x+y, where operator+ is overloaded.
-    diag(DiagnosticsEngine::Error,
-         OpCall->getEndLoc(),
-         "We don't support overloaded operators yet!");
-    return {};
   }
 
   StmtDiff

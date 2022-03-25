@@ -226,6 +226,28 @@ namespace clad {
     clang::CXXNewExpr* BuildCXXNewExpr(clang::Sema& semaRef,
                                        clang::QualType qType,
                                        clang::Expr* initializer);
+
+    clang::Expr* BuildOverloadedOp(clang::Sema& semaRef,
+                                   clang::UnaryOperatorKind kind,
+                                   clang::UnresolvedSetImpl& fns,
+                                   clang::Expr* arg);
+
+    clang::Expr* BuildOverloadedOp(clang::Sema& semaRef,
+                                   clang::BinaryOperatorKind kind,
+                                   clang::UnresolvedSetImpl& fns,
+                                   clang::Expr* L, clang::Expr* R);
+
+    clang::Expr* BuildOverloadedOp(clang::Sema& semaRef,
+                                   clang::UnaryOperatorKind kind,
+                                   clang::FunctionDecl* FD, clang::Expr* arg);
+
+    clang::Expr* BuildOverloadedOp(clang::Sema& semaRef,
+                                   clang::BinaryOperatorKind kind,
+                                   clang::FunctionDecl* FD, clang::Expr* L,
+                                   clang::Expr* R);
+
+    clang::BinaryOperatorKind
+    GetCorrespondingBinOp(clang::OverloadedOperatorKind OOKind);
   } // namespace utils
 }
 

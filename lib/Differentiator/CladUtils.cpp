@@ -5,6 +5,7 @@
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/Expr.h"
+#include "clang/AST/UnresolvedSet.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Sema/Lookup.h"
 #include "clad/Differentiator/Compatibility.h"
@@ -304,6 +305,47 @@ namespace clad {
                                       GetValidSRange(semaRef), initializer)
                          .getAs<CXXNewExpr>();
       return newExpr;
+    }
+
+    clang::Expr* BuildOverloadedOp(clang::Sema& semaRef,
+                                   clang::UnaryOperatorKind kind,
+                                   clang::UnresolvedSetImpl& fns, Expr* arg) {
+      return semaRef.CreateOverloadedUnaryOp(noLoc, kind, fns, arg).get();
+    }
+
+    clang::Expr* BuildOverloadedOp(clang::Sema& semaRef,
+                                   clang::BinaryOperatorKind kind,
+                                   clang::UnresolvedSetImpl& fns, Expr* L,
+                                   Expr* R) {
+      return semaRef.CreateOverloadedBinOp(noLoc, kind, fns, L, R).get();
+    }
+
+    clang::Expr* BuildOverloadedOp(clang::Sema& semaRef,
+                                   clang::UnaryOperatorKind kind,
+                                   clang::FunctionDecl* FD, Expr* arg) {
+      UnresolvedSet<1> USI;
+      USI.addDecl(FD);
+      return BuildOverloadedOp(semaRef, kind, USI, arg);
+    }
+
+    clang::Expr* BuildOverloadedOp(clang::Sema& semaRef,
+                                   clang::BinaryOperatorKind kind,
+                                   clang::FunctionDecl* FD, Expr* L, Expr* R) {
+      UnresolvedSet<1> USI;
+      USI.addDecl(FD);
+      return BuildOverloadedOp(semaRef, kind, USI, L, R);
+    }
+
+    clang::BinaryOperatorKind
+    GetCorrespondingBinOp(clang::OverloadedOperatorKind OOKind) {
+      switch (OOKind) {
+        case OverloadedOperatorKind::OO_Equal:
+          return BinaryOperatorKind::BO_Assign;
+        case OverloadedOperatorKind::OO_Plus:
+          return BinaryOperatorKind::BO_Add;
+        case OverloadedOperatorKind::OO_PlusEqual:
+          return BinaryOperatorKind::BO_AddAssign;
+      }
     }
   } // namespace utils
 } // namespace clad
