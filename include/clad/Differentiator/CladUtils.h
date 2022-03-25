@@ -216,6 +216,17 @@ namespace clad {
     bool IsStaticMethod(const clang::FunctionDecl* FD);
 
     bool IsCladValueAndPushforwardType(clang::QualType T);
+
+    /// Builds a static cast to RValue expression for the expression `E`.
+    ///
+    /// If type of `E` is `T`. Then this function effectively creates:
+    // ```
+    // static_cast<T&&>(E)
+    // ```
+    clang::Expr* BuildStaticCastToRValue(clang::Sema& semaRef, clang::Expr* E);
+
+    /// Returns true if expression `E` is PRValue or XValue.
+    bool IsRValue(const clang::Expr* E);
   } // namespace utils
 }
 
