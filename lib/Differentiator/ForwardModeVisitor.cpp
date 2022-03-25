@@ -1059,6 +1059,8 @@ namespace clad {
 
     bool skipFirstArg = false;
 
+    // Here we do not need to check if FD is an instance method or a static
+    // method because C++ forbids creating operator overloads as static methods.
     if (isa<CXXOperatorCallExpr>(CE) && isa<CXXMethodDecl>(FD))
       skipFirstArg = true;
 
@@ -1087,13 +1089,21 @@ namespace clad {
       Expr* R = nullptr;
       if (isa<CXXMethodDecl>(FD)) {
         L = baseDiff.getExpr();
-        R = CallArgs[0];
+        if (CallArgs.size() >= 0)
+          R = CallArgs[0];
       } else {
         L = CallArgs[0];
-        R = CallArgs[1];
+        if (CallArgs.size() >= 1)
+          R = CallArgs[1];
       }
-      if (CE->getNumArgs() == 2) {
-        call = BuildOp(utils::GetCorrespondingBinOp(OCE->getOperator()), L, R);
+      auto OOCode = OCE->getOperator();
+      if (CE->getNumArgs() == 2 &&
+          OOCode != OverloadedOperatorKind::OO_PlusEqual &&
+          OOCode != OverloadedOperatorKind::OO_MinusMinus) {
+        call = BuildOp(BinaryOperator::getOverloadedOpcode(OOCode), L, R);
+      } else {
+        call = BuildOp(UnaryOperator::getOverloadedOpcode(OOCode, R != nullptr),
+                       L);
       }
     } else
       call =
