@@ -452,7 +452,7 @@ std::complex<double> fn10(double i, double j) {
 // CHECK-NEXT:     c2.real_pushforward(5 * i, &_d_c2, 0 * i + 5 * _d_i);
 // CHECK-NEXT:     c2.imag_pushforward(2 * i, &_d_c2, 0 * i + 2 * _d_i);
 // CHECK-NEXT:     clad::ValueAndPushforward<complex<double>, complex<double> > _t0 = operator_plus_pushforward(c1, c2, _d_c1, _d_c2);
-// CHECK-NEXT:     clad::ValueAndPushforward<complex<double> &, complex<double> &> _t1 = c1.operator_equal_pushforward(_t0.value, &_d_c1, _t0.pushforward);
+// CHECK-NEXT:     clad::ValueAndPushforward<complex<double> &, complex<double> &> _t1 = c1.operator_equal_pushforward({{(static_cast<std::__1::complex<double> &&>\(_t0.value\))|(_t0.value)}}, &_d_c1, {{(static_cast<std::__1::complex<double> &&>\(_t0.pushforward\))|(_t0.pushforward)}});
 // CHECK-NEXT:     clad::ValueAndPushforward<complex<double> &, complex<double> &> _t2 = c1.operator_plus_equal_pushforward(c2, &_d_c1, _d_c2);
 // CHECK-NEXT:     clad::ValueAndPushforward<complex<double>, complex<double> > _t3 = operator_plus_pushforward(c1, c1, _d_c1, _d_c1);
 // CHECK-NEXT:     return _t3.pushforward;
