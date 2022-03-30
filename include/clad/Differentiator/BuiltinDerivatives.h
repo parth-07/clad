@@ -14,6 +14,8 @@ namespace custom_derivatives{}
 #include "clad/Differentiator/CladConfig.h"
 
 #include <cmath>
+#include <vector>
+
 namespace clad {
 template <typename T, typename U> struct ValueAndPushforward {
   T value;
@@ -79,6 +81,14 @@ pow_pullback(T1 x, T2 exponent, decltype(::std::pow(T1(), T2())) d_y,
   *d_x += t.pushforward * d_y;
   t = pow_pushforward(x, exponent, static_cast<T1>(0), static_cast<T2>(1));
   *d_exponent += t.pushforward * d_y;
+}
+
+namespace class_functions {
+  template<typename T, typename U>
+  void push_back_pushforward(::std::vector<T>* v, U val, ::std::vector<T>* d_v, U d_val) {
+    d_v->push_back(d_val);
+    v->push_back(val);
+  }
 }
 } // namespace std
 // These are required because C variants of mathematical functions are

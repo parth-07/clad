@@ -1016,18 +1016,44 @@ namespace clad {
         utils::BuildNNS(m_Sema, originalFnDC, SS);
         DC = originalFnDC;
       } else {
+        DeclContext* effectiveOriginalFnDC = originalFnDC;
+        if (isa<RecordDecl>(originalFnDC)) {
+          effectiveOriginalFnDC = utils::GetInnermostDC(m_Sema, originalFnDC);
+        }
         utils::BuildNNS(m_Sema, NSD, SS);
-        utils::BuildNNS(m_Sema, originalFnDC, SS);
-        DC = utils::FindDeclContext(m_Sema, NSD, originalFnDC);
+        utils::BuildNNS(m_Sema, effectiveOriginalFnDC, SS);
+        // llvm::errs()<<"Dumping lookup NNS:\n";
+        // SS.getScopeRep()->dump();
+        // llvm::errs()<<"\n";
+        DC = utils::FindDeclContext(m_Sema, NSD, effectiveOriginalFnDC);
+        if (isa<RecordDecl>(originalFnDC) && DC)
+          DC = utils::LookupNSD(m_Sema, "class_functions",
+                                /*shouldExist=*/false, DC);
       }
     } else {
       SS.Extend(m_Context, NSD, noLoc, noLoc);
     }
-
+    // llvm::errs()<<"Custom derivative search start\n";
+    // llvm::errs()<<"Searching: "<<DNI.getAsString()<<"\n";
+    // if (DC) {
+    //   llvm::errs()<<"Dumping DC:\n";
+    //   DC->dumpDeclContext();
+    // } else {
+    //   llvm::errs()<<"DC is null!!!\n";
+    // }
     LookupResult R(m_Sema, DNI, Sema::LookupOrdinaryName);
     if (DC)
       m_Sema.LookupQualifiedName(R, DC);
     Expr* OverloadedFn = 0;
+    // if (R.empty()) {
+    //   llvm::errs()<<"Found nothing!!\n";
+    // } else {
+    //   llvm::errs()<<"Dumping found declarations!!\n";
+    //   for (auto item : R) {
+    //     item->dumpColor();
+    //     llvm::errs()<<"\n";
+    //   }
+    // }
     if (!R.empty()) {
       // FIXME: We should find a way to specify nested name specifier
       // after finding the custom derivative.
@@ -1036,6 +1062,12 @@ namespace clad {
 
       llvm::MutableArrayRef<Expr*> MARargs =
           llvm::MutableArrayRef<Expr*>(CallArgs);
+
+      // llvm::errs()<<"Dumping call arguments:\n";
+      // for (auto item : CallArgs) {
+      //   item->dumpColor();
+      //   llvm::errs()<<"\n";
+      // }
 
       SourceLocation Loc;
 
@@ -1148,9 +1180,18 @@ namespace clad {
     pushforwardFnArgs.insert(pushforwardFnArgs.end(), diffArgs.begin(),
                              diffArgs.end());
 
+    auto customDerivativeArgs = pushforwardFnArgs;
+
+    if (baseDiff.getExpr()) {
+      Expr* baseE = baseDiff.getExpr();
+      if (!baseE->getType()->isPointerType())
+        baseE = BuildOp(UnaryOperatorKind::UO_AddrOf, baseE);
+      customDerivativeArgs.insert(customDerivativeArgs.begin(), baseE);
+    }
+
     // Try to find a user-defined overloaded derivative.
     Expr* callDiff = m_Builder.BuildCallToCustomDerivativeOrNumericalDiff(
-        DNInfo, pushforwardFnArgs, getCurrentScope(),
+        DNInfo, customDerivativeArgs, getCurrentScope(),
         const_cast<DeclContext*>(FD->getDeclContext()));
 
     // Check if it is a recursive call.
@@ -1259,17 +1300,14 @@ namespace clad {
     else if (opKind == UnaryOperatorKind::UO_Real ||
              opKind == UnaryOperatorKind::UO_Imag) {
       return StmtDiff(op, BuildOp(opKind, diff.getExpr_dx()));
-    } else {
-      // This only adds support for differentiating the following expression:
-      // ```
-      // *this;
-      // ```
-      if (opKind == UnaryOperatorKind::UO_Deref) {
-        if (isa<CXXThisExpr>(UnOp->getSubExpr()->IgnoreParenImpCasts())) {
-          Expr* derivedE = BuildOp(opKind, diff.getExpr_dx());
-          return {op, derivedE};
-        }
+    } else if (opKind == UnaryOperatorKind::UO_Deref) {
+      if (isa<CXXThisExpr>(UnOp->getSubExpr()->IgnoreParenImpCasts())) {
+        Expr* derivedE = BuildOp(opKind, diff.getExpr_dx());
+        return {op, derivedE};
       }
+      return {op, BuildOp(opKind, diff.getExpr_dx())};
+    }
+    else {
       unsupportedOpWarn(UnOp->getEndLoc());
       auto zero =
           ConstantFolder::synthesizeLiteral(m_Context.IntTy, m_Context, 0);

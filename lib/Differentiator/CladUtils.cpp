@@ -385,5 +385,17 @@ namespace clad {
     bool IsRValue(const clang::Expr* E) {
       return E->isRValue() || E->isXValue();
     }
+
+    clang::DeclContext* GetInnermostDC(clang::Sema& semaRef,
+                                       clang::DeclContext* DC) {
+      ASTContext& C = semaRef.getASTContext();
+      assert(DC && "Invalid DC");
+      while (DC) {
+        if (isa<NamespaceDecl>(DC))
+          break;
+        DC = DC->getParent();
+      }
+      return DC;
+    }
   } // namespace utils
 } // namespace clad

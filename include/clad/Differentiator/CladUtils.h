@@ -227,6 +227,9 @@ namespace clad {
 
     /// Returns true if expression `E` is PRValue or XValue.
     bool IsRValue(const clang::Expr* E);
+
+    clang::DeclContext* GetInnermostDC(clang::Sema& semaRef,
+                                       clang::DeclContext* DC);
   } // namespace utils
 }
 
