@@ -1022,9 +1022,9 @@ namespace clad {
         }
         utils::BuildNNS(m_Sema, NSD, SS);
         utils::BuildNNS(m_Sema, effectiveOriginalFnDC, SS);
-        // llvm::errs()<<"Dumping lookup NNS:\n";
-        // SS.getScopeRep()->dump();
-        // llvm::errs()<<"\n";
+        llvm::errs()<<"Dumping lookup NNS:\n";
+        SS.getScopeRep()->dump();
+        llvm::errs()<<"\n";
         DC = utils::FindDeclContext(m_Sema, NSD, effectiveOriginalFnDC);
         if (isa<RecordDecl>(originalFnDC) && DC)
           DC = utils::LookupNSD(m_Sema, "class_functions",
@@ -1033,27 +1033,27 @@ namespace clad {
     } else {
       SS.Extend(m_Context, NSD, noLoc, noLoc);
     }
-    // llvm::errs()<<"Custom derivative search start\n";
-    // llvm::errs()<<"Searching: "<<DNI.getAsString()<<"\n";
-    // if (DC) {
-    //   llvm::errs()<<"Dumping DC:\n";
-    //   DC->dumpDeclContext();
-    // } else {
-    //   llvm::errs()<<"DC is null!!!\n";
-    // }
+    llvm::errs()<<"Custom derivative search start\n";
+    llvm::errs()<<"Searching: "<<DNI.getAsString()<<"\n";
+    if (DC) {
+      llvm::errs()<<"Dumping DC:\n";
+      DC->dumpDeclContext();
+    } else {
+      llvm::errs()<<"DC is null!!!\n";
+    }
     LookupResult R(m_Sema, DNI, Sema::LookupOrdinaryName);
     if (DC)
       m_Sema.LookupQualifiedName(R, DC);
     Expr* OverloadedFn = 0;
-    // if (R.empty()) {
-    //   llvm::errs()<<"Found nothing!!\n";
-    // } else {
-    //   llvm::errs()<<"Dumping found declarations!!\n";
-    //   for (auto item : R) {
-    //     item->dumpColor();
-    //     llvm::errs()<<"\n";
-    //   }
-    // }
+    if (R.empty()) {
+      llvm::errs()<<"Found nothing!!\n";
+    } else {
+      llvm::errs()<<"Dumping found declarations!!\n";
+      for (auto item : R) {
+        item->dumpColor();
+        llvm::errs()<<"\n";
+      }
+    }
     if (!R.empty()) {
       // FIXME: We should find a way to specify nested name specifier
       // after finding the custom derivative.
@@ -1063,11 +1063,11 @@ namespace clad {
       llvm::MutableArrayRef<Expr*> MARargs =
           llvm::MutableArrayRef<Expr*>(CallArgs);
 
-      // llvm::errs()<<"Dumping call arguments:\n";
-      // for (auto item : CallArgs) {
-      //   item->dumpColor();
-      //   llvm::errs()<<"\n";
-      // }
+      llvm::errs()<<"Dumping call arguments:\n";
+      for (auto item : CallArgs) {
+        item->dumpColor();
+        llvm::errs()<<"\n";
+      }
 
       SourceLocation Loc;
 
@@ -1095,7 +1095,7 @@ namespace clad {
       s = "";
 
     IdentifierInfo* II =
-        &m_Context.Idents.get(FD->getNameAsString() + "_pushforward");
+        &m_Context.Idents.get(utils::ComputeEffectiveFnName(FD) + "_pushforward");
     DeclarationName name(II);
     SourceLocation DeclLoc;
     DeclarationNameInfo DNInfo(name, DeclLoc);
@@ -1193,7 +1193,13 @@ namespace clad {
     Expr* callDiff = m_Builder.BuildCallToCustomDerivativeOrNumericalDiff(
         DNInfo, customDerivativeArgs, getCurrentScope(),
         const_cast<DeclContext*>(FD->getDeclContext()));
-
+    
+    if (callDiff) {
+      llvm::errs()<<"Dumping callDiff:\n";
+      callDiff->dumpColor();
+    } else {
+      llvm::errs()<<"callDiff is nullptr!!\n";
+    }
     // Check if it is a recursive call.
     if (!callDiff && (FD == m_Function) &&
         m_Mode == DiffMode::experimental_pushforward) {

@@ -15,6 +15,7 @@ namespace custom_derivatives{}
 
 #include <cmath>
 #include <vector>
+#include <map>
 
 namespace clad {
 template <typename T, typename U> struct ValueAndPushforward {
@@ -88,6 +89,38 @@ namespace class_functions {
   void push_back_pushforward(::std::vector<T>* v, U val, ::std::vector<T>* d_v, U d_val) {
     d_v->push_back(d_val);
     v->push_back(val);
+  }
+
+  template<typename T>
+  void clear_pushforward(::std::vector<T>* v, ::std::vector<T>* d_v) {
+    d_v->clear();
+    v->clear();
+  }
+
+  template<typename T>
+  void resize_pushforward(::std::vector<T>* v, unsigned sz, ::std::vector<T>* d_v, unsigned d_sz) {
+    d_v->resize(sz, T());
+    v->resize(sz);
+  }
+
+  template<typename T, typename U>
+  void resize_pushforward(::std::vector<T>* v, unsigned sz, U val, ::std::vector<T>* d_v, unsigned d_sz, U d_val) {
+    d_v->resize(sz, d_val);
+    v->resize(sz, val);
+  }
+
+  template <typename T>
+  clad::ValueAndPushforward<T&, T&>
+  operator_subscript_pushforward(::std::vector<T>* v, unsigned idx,
+                                 ::std::vector<T>* d_v, unsigned d_idx) {
+    return {(*v)[idx], (*d_v)[idx]};
+  }
+
+  template <typename Key, typename Val>
+  ValueAndPushforward<Val&, Val&>
+  operator_subscript_pushforward(::std::map<Key, Val>* m, Key key,
+                                 ::std::map<Key, Val>* d_m, Key d_key) {
+    return {(*m)[key], (*d_m)[key]};
   }
 }
 } // namespace std
