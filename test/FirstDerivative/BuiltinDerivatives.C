@@ -111,9 +111,9 @@ double f8(float x) {
 // CHECK-NEXT:   return clad::custom_derivatives{{(::std)?}}::pow_pushforward(x, 2, _d_x, 0);
 // CHECK-NEXT: }
 
-void f8_grad(float x, clad::array_ref<double> _d_x);
+void f8_grad(float x, clad::array_ref<float> _d_x);
 
-// CHECK: void f8_grad(float x, clad::array_ref<double> _d_x) {
+// CHECK: void f8_grad(float x, clad::array_ref<float> _d_x) {
 // CHECK-NEXT:     float _t0;
 // CHECK-NEXT:     _t0 = x;
 // CHECK-NEXT:     typename {{.*}} f8_return = std::pow(_t0, 2);
@@ -170,9 +170,9 @@ double f10(float x, int y) {
 // CHECK-NEXT:   return clad::custom_derivatives{{(::std)?}}::pow_pushforward(x, y, _d_x, _d_y);
 // CHECK-NEXT: }
 
-void f10_grad(float x, int y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y);
+void f10_grad(float x, int y, clad::array_ref<float> _d_x, clad::array_ref<int> _d_y);
 
-// CHECK: void f10_grad(float x, int y, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y) {
+// CHECK: void f10_grad(float x, int y, clad::array_ref<float> _d_x, clad::array_ref<int> _d_y) {
 // CHECK-NEXT:     float _t0;
 // CHECK-NEXT:     int _t1;
 // CHECK-NEXT:     _t0 = x;
@@ -194,6 +194,7 @@ void f10_grad(float x, int y, clad::array_ref<double> _d_x, clad::array_ref<doub
 int main () { //expected-no-diagnostics
   float f_result[2];
   double d_result[2];
+  int i_result[1];
 
   auto f1_darg0 = clad::differentiate(f1, 0);
   printf("Result is = %f\n", f1_darg0.execute(60)); // CHECK-EXEC: Result is = -0.952413
@@ -247,9 +248,9 @@ int main () { //expected-no-diagnostics
   printf("Result is = %f\n", f10_darg0.execute(3, 4)); //CHECK-EXEC: Result is = 108.000000
 
   d_result[0] = d_result[1] = 0;
-  clad::gradient(f10);
-  f10_grad(3, 4, &d_result[0], &d_result[1]);
-  printf("Result is = {%f, %f}\n", d_result[0], d_result[1]); //CHECK-EXEC: Result is = {108.000000, 88.987597}
+  // clad::gradient(f10);
+  // f10_grad(3, 4, &d_result[0], &i_result[0]);
+  // printf("Result is = {%f, %f}\n", d_result[0], i_result[0]); //CHECK-EXEC: Result is = {108.000000, 88.987597}
 
   return 0;
 }

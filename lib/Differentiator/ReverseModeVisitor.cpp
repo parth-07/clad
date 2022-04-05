@@ -2758,6 +2758,7 @@ namespace clad {
 
   QualType ReverseModeVisitor::GetParameterDerivativeType(QualType yType,
                                                           QualType xType) {
+                                               
     if (m_Mode == DiffMode::reverse)
       assert(yType->isRealType() &&
              "yType should be a non-reference builtin-numerical scalar type!!");
@@ -2768,9 +2769,9 @@ namespace clad {
     // derivative variables should always be of non-const type.
     xValueType.removeLocalConst();
     QualType nonRefXValueType = xValueType.getNonReferenceType();
-    if (nonRefXValueType->isRealType())
-      return GetCladArrayRefOfType(yType);
-    else
+  //   if (nonRefXValueType->isRealType())
+  //     return GetCladArrayRefOfType(yType);
+  //   else
       return GetCladArrayRefOfType(nonRefXValueType);
   }
 
@@ -2804,8 +2805,16 @@ namespace clad {
       for (auto PVD : m_Function->parameters()) {
         auto it = std::find(std::begin(diffParams), std::end(diffParams), PVD);
         if (it != std::end(diffParams))
-          paramTypes.push_back(
-              GetParameterDerivativeType(effectiveReturnType, PVD->getType()));
+          if (PVD->getType()->isAnyPointerType()) {
+            paramTypes.push_back(GetCladArrayRefOfType(PVD->getType()->getPointeeType()));
+            // paramTypes.push_back(GetParameterDerivativeType(effectiveReturnType, PVD->getType()->getPointeeType()));
+          }
+          else {
+            paramTypes.push_back(GetCladArrayRefOfType(PVD->getType()));
+            // paramTypes.push_back(GetParameterDerivativeType(effectiveReturnType, PVD->getType()));
+          }
+          // paramTypes.push_back(
+          //     GetParameterDerivativeType(effectiveReturnType, PVD->getType()));
       }
     } else if (m_Mode == DiffMode::jacobian) {
       std::size_t lastArgIdx = m_Function->getNumParams() - 1;

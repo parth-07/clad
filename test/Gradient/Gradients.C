@@ -587,10 +587,10 @@ unsigned f_types(int x, float y, double z) {
 void f_types_grad(int x,
                   float y,
                   double z,
-                  clad::array_ref<unsigned int> _d_x,
-                  clad::array_ref<unsigned int> _d_y,
-                  clad::array_ref<unsigned int> _d_z);
-//CHECK:   void f_types_grad(int x, float y, double z, clad::array_ref<unsigned int> _d_x, clad::array_ref<unsigned int> _d_y, clad::array_ref<unsigned int> _d_z) {
+                  clad::array_ref<int> _d_x,
+                  clad::array_ref<float> _d_y,
+                  clad::array_ref<double> _d_z);
+//CHECK:   void f_types_grad(int x, float y, double z, clad::array_ref<int> _d_x, clad::array_ref<float> _d_y, clad::array_ref<doublet> _d_z) {
 //CHECK-NEXT:       double f_types_return = x + y + z;
 //CHECK-NEXT:       goto _label0;
 //CHECK-NEXT:     _label0:

@@ -365,7 +365,7 @@ float func7(float x) {
 
 double helper2(float& x) { return x * x; }
 
-// CHECK: void helper2_pullback(float &x, double _d_y, clad::array_ref<double> _d_x) {
+// CHECK: void helper2_pullback(float &x, double _d_y, clad::array_ref<float> _d_x) {
 // CHECK-NEXT:     float _t0;
 // CHECK-NEXT:     float _t1;
 // CHECK-NEXT:     _t1 = x;
