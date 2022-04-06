@@ -28,6 +28,7 @@ namespace clad {
     unsigned m_IndependentVarIndex = ~0;
     unsigned m_DerivativeOrder = ~0;
     unsigned m_ArgIndex = ~0;
+    
   public:
     ForwardModeVisitor(DerivativeBuilder& builder);
     ~ForwardModeVisitor();
@@ -87,7 +88,7 @@ namespace clad {
     VisitMaterializeTemporaryExpr(const clang::MaterializeTemporaryExpr* MTE);
     StmtDiff
     VisitCXXTemporaryObjectExpr(const clang::CXXTemporaryObjectExpr* TOE);
-
+    StmtDiff VisitCXXThisExpr(const clang::CXXThisExpr* CTE);
   private:
     /// Helper function for differentiating the switch statement body.
     ///
@@ -105,6 +106,11 @@ namespace clad {
     /// \return active switch case label after processing `stmt`
     clang::SwitchCase* DeriveSwitchStmtBodyHelper(const clang::Stmt* stmt,
                                                   clang::SwitchCase* activeSC);
+
+    /// Returns the return type for the pushforward function of the function
+    /// `m_Function`.
+    /// \note `m_Function` field should be set before using this function.
+    clang::QualType ComputePushforwardFnReturnType();
   };
 } // end namespace clad
 

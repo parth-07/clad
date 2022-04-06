@@ -110,6 +110,14 @@ namespace clad {
     VectorOutputs m_VectorOutput;
     /// The functor type that is currently being differentiated, if any.
     const clang::CXXRecordDecl* m_Functor = nullptr;
+    /// Stores derivative expression of the implicit `this` pointer.
+    ///
+    /// In the forward mode, `this` pointer derivative expression is of pointer
+    /// type. In the reverse mode, `this` pointer derivative expression is of
+    /// object type.
+    // FIXME: Fix this inconsistency, by making `this` pointer derivative
+    // expression to be of object type in the reverse mode as well.
+    clang::Expr* m_ThisExprDerivative = nullptr;
     /// A function used to wrap result of visiting E in a lambda. Returns a call
     /// to the built lambda. Func is a functor that will be invoked inside
     /// lambda scope and block. Statements inside lambda are expected to be
@@ -359,7 +367,7 @@ namespace clad {
     /// arguments \returns The created type clad::class<TemplateArgs>
     clang::QualType
     GetCladClassOfType(clang::TemplateDecl* CladClassDecl,
-                       llvm::MutableArrayRef<clang::QualType> TemplateArgs);
+                       llvm::ArrayRef<clang::QualType> TemplateArgs);
     /// Find declaration of clad::tape templated type.
     clang::TemplateDecl* GetCladTapeDecl();
     /// Perform a lookup into clad namespace for an entity with given name.
@@ -403,9 +411,9 @@ namespace clad {
     /// \returns Built member function call expression
     ///  Base.MemberFunction(ArgExprs) or Base->MemberFunction(ArgExprs)
     clang::Expr*
-    BuildCallExprToMemFn(clang::Expr* Base, bool isArrow,
-                         llvm::StringRef MemberFunctionName,
-                         llvm::MutableArrayRef<clang::Expr*> ArgExprs);
+    BuildCallExprToMemFn(clang::Expr* Base, llvm::StringRef MemberFunctionName,
+                         llvm::MutableArrayRef<clang::Expr*> ArgExprs,
+                         clang::ValueDecl* memberDecl = nullptr);
 
     /// Build a call to member function through this pointer.
     ///

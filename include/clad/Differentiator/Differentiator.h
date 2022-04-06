@@ -20,12 +20,12 @@
 
 extern "C" {
   int printf(const char* fmt, ...);
-  char* strcpy (char* destination, const char* source);
-  size_t strlen(const char*);
 #if defined(__APPLE__) || defined(_MSC_VER)
+  extern size_t strlen(const char*);
   void* malloc(size_t);
   void free(void *ptr);
 #else
+  extern size_t strlen(const char*) __THROW __attribute_pure__ __nonnull ((1));
   void* malloc(size_t) __THROW __attribute_malloc__ __wur;
   void free(void *ptr) __THROW;
 #endif
@@ -103,7 +103,7 @@ namespace clad {
             typename std::enable_if<EnablePadding, bool>::type = true>
   CUDA_HOST_DEVICE return_type_t<F>
   execute_with_default_args(list<Rest...>, F f, Args&&... args) {
-    return f(static_cast<Args>(args)..., static_cast<Rest>(0)...);
+    return f(static_cast<Args>(args)..., static_cast<Rest>(nullptr)...);
   }
 
   template <bool EnablePadding, class... Rest, class F, class... Args,
@@ -122,7 +122,7 @@ namespace clad {
                                                   Args&&... args)
       -> return_type_t<decltype(f)> {
     return (static_cast<Obj>(obj).*f)(static_cast<Args>(args)...,
-                                      static_cast<Rest>(0)...);
+                                      static_cast<Rest>(nullptr)...);
   }
 
   template <bool EnablePadding, class... Rest, class ReturnType, class C,
