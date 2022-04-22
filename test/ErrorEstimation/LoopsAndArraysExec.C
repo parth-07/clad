@@ -13,7 +13,7 @@ double runningSum(float* f, int n) {
   return sum;
 }
 
-//CHECK: void runningSum_grad(float *f, int n, clad::array_ref<double> _d_f, clad::array_ref<int> _d_n, double &_final_error) {
+//CHECK: void runningSum_grad(float *f, int n, clad::array_ref<float> _d_f, clad::array_ref<int> _d_n, double &_final_error) {
 //CHECK-NEXT:     double _d_sum = 0;
 //CHECK-NEXT:     double _delta_sum = 0;
 //CHECK-NEXT:     double _EERepl_sum0;

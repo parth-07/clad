@@ -25,7 +25,7 @@ double fn1(float i) {
   return a;
 }
 
-// CHECK: void fn1_grad(float i, clad::array_ref<double> _d_i) {
+// CHECK: void fn1_grad(float i, clad::array_ref<float> _d_i) {
 // CHECK-NEXT:     float _t0;
 // CHECK-NEXT:     float _d_res = 0;
 // CHECK-NEXT:     float _t1;
