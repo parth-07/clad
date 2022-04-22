@@ -1387,12 +1387,6 @@ namespace clad {
 
       size_t idx = 0;
 
-      auto ArrayDiffArgType = GetCladArrayOfType(CEType.getCanonicalType());
-      QualType requiredValueType = CEType;
-      if (CEType->isVoidType()) {
-        requiredValueType = m_Context.DoubleTy;
-        ArrayDiffArgType = GetCladArrayOfType(requiredValueType);
-      }
       /// Add base derivative expression in the derived call output args list if
       /// `CE` is a call to an instance member function.
       if (auto MCE = dyn_cast<CXXMemberCallExpr>(CE)) {
@@ -1445,58 +1439,9 @@ namespace clad {
             argDerivative = BuildDeclRef(derivativeArrayRefVD);
           }
           if (isCladArrayType(argDerivative->getType())) {
-            Expr* compatibleArg = argDerivative;
-            QualType argValueType;
-
-            if (isCladArrayType(argDerivative->getType()))
-              argValueType =
-                  DetermineCladArrayValueType(argDerivative->getType());
-
-            // pullback function expects derivative of different type than what
-            // we have. We want to "continue" the reverse mode derivation. To
-            // handle this, we will create a temporary derivative here for the
-            // pullback function, and then we will update the current derivative
-            // with the temporary derivative. To be more specific, we will do as
-            // follows: "float" is only taken here for example!!
-            // ```
-            // clad::array<float> _grad0 = _d_arr;
-            // update(arr, _grad0);
-            // _d_arr = _grad0;
-            // ```
-            if (!utils::SameCanonicalType(argValueType, requiredValueType)) {
-              gradVarDecl = BuildVarDecl(
-                  ArrayDiffArgType, gradVarII, argDerivative,
-                  /*DirectInit=*/false,
-                  /*TSI=*/nullptr, VarDecl::InitializationStyle::CallInit);
-              gradVarExpr = BuildDeclRef(gradVarDecl);
-              compatibleArg = gradVarExpr;
-              addToCurrentBlock(BuildOp(BinaryOperatorKind::BO_Assign,
-                                        argDerivative, gradVarExpr),
-                                direction::reverse);
-            }
-            gradArgExpr = compatibleArg;
+            gradArgExpr = argDerivative;
           } else {
-            Expr* compatibleArg = argDerivative;
-            // Pullback function may expect different type of derivative than what
-            // we actually have. We are using temporary derivative of correct
-            // type to handle this situation. We are doing as follows:
-            // ```
-            // T _grad0 = _d_i;
-            // update(i, _grad0);
-            // _d_i = _grad0;
-            // ```
-            if (!argDerivative->getType()->isRecordType() &&
-                !utils::SameCanonicalType(argDerivative->getType(),
-                                          requiredValueType)) {
-              gradVarDecl =
-                  BuildVarDecl(requiredValueType, gradVarII, argDerivative);
-              gradVarExpr = BuildDeclRef(gradVarDecl);
-              compatibleArg = gradVarExpr;
-              addToCurrentBlock(BuildOp(BinaryOperatorKind::BO_Assign,
-                                        argDerivative, gradVarExpr),
-                                direction::reverse);
-            }
-            gradArgExpr = BuildOp(UnaryOperatorKind::UO_AddrOf, compatibleArg);
+            gradArgExpr = BuildOp(UnaryOperatorKind::UO_AddrOf, argDerivative);
           }
         } else {
           // Declare: diffArgType _grad = 0;
