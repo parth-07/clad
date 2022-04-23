@@ -1184,13 +1184,13 @@ namespace clad {
     std::size_t insertionPoint = getCurrentBlock(direction::reverse).size();
     // Store the type to reduce call overhead that would occur if used in the
     // loop
-    auto CEType = getNonConstType(CE->getType(), m_Context, m_Sema);
-    // Use `double` as the placeholder type for the derivatives when the funtion
-    // return type is void. We need to do this because we are using function
-    // return type to compute the derivative type of the arguments. See
-    // https://github.com/vgvassilev/clad/issues/385 for more details.
-    if (CEType->isVoidType())
-      CEType = m_Context.DoubleTy;
+    // auto CEType = getNonConstType(CE->getType(), m_Context, m_Sema);
+    // // Use `double` as the placeholder type for the derivatives when the funtion
+    // // return type is void. We need to do this because we are using function
+    // // return type to compute the derivative type of the arguments. See
+    // // https://github.com/vgvassilev/clad/issues/385 for more details.
+    // if (CEType->isVoidType())
+    //   CEType = m_Context.DoubleTy;
     // FIXME: We should add instructions for handling non-differentiable
     // arguments. Currently we are implicitly assuming function call only
     // contains differentiable arguments.
@@ -1207,8 +1207,6 @@ namespace clad {
         QualType argResultValueType =
             utils::GetValueType(argDiff.getExpr()->getType())
                 .getNonReferenceType();
-        if (argResultValueType->isRealType())
-          argResultValueType = CEType;
         // Create ArgResult variable for each reference argument because it is
         // required by error estimator. For automatic differentiation, we do not need
         // to create ArgResult variable for arguments passed by reference.
@@ -1244,7 +1242,7 @@ namespace clad {
         // same as the call expression as it is the type used to declare the
         // _gradX array
         Expr* dArg;
-        dArg = StoreAndRef(/*E=*/nullptr, CEType, direction::reverse, "_r",
+        dArg = StoreAndRef(/*E=*/nullptr, arg->getType(), direction::reverse, "_r",
                            /*forceDeclCreation=*/true);
         ArgResultDecls.push_back(
             cast<VarDecl>(cast<DeclRefExpr>(dArg)->getDecl()));
@@ -1452,7 +1450,7 @@ namespace clad {
 
           gradVarDecl = BuildVarDecl(
               nonRefXValueType, gradVarII,
-              ConstantFolder::synthesizeLiteral(CEType, m_Context, 0));
+              ConstantFolder::synthesizeLiteral(PVD->getType(), m_Context, 0));
           // Pass the address of the declared variable
           gradVarExpr = BuildDeclRef(gradVarDecl);
           gradArgExpr =
@@ -1549,6 +1547,7 @@ namespace clad {
                                                               DerivedCallArgs);
             asGrad = !OverloadedDerivedFn;
           } else {
+            auto CEType = getNonConstType(CE->getType(), m_Context, m_Sema);
             OverloadedDerivedFn = GetMultiArgCentralDiffCall(
                 fnCallee, CEType.getCanonicalType(), CE->getNumArgs(),
                 NumericalDiffMultiArg, DerivedCallArgs, DerivedCallOutputArgs);
@@ -2831,6 +2830,12 @@ namespace clad {
       return GetCladArrayRefOfType(nonRefXValueType);
   }
 
+  clang::QualType ReverseModeVisitor::ComputeAdjointType(clang::QualType T) {
+    QualType TValueType = utils::GetValueType(T);
+    TValueType.removeLocalConst();
+    return GetCladArrayRefOfType(TValueType);
+  }
+
   llvm::SmallVector<clang::QualType, 8>
   ReverseModeVisitor::ComputeParamTypes(const DiffParams& diffParams) {
     llvm::SmallVector<clang::QualType, 8> paramTypes;
@@ -2871,12 +2876,13 @@ namespace clad {
       for (auto PVD : m_Function->parameters()) {
         auto it = std::find(std::begin(diffParams), std::end(diffParams), PVD);
         if (it != std::end(diffParams))
-          if (PVD->getType()->isAnyPointerType()) {
-            paramTypes.push_back(GetCladArrayRefOfType(PVD->getType()->getPointeeType()));
-          }
-          else {
-            paramTypes.push_back(GetCladArrayRefOfType(PVD->getType().getNonReferenceType()));
-          }
+          paramTypes.push_back(ComputeAdjointType(PVD->getType()));
+          // if (PVD->getType()->isAnyPointerType()) {
+          //   paramTypes.push_back(GetCladArrayRefOfType(PVD->getType()->getPointeeType()));
+          // }
+          // else {
+          //   paramTypes.push_back(GetCladArrayRefOfType(PVD->getType().getNonReferenceType()));
+          // }
       }
     } else if (m_Mode == DiffMode::jacobian) {
       std::size_t lastArgIdx = m_Function->getNumParams() - 1;

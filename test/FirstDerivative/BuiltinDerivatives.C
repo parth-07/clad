@@ -106,12 +106,12 @@ void f7_grad(float x, clad::array_ref<float> _d_x);
 // CHECK-NEXT:     goto _label0;
 // CHECK-NEXT:   _label0:
 // CHECK-NEXT:     {
-// CHECK-NEXT:         typename {{.*}} _grad0 = 0.;
-// CHECK-NEXT:         typename {{.*}} _grad1 = 0.;
-// CHECK-NEXT:         clad::custom_derivatives{{(::std)?}}::pow_pullback(_t0, 2., 1, &_grad0, &_grad1);
-// CHECK-NEXT:         typename {{.*}} _r0 = _grad0;
+// CHECK-NEXT:         float _grad0 = 0.F;
+// CHECK-NEXT:         double _grad1 = 0.;
+// CHECK-NEXT:         clad::custom_derivatives::std::pow_pullback(_t0, 2., 1, &_grad0, &_grad1);
+// CHECK-NEXT:         float _r0 = _grad0;
 // CHECK-NEXT:         * _d_x += _r0;
-// CHECK-NEXT:         typename {{.*}} _r1 = _grad1;
+// CHECK-NEXT:         double _r1 = _grad1;
 // CHECK-NEXT:     }
 // CHECK-NEXT: }
 
@@ -134,12 +134,12 @@ void f8_grad(float x, clad::array_ref<float> _d_x);
 // CHECK-NEXT:     goto _label0;
 // CHECK-NEXT:   _label0:
 // CHECK-NEXT:     {
-// CHECK-NEXT:         typename {{.*}} _grad0 = 0.;
-// CHECK-NEXT:         typename {{.*}} _grad1 = 0.;
-// CHECK-NEXT:         clad::custom_derivatives{{(::std)?}}::pow_pullback(_t0, 2, 1, &_grad0, &_grad1);
-// CHECK-NEXT:         typename {{.*}} _r0 = _grad0;
+// CHECK-NEXT:         float _grad0 = 0.F;
+// CHECK-NEXT:         int _grad1 = 0;
+// CHECK-NEXT:         clad::custom_derivatives::std::pow_pullback(_t0, 2, 1, &_grad0, &_grad1);
+// CHECK-NEXT:         float _r0 = _grad0;
 // CHECK-NEXT:         * _d_x += _r0;
-// CHECK-NEXT:         typename {{.*}} _r1 = _grad1;
+// CHECK-NEXT:         int _r1 = _grad1;
 // CHECK-NEXT:     }
 // CHECK-NEXT: }
 
@@ -167,7 +167,7 @@ void f9_grad(float x, float y, clad::array_ref<float> _d_x, clad::array_ref<floa
 // CHECK-NEXT:     {
 // CHECK-NEXT:         float _grad0 = 0.F;
 // CHECK-NEXT:         float _grad1 = 0.F;
-// CHECK-NEXT:         clad::custom_derivatives{{(::std)?}}::pow_pullback(_t0, _t1, 1, &_grad0, &_grad1);
+// CHECK-NEXT:         clad::custom_derivatives::std::pow_pullback(_t0, _t1, 1, &_grad0, &_grad1);
 // CHECK-NEXT:         float _r0 = _grad0;
 // CHECK-NEXT:         * _d_x += _r0;
 // CHECK-NEXT:         float _r1 = _grad1;
@@ -197,12 +197,12 @@ void f10_grad(float x, int y, clad::array_ref<float> _d_x, clad::array_ref<int> 
 // CHECK-NEXT:     goto _label0;
 // CHECK-NEXT:   _label0:
 // CHECK-NEXT:     {
-// CHECK-NEXT:         typename {{.*}} _grad0 = 0.;
-// CHECK-NEXT:         typename {{.*}} _grad1 = 0.;
-// CHECK-NEXT:         clad::custom_derivatives{{(::std)?}}::pow_pullback(_t0, _t1, 1, &_grad0, &_grad1);
-// CHECK-NEXT:         typename {{.*}} _r0 = _grad0;
+// CHECK-NEXT:         float _grad0 = 0.F;
+// CHECK-NEXT:         int _grad1 = 0;
+// CHECK-NEXT:         clad::custom_derivatives::std::pow_pullback(_t0, _t1, 1, &_grad0, &_grad1);
+// CHECK-NEXT:         float _r0 = _grad0;
 // CHECK-NEXT:         * _d_x += _r0;
-// CHECK-NEXT:         typename {{.*}} _r1 = _grad1;
+// CHECK-NEXT:         int _r1 = _grad1;
 // CHECK-NEXT:         * _d_y += _r1;
 // CHECK-NEXT:     }
 // CHECK-NEXT: }
@@ -247,10 +247,10 @@ int main () { //expected-no-diagnostics
   auto f8_darg0 = clad::differentiate(f8, 0);
   printf("Result is = %f\n", f8_darg0.execute(3)); //CHECK-EXEC: Result is = 6.000000
 
-  d_result[0] = 0;
+  f_result[0] = 0;
   clad::gradient(f8);
-  f8_grad(3, d_result);
-  printf("Result is = %f\n", d_result[0]); //CHECK-EXEC: Result is = 6.000000
+  f8_grad(3, f_result);
+  printf("Result is = %f\n", f_result[0]); //CHECK-EXEC: Result is = 6.000000
 
   auto f9_darg0 = clad::differentiate(f9, 0);
   printf("Result is = %f\n", f9_darg0.execute(3, 4)); //CHECK-EXEC: Result is = 108.000000
@@ -263,10 +263,10 @@ int main () { //expected-no-diagnostics
   auto f10_darg0 = clad::differentiate(f10, 0);
   printf("Result is = %f\n", f10_darg0.execute(3, 4)); //CHECK-EXEC: Result is = 108.000000
 
-  d_result[0] = d_result[1] = 0;
-  // clad::gradient(f10);
-  // f10_grad(3, 4, &d_result[0], &i_result[0]);
-  // printf("Result is = {%f, %f}\n", d_result[0], i_result[0]); //CHECK-EXEC: Result is = {108.000000, 88.987597}
+  f_result[0] = f_result[1] = 0;
+  clad::gradient(f10);
+  f10_grad(3, 4, &f_result[0], &i_result[0]);
+  printf("Result is = {%f, %d}\n", f_result[0], i_result[0]); //CHECK-EXEC: Result is = {108.000000, 88}
 
   return 0;
 }

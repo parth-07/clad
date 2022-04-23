@@ -401,7 +401,7 @@ float func8(float x, float y) {
 //CHECK-NEXT:     {
 //CHECK-NEXT:         * _d_y += _d_z;
 //CHECK-NEXT:         helper2_pullback(_t0, _d_z, &* _d_x);
-//CHECK-NEXT:         double _r0 = * _d_x;
+//CHECK-NEXT:         float _r0 = * _d_x;
 //CHECK-NEXT:         _delta_z += _d_z * _EERepl_z0 * {{.+}};
 //CHECK-NEXT:         _final_error += _r0 * _t0 * {{.+}};
 //CHECK-NEXT:     }

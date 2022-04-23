@@ -49,12 +49,12 @@ double f(double *arr) {
 //CHECK-NEXT:       double f_return = addArr(arr, 3);
 //CHECK-NEXT:       goto _label0;
 //CHECK-NEXT:     _label0:
-//CHECK-NEXT:       {
-//CHECK-NEXT:         int _grad1 = 0.;
+//CHECK-NEXT:     {
+//CHECK-NEXT:         int _grad1 = 0;
 //CHECK-NEXT:         addArr_pullback(_t0, 3, 1, _d_arr, &_grad1);
 //CHECK-NEXT:         clad::array<double> _r0(_d_arr);
-//CHECK-NEXT:         double _r1 = _grad1;
-//CHECK-NEXT:       }
+//CHECK-NEXT:         int _r1 = _grad1;
+//CHECK-NEXT:     }
 //CHECK-NEXT:   }
 
 float func(float* a, float* b) {
