@@ -1182,15 +1182,7 @@ namespace clad {
     // Save current index in the current block, to potentially put some
     // statements there later.
     std::size_t insertionPoint = getCurrentBlock(direction::reverse).size();
-    // Store the type to reduce call overhead that would occur if used in the
-    // loop
-    // auto CEType = getNonConstType(CE->getType(), m_Context, m_Sema);
-    // // Use `double` as the placeholder type for the derivatives when the funtion
-    // // return type is void. We need to do this because we are using function
-    // // return type to compute the derivative type of the arguments. See
-    // // https://github.com/vgvassilev/clad/issues/385 for more details.
-    // if (CEType->isVoidType())
-    //   CEType = m_Context.DoubleTy;
+
     // FIXME: We should add instructions for handling non-differentiable
     // arguments. Currently we are implicitly assuming function call only
     // contains differentiable arguments.
@@ -2877,12 +2869,6 @@ namespace clad {
         auto it = std::find(std::begin(diffParams), std::end(diffParams), PVD);
         if (it != std::end(diffParams))
           paramTypes.push_back(ComputeAdjointType(PVD->getType()));
-          // if (PVD->getType()->isAnyPointerType()) {
-          //   paramTypes.push_back(GetCladArrayRefOfType(PVD->getType()->getPointeeType()));
-          // }
-          // else {
-          //   paramTypes.push_back(GetCladArrayRefOfType(PVD->getType().getNonReferenceType()));
-          // }
       }
     } else if (m_Mode == DiffMode::jacobian) {
       std::size_t lastArgIdx = m_Function->getNumParams() - 1;
