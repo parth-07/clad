@@ -1025,7 +1025,9 @@ namespace clad {
     for (std::size_t i = 0; i < Indices.size(); i++) {
       StmtDiff IdxDiff = Visit(Indices[i]);
       clonedIndices[i] = IdxDiff.getExpr();
-      reverseIndices[i] = IdxDiff.getExpr_dx() ? IdxDiff.getExpr_dx() : Clone(IdxDiff.getExpr());
+      // auto idxStored = GlobalStoreAndRef(IdxDiff.getExpr());
+      // reverseIndices[i] = idxStored.getExpr_dx();
+      reverseIndices[i] = Clone(IdxDiff.getExpr());
       forwSweepDerivativeIndices[i] = IdxDiff.getExpr();
     }
     auto cloned = BuildArraySubscript(BaseDiff.getExpr(), clonedIndices);
@@ -1900,7 +1902,10 @@ namespace clad {
       Ldiff = Visit(L, dfdx());
       auto Lblock = endBlock(direction::reverse);
       Lstored = GlobalStoreAndRef(Ldiff.getExpr(), "_t", /*force*/true);
-      auto assign = BuildOp(BO_Assign, Ldiff.getExpr(), Lstored.getExpr());
+      auto assign = BuildOp(BO_Assign, Ldiff.getExpr(), Lstored.getExpr_dx());
+      if (isInsideLoop) {
+        addToCurrentBlock(Lstored.getExpr(), direction::forward);
+      }
       addToCurrentBlock(assign, direction::reverse);
       Expr* LCloned = Ldiff.getExpr();
       // For x, AssignedDiff is _d_x, for x[i] its _d_x[i], for reference exprs
@@ -1924,16 +1929,6 @@ namespace clad {
       // If assigned expr is dependent, first update its derivative;
       auto Lblock_begin = Lblock->body_rbegin();
       auto Lblock_end = Lblock->body_rend();
-      if (isInsideLoop) {
-        // x[i] = y[j] + ... -> push(x[i]); x[i] = y[j] + ...
-        Expr* PushL = Ldiff.getExpr();
-        Expr* PopL = Ldiff.getExpr_dx();
-        VarDecl* popLVar = BuildVarDecl(PopL->getType(), "_t", PopL,
-                                        /*DirectInit=*/true);
-
-        addToCurrentBlock(PushL, direction::forward);
-        addToCurrentBlock(BuildDeclStmt(popLVar), direction::reverse);
-      }
       if (dfdx() && Lblock->size()) {
         addToCurrentBlock(*Lblock_begin, direction::reverse);
         Lblock_begin = std::next(Lblock_begin);
