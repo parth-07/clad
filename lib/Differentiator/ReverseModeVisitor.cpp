@@ -1901,12 +1901,14 @@ namespace clad {
       beginBlock(direction::reverse);
       Ldiff = Visit(L, dfdx());
       auto Lblock = endBlock(direction::reverse);
-      Lstored = GlobalStoreAndRef(Ldiff.getExpr(), "_t", /*force*/true);
-      auto assign = BuildOp(BO_Assign, Ldiff.getExpr(), Lstored.getExpr_dx());
-      if (isInsideLoop) {
-        addToCurrentBlock(Lstored.getExpr(), direction::forward);
+      if (/*!L->HasSideEffects(m_Context)*/true) {
+        Lstored = GlobalStoreAndRef(Ldiff.getExpr(), "_t", /*force*/true);
+        auto assign = BuildOp(BO_Assign, Ldiff.getExpr(), Lstored.getExpr_dx());
+        if (isInsideLoop) {
+          addToCurrentBlock(Lstored.getExpr(), direction::forward);
+        }
+        addToCurrentBlock(assign, direction::reverse);
       }
-      addToCurrentBlock(assign, direction::reverse);
       Expr* LCloned = Ldiff.getExpr();
       // For x, AssignedDiff is _d_x, for x[i] its _d_x[i], for reference exprs
       // like (x = y) it propagates recursively, so _d_x is also returned.
@@ -2454,7 +2456,7 @@ namespace clad {
       return DelayedStoreResult{*this,
                                 StmtDiff{Push, Pop},
                                 /*isConstant*/ false,
-                                /*isInsideLoop*/ true};
+                                /*isInsideLoop*/ true, /*needsUpdate=*/ true};
     } else {
       Expr* Ref = BuildDeclRef(GlobalStoreImpl(
           getNonConstType(E->getType(), m_Context, m_Sema), prefix));
@@ -2462,7 +2464,7 @@ namespace clad {
       return DelayedStoreResult{*this,
                                 StmtDiff{Ref, Ref},
                                 /*isConstant*/ false,
-                                /*isInsideLoop*/ false};
+                                /*isInsideLoop*/ false, /*needsUpdate=*/ true};
     }
   }
 
