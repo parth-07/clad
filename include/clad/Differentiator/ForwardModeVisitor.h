@@ -96,6 +96,9 @@ namespace clad {
     StmtDiff VisitCXXNullPtrLiteralExpr(const clang::CXXNullPtrLiteralExpr* NPL);
     StmtDiff VisitUnaryExprOrTypeTraitExpr(const clang::UnaryExprOrTypeTraitExpr* UE);
     StmtDiff VisitPseudoObjectExpr(const clang::PseudoObjectExpr* POE);
+    StmtDiff
+    VisitOMPParallelForDirective(const clang::OMPParallelForDirective* OFD);
+
   private:
     /// Helper function for differentiating the switch statement body.
     ///

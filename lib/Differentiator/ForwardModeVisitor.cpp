@@ -2099,4 +2099,19 @@ namespace clad {
     return {Clone(POE),
             ConstantFolder::synthesizeLiteral(m_Context.IntTy, m_Context, 0)};
   }
+
+  StmtDiff ForwardModeVisitor::VisitOMPParallelForDirective(
+      const clang::OMPParallelForDirective* OFD) {
+    const Stmt* primalAssociatedS = OFD->getAssociatedStmt();
+    llvm::errs()<<"Dumping primal associated statement:\n";
+    primalAssociatedS->dumpColor();
+    Stmt* transformedAssociatedS = Visit(primalAssociatedS).getStmt();
+    Stmt* S = m_Sema
+                  .ActOnOpenMPExecutableDirective(
+                      OFD->getDirectiveKind(), DeclarationNameInfo(),
+                      OpenMPDirectiveKind::OMPD_unknown, OFD->clauses(),
+                      transformedAssociatedS, noLoc, noLoc)
+                  .get();
+    return S;
+  }
 } // end namespace clad
