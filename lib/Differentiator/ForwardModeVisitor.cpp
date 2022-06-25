@@ -2102,16 +2102,39 @@ namespace clad {
 
   StmtDiff ForwardModeVisitor::VisitOMPParallelForDirective(
       const clang::OMPParallelForDirective* OFD) {
-    const Stmt* primalAssociatedS = OFD->getAssociatedStmt();
-    llvm::errs()<<"Dumping primal associated statement:\n";
-    primalAssociatedS->dumpColor();
-    Stmt* transformedAssociatedS = Visit(primalAssociatedS).getStmt();
-    Stmt* S = m_Sema
-                  .ActOnOpenMPExecutableDirective(
-                      OFD->getDirectiveKind(), DeclarationNameInfo(),
-                      OpenMPDirectiveKind::OMPD_unknown, OFD->clauses(),
-                      transformedAssociatedS, noLoc, noLoc)
-                  .get();
-    return S;
+    unsigned scopeFlags = Scope::FnScope | Scope::DeclScope | Scope::CompoundStmtScope |
+               Scope::OpenMPDirectiveScope;
+    if (isOpenMPLoopDirective(OFD->getDirectiveKind()))
+      scopeFlags |= Scope::OpenMPLoopDirectiveScope;
+    if (isOpenMPSimdDirective(OFD->getDirectiveKind()))
+      scopeFlags |= Scope::OpenMPSimdDirectiveScope;
+    beginScope(scopeFlags);
+    DeclarationNameInfo DNI;
+    // m_Sema.StartOpenMPDSABlock(OpenMPDirectiveKind::OMPD_declare_mapper, DNI,
+    //                            getCurrentScope(), noLoc);
+
+    // m_Sema.ActOnOpenMPRegionStart(OFD->getDirectiveKind(), getCurrentScope());
+    const CapturedStmt* primalCapturedS =
+        cast<CapturedStmt>(OFD->getAssociatedStmt());
+    llvm::errs() << "Dumping primal captured statement:\n";
+    primalCapturedS->getCapturedStmt()->dumpColor();
+    Stmt* transformedAssociatedS =
+        Visit(primalCapturedS->getCapturedStmt()).getStmt();
+    llvm::errs() << "Asociated statement before RegionEnd:\n";
+    transformedAssociatedS->dumpColor();
+    // transformedAssociatedS =
+    //     m_Sema.ActOnOpenMPRegionEnd(transformedAssociatedS, OFD->clauses())
+    //         .get();
+    // llvm::errs() << "Asociated statement after RegionEnd:\n";
+    // transformedAssociatedS->dumpColor();
+    // Stmt* directive = m_Sema
+    //                       .ActOnOpenMPExecutableDirective(
+    //                           OFD->getDirectiveKind(), DeclarationNameInfo(),
+    //                           OpenMPDirectiveKind::OMPD_unknown, OFD->clauses(),
+    //                           transformedAssociatedS, noLoc, noLoc)
+    //                       .get();
+    // return directive;
+    endScope();
+    return m_Sema.ActOnNullStmt(noLoc).get();
   }
 } // end namespace clad
