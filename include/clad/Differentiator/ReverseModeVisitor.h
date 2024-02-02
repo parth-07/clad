@@ -289,7 +289,7 @@ namespace clad {
                                                 llvm::StringRef prefix = "_t");
 
     struct CladTapeResult {
-      ReverseModeVisitor&  V;
+      ReverseModeVisitor& V;
       clang::Expr* Push;
       clang::Expr* Pop;
       clang::Expr* Ref;
@@ -486,7 +486,6 @@ namespace clad {
                                    clang::Stmt* forLoopIncDiff = nullptr,
                                    bool isForLoop = false);
 
-
     /// This class modifies forward and reverse blocks of the loop/switch
     /// body so that `break` and `continue` statements are correctly
     /// handled. `break` and `continue` statements are handled by
@@ -578,7 +577,7 @@ namespace clad {
     BreakContStmtHandler* GetActiveBreakContStmtHandler() {
       return &m_BreakContStmtHandlers.back();
     }
-    BreakContStmtHandler* PushBreakContStmtHandler(bool forSwitchStmt=false) {
+    BreakContStmtHandler* PushBreakContStmtHandler(bool forSwitchStmt = false) {
       m_BreakContStmtHandlers.emplace_back(*this, forSwitchStmt);
       return &m_BreakContStmtHandlers.back();
     }
@@ -633,9 +632,7 @@ namespace clad {
       return &m_SwitchStmtsData.back();
     }
 
-    void PopSwitchStmtInfo() {
-      m_SwitchStmtsData.pop_back();
-    }
+    void PopSwitchStmtInfo() { m_SwitchStmtsData.pop_back(); }
   };
 } // end namespace clad
 

@@ -3250,9 +3250,9 @@ Expr* getArraySizeExpr(const ArrayType* AT, ASTContext& context,
   // differentiated statement of the statement just before the `break` statement
   // that was hit in the forward pass)
   StmtDiff ReverseModeVisitor::VisitSwitchStmt(const SwitchStmt* SS) {
-    // Scope and blocks for the compound statement that encloses the switch statement
-    // in both the forward and the reverse pass.
-    // Block is required handling condition variable and switch-init statement.
+    // Scope and blocks for the compound statement that encloses the switch
+    // statement in both the forward and the reverse pass. Block is required
+    // handling condition variable and switch-init statement.
     beginScope(Scope::DeclScope);
     beginBlock(direction::forward);
     beginBlock(direction::reverse);
@@ -3266,14 +3266,15 @@ Expr* getArraySizeExpr(const ArrayType* AT, ASTContext& context,
 
     // Handles condition variable
     if (SS->getConditionVariable()) {
-      StmtDiff condVarDiff = DifferentiateSingleStmt(SS->getConditionVariableDeclStmt());
+      StmtDiff condVarDiff =
+          DifferentiateSingleStmt(SS->getConditionVariableDeclStmt());
       addToCurrentBlock(condVarDiff.getStmt(), direction::forward);
       addToCurrentBlock(condVarDiff.getStmt_dx(), direction::reverse);
     }
     // Condition is only cloned, and not differentiated.
-    // Its because conditions generally contain non-differentiable constructs, but
-    // this behaviour will lead to incorrect results if the condition expression
-    // modifies any variable.
+    // Its because conditions generally contain non-differentiable constructs,
+    // but this behaviour will lead to incorrect results if the condition
+    // expression modifies any variable.
     Expr* condClone = (SS->getCond() ? Clone(SS->getCond()) : nullptr);
 
     Expr* condExpr = nullptr;
@@ -3309,18 +3310,17 @@ Expr* getArraySizeExpr(const ArrayType* AT, ASTContext& context,
 
     const Stmt* body = SS->getBody();
     StmtDiff bodyDiff = nullptr;
-    if (isa<CompoundStmt>(body)) {
+    if (isa<CompoundStmt>(body))
       bodyDiff = Visit(body);
-    } else {
+    else
       bodyDiff = DifferentiateSingleStmt(body);
-    }
 
     // Each switch case statement of the original function gets transformed to
     // an if condition in the reverse pass. The if condition decides at runtime
-    // whether the processing of the differentiated statements of the switch statement
-    // body should stop or continue. This is based on the fact that processing
-    // of statements of switch statement body always starts at a case statement.
-    // For example,
+    // whether the processing of the differentiated statements of the switch
+    // statement body should stop or continue. This is based on the fact that
+    // processing of statements of switch statement body always starts at a case
+    // statement. For example,
     // ```
     // case 3:
     // ```
@@ -3356,7 +3356,8 @@ Expr* getArraySizeExpr(const ArrayType* AT, ASTContext& context,
                                 BuildOp(BinaryOperatorKind::BO_NE,
                                         SSData->switchStmtCond, CS->getLHS()));
           } else {
-            breakCond = BuildOp(BinaryOperatorKind::BO_NE, SSData->switchStmtCond, CS->getLHS());
+            breakCond = BuildOp(BinaryOperatorKind::BO_NE,
+                                SSData->switchStmtCond, CS->getLHS());
           }
         }
       }
@@ -3365,9 +3366,9 @@ Expr* getArraySizeExpr(const ArrayType* AT, ASTContext& context,
 
     activeBreakContHandler->EndCFSwitchStmtScope();
 
-    // If switch statement contains no cases, then, no statement of the switch statement body
-    // will be processed in both the forward and the reverse pass. Thus, we do not need
-    // to add them in the differentiated function.
+    // If switch statement contains no cases, then, no statement of the switch
+    // statement body will be processed in both the forward and the reverse
+    // pass. Thus, we do not need to add them in the differentiated function.
     if (!(SSData->cases.empty())) {
       Sema::ConditionResult condRes = m_Sema.ActOnCondition(
           getCurrentScope(), noLoc, condExpr, Sema::ConditionKind::Switch);
@@ -3377,19 +3378,16 @@ Expr* getArraySizeExpr(const ArrayType* AT, ASTContext& context,
       activeBreakContHandler->UpdateForwAndRevBlocks(bodyDiff);
 
       // Registers all the cases to the switch statement.
-      for (auto SC : SSData->cases) {
+      for (auto SC : SSData->cases)
         forwardSS->addSwitchCase(SC);
-      }
 
-      forwardSS = m_Sema
-                      .ActOnFinishSwitchStmt(noLoc, forwardSS,
-                                             bodyDiff.getStmt())
-                      .getAs<SwitchStmt>();
+      forwardSS =
+          m_Sema.ActOnFinishSwitchStmt(noLoc, forwardSS, bodyDiff.getStmt())
+              .getAs<SwitchStmt>();
 
       addToCurrentBlock(forwardSS, direction::forward);
-      if (isInsideLoop) {
+      if (isInsideLoop)
         addToCurrentBlock(condTape->Pop, direction::reverse);
-      }
       addToCurrentBlock(bodyDiff.getStmt_dx(), direction::reverse);
     }
 
@@ -3412,10 +3410,9 @@ Expr* getArraySizeExpr(const ArrayType* AT, ASTContext& context,
     Expr* ifCond = BuildOp(BinaryOperatorKind::BO_EQ, newSC->getLHS(),
                            SSData->switchStmtCond);
     Stmt* ifThen = m_Sema.ActOnBreakStmt(noLoc, getCurrentScope()).get();
-    Stmt* ifBreakExpr = clad_compat::IfStmt_Create(m_Context, noLoc, false,
-                                                   nullptr, nullptr, ifCond,
-                                                   noLoc, noLoc, ifThen, noLoc,
-                                                   nullptr);
+    Stmt* ifBreakExpr = clad_compat::IfStmt_Create(
+        m_Context, noLoc, false, nullptr, nullptr, ifCond, noLoc, noLoc, ifThen,
+        noLoc, nullptr);
     SSData->cases.push_back(newSC);
     addToCurrentBlock(ifBreakExpr, direction::reverse);
     addToCurrentBlock(newSC, direction::forward);
@@ -3429,12 +3426,12 @@ Expr* getArraySizeExpr(const ArrayType* AT, ASTContext& context,
     beginBlock(direction::reverse);
     beginBlock(direction::forward);
     auto SSData = GetActiveSwitchStmtInfo();
-    auto newDefaultStmt = new (m_Sema.getASTContext()) DefaultStmt(noLoc, noLoc, nullptr);
+    auto newDefaultStmt =
+        new (m_Sema.getASTContext()) DefaultStmt(noLoc, noLoc, nullptr);
     Stmt* ifThen = m_Sema.ActOnBreakStmt(noLoc, getCurrentScope()).get();
-    Stmt* ifBreakExpr = clad_compat::IfStmt_Create(m_Context, noLoc, false,
-                                                   nullptr, nullptr, nullptr,
-                                                   noLoc, noLoc, ifThen, noLoc,
-                                                   nullptr);
+    Stmt* ifBreakExpr = clad_compat::IfStmt_Create(
+        m_Context, noLoc, false, nullptr, nullptr, nullptr, noLoc, noLoc,
+        ifThen, noLoc, nullptr);
     SSData->cases.push_back(newDefaultStmt);
     SSData->defaultIfBreakExpr = cast<IfStmt>(ifBreakExpr);
     addToCurrentBlock(ifBreakExpr, direction::reverse);
