@@ -3,6 +3,7 @@
 //CHECK-NOT: {{.*error|warning|note:.*}}
 
 #include "clad/Differentiator/Differentiator.h"
+#include "../TestUtils.h"
 
 double fn1(double i, double j) {
   double res = 0;
@@ -513,6 +514,65 @@ double fn5(double i, double j) {
 // CHECK-NEXT:     }
 // CHECK-NEXT: }
 
+double fn6(double u, double v) {
+  int res = 0;
+  double temp = 0;
+  switch(res = u * v) {
+    default:
+      temp = 1;
+  }
+  return res;
+}
+
+// CHECK: void fn6_grad(double u, double v, clad::array_ref<double> _d_u, clad::array_ref<double> _d_v) {
+// CHECK-NEXT:     int _d_res = 0;
+// CHECK-NEXT:     double _d_temp = 0;
+// CHECK-NEXT:     int _t0;
+// CHECK-NEXT:     int _cond0;
+// CHECK-NEXT:     double _t1;
+// CHECK-NEXT:     clad::tape<unsigned long> _t2 = {};
+// CHECK-NEXT:     int res = 0;
+// CHECK-NEXT:     double temp = 0;
+// CHECK-NEXT:     {
+// CHECK-NEXT:         _t0 = res;
+// CHECK-NEXT:         res = u * v;
+// CHECK-NEXT:         _cond0 = res = u * v;
+// CHECK-NEXT:         switch (_cond0) {
+// CHECK-NEXT:             {
+// CHECK-NEXT:               default:
+// CHECK-NEXT:                 temp = 1;
+// CHECK-NEXT:                 _t1 = temp;
+// CHECK-NEXT:             }
+// CHECK-NEXT:             clad::push(_t2, 1UL);
+// CHECK-NEXT:         }
+// CHECK-NEXT:     }
+// CHECK-NEXT:     goto _label0;
+// CHECK-NEXT:   _label0:
+// CHECK-NEXT:     _d_res += 1;
+// CHECK-NEXT:     {
+// CHECK-NEXT:         switch (clad::pop(_t2)) {
+// CHECK-NEXT:           case 1UL:
+// CHECK-NEXT:             ;
+// CHECK-NEXT:             {
+// CHECK-NEXT:                 {
+// CHECK-NEXT:                     temp = _t1;
+// CHECK-NEXT:                     double _r_d1 = _d_temp;
+// CHECK-NEXT:                     _d_temp -= _r_d1;
+// CHECK-NEXT:                 }
+// CHECK-NEXT:                 if (true)
+// CHECK-NEXT:                     break;
+// CHECK-NEXT:             }
+// CHECK-NEXT:         }
+// CHECK-NEXT:         {
+// CHECK-NEXT:             res = _t0;
+// CHECK-NEXT:             int _r_d0 = _d_res;
+// CHECK-NEXT:             _d_res -= _r_d0;
+// CHECK-NEXT:             * _d_u += _r_d0 * v;
+// CHECK-NEXT:             * _d_v += u * _r_d0;
+// CHECK-NEXT:         }
+// CHECK-NEXT:     }
+// CHECK-NEXT: }
+
 #define TEST_2(F, x, y)                                                        \
   {                                                                            \
     result[0] = result[1] = 0;                                                 \
@@ -530,4 +590,7 @@ int main() {
   TEST_2(fn3, 3, 5);  // CHECK-EXEC: {162.00, 90.00}
   TEST_2(fn4, 3, 5);  // CHECK-EXEC: {10.00, 6.00}
   TEST_2(fn5, 3, 5);  // CHECK-EXEC: {5.00, 3.00}
+
+  INIT_GRADIENT(fn6);
+  TEST_GRADIENT(fn6, 2, 3, 5, &result[0], &result[1]); // CHECK-EXEC: {5.00, 3.00}
 }

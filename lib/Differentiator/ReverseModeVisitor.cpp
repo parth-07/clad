@@ -9,6 +9,7 @@
 #include "ConstantFolder.h"
 
 #include "TBRAnalyzer.h"
+#include "clad/Differentiator/DerivativeBuilder.h"
 #include "clad/Differentiator/DiffPlanner.h"
 #include "clad/Differentiator/ErrorEstimator.h"
 #include "clad/Differentiator/ExternalRMVSource.h"
@@ -18,6 +19,7 @@
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/TemplateBase.h"
+#include "clang/Basic/TokenKinds.h"
 #include "clang/Sema/Lookup.h"
 #include "clang/Sema/Overload.h"
 #include "clang/Sema/Scope.h"
@@ -3252,7 +3254,7 @@ Expr* getArraySizeExpr(const ArrayType* AT, ASTContext& context,
   StmtDiff ReverseModeVisitor::VisitSwitchStmt(const SwitchStmt* SS) {
     // Scope and blocks for the compound statement that encloses the switch
     // statement in both the forward and the reverse pass. Block is required
-    // handling condition variable and switch-init statement.
+    // for handling condition variable and switch-init statement.
     beginScope(Scope::DeclScope);
     beginBlock(direction::forward);
     beginBlock(direction::reverse);
@@ -3271,14 +3273,12 @@ Expr* getArraySizeExpr(const ArrayType* AT, ASTContext& context,
       addToCurrentBlock(condVarDiff.getStmt(), direction::forward);
       addToCurrentBlock(condVarDiff.getStmt_dx(), direction::reverse);
     }
-    // Condition is only cloned, and not differentiated.
-    // Its because conditions generally contain non-differentiable constructs,
-    // but this behaviour will lead to incorrect results if the condition
-    // expression modifies any variable.
-    Expr* condClone = (SS->getCond() ? Clone(SS->getCond()) : nullptr);
 
+    StmtDiff condDiff = DifferentiateSingleStmt(SS->getCond());
+    addToCurrentBlock(condDiff.getStmt(), direction::forward);
+    addToCurrentBlock(condDiff.getStmt_dx(), direction::reverse);
     Expr* condExpr = nullptr;
-    llvm::Optional<CladTapeResult> condTape;
+    clad_compat::llvm_Optional<CladTapeResult> condTape;
 
     if (isInsideLoop) {
       // If we are inside a loop, condition will be stored and used as follows:
@@ -3289,10 +3289,10 @@ Expr* getArraySizeExpr(const ArrayType* AT, ASTContext& context,
       // reverse block:
       // switch (...) { ... }
       // clad::pop(...);
-      condTape.emplace(MakeCladTapeFor(condClone, "_cond"));
+      condTape.emplace(MakeCladTapeFor(condDiff.getExpr(), "_cond"));
       condExpr = condTape->Push;
     } else {
-      condExpr = GlobalStoreAndRef(condClone, "_cond").getExpr();
+      condExpr = GlobalStoreAndRef(condDiff.getExpr(), "_cond").getExpr();
     }
 
     auto activeBreakContHandler = PushBreakContStmtHandler(
@@ -3361,6 +3361,8 @@ Expr* getArraySizeExpr(const ArrayType* AT, ASTContext& context,
           }
         }
       }
+      if (!breakCond)
+        breakCond = m_Sema.ActOnCXXBoolLiteral(noLoc, tok::kw_true).get();
       SSData->defaultIfBreakExpr->setCond(breakCond);
     }
 
