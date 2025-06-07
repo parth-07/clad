@@ -9,6 +9,10 @@ on:
       - master
       - coverity_scan
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   build:
     name: ${{ matrix.name }}
@@ -18,406 +22,476 @@ jobs:
       matrix:
 
         include:
-          - name: osx-clang-runtime5
-            os: macos-10.15
+          - name: osx14-arm-clang-runtime14
+            os: macos-14
             compiler: clang
-            clang-runtime: '5.0'
+            clang-runtime: '14'
 
-          - name: osx-clang-runtime6
-            os: macos-10.15
+          - name: osx14-arm-clang-runtime17
+            os: macos-14
             compiler: clang
-            clang-runtime: '6.0'
-
-          - name: osx-clang-runtime7
-            os: macos-10.15
+            clang-runtime: '17'
+            
+          - name: osx14-arm-clang-runtime18
+            os: macos-14
             compiler: clang
-            clang-runtime: '7'
+            clang-runtime: '18'
 
-          - name: osx-clang-runtime8
-            os: macos-10.15
+          - name: osx14-arm-clang-runtime19
+            os: macos-14
             compiler: clang
-            clang-runtime: '8'
+            clang-runtime: '19'
 
-          - name: osx-clang-runtime9
-            os: macos-10.15
+          - name: osx14-arm-clang-runtime20
+            os: macos-14
             compiler: clang
-            clang-runtime: '9'
+            clang-runtime: '20'
 
-          - name: osx-clang-runtime10
-            os: macos-10.15
-            compiler: clang
-            clang-runtime: '10'
-
-          - name: osx-clang-runtime11
-            os: macos-latest
-            compiler: clang
-            clang-runtime: '11'
-
-          - name: osx-clang-runtime12
-            os: macos-latest
+          - name: osx13-x86-clang-runtime12
+            os: macos-13
             compiler: clang
             clang-runtime: '12'
 
-          - name: ubu18-gcc5-runtime8
-            os: ubuntu-18.04
-            compiler: gcc-5
-            clang-runtime: '8'
+          - name: osx13-x86-clang-runtime16
+            os: macos-13
+            compiler: clang
+            clang-runtime: '16'
 
-          - name: ubu18-gcc6-runtime11-analyzers
-            os: ubuntu-18.04
-            compiler: gcc-6
-            clang-runtime: '11'
+          - name: osx13-x86-clang-runtime17
+            os: macos-13
+            compiler: clang
+            clang-runtime: '17'
+            
+          - name: osx13-x86-clang-runtime18
+            os: macos-13
+            compiler: clang
+            clang-runtime: '18'
+
+          - name: osx13-x86-clang-runtime19
+            os: macos-13
+            compiler: clang
+            clang-runtime: '19'
+
+          - name: osx13-x86-clang-runtime20
+            os: macos-13
+            compiler: clang
+            clang-runtime: '20'
+
+          - name: win2022-msvc-runtime14
+            os: windows-2022
+            compiler: msvc
+            clang-runtime: '14'
+
+          - name: win2022-msvc-runtime17
+            os: windows-2022
+            compiler: msvc
+            clang-runtime: '17'
+
+          - name: win2022-msvc-runtime18
+            os: windows-2022
+            compiler: msvc
+            clang-runtime: '18'
+
+          - name: win2022-msvc-runtime19
+            os: windows-2022
+            compiler: msvc
+            clang-runtime: '19'
+
+          - name: win2022-msvc-runtime20
+            os: windows-2022
+            compiler: msvc
+            clang-runtime: '20'
+
+          - name: win11-arm-msvc-runtime20
+            os: windows-11-arm
+            compiler: msvc
+            clang-runtime: '20'
+
+          - name: ubu22-clang15-runtime18-debug
+            os: ubuntu-22.04
+            compiler: clang-15
+            clang-runtime: '18'
+            debug_build: true
+
+          - name: selfh-ubu22-gcc12-runtime18-analyzers
+            os: self-hosted #ubuntu-22.04
+            compiler: gcc-12
+            clang-runtime: '18'
             coverage: true
+            cuda: true
+            #extra_cmake_options: '-DCLAD_ENABLE_ENZYME_BACKEND=On'
             #clang-format: true
 
-          - name: ubu18-gcc6-runtime11-benchmarks
-            os: ubuntu-18.04
-            compiler: gcc-6
+          - name: ubu22-gcc10-runtime11-benchmarks
+            os: ubuntu-22.04
+            compiler: gcc-10
             clang-runtime: '11'
-            extra_cmake_options: '-DCLAD_ENABLE_BENCHMARKS=On'
+            extra_cmake_options: '-DCLAD_ENABLE_BENCHMARKS=On -DCLAD_ENABLE_ENZYME_BACKEND=On'
             benchmark: true
 
-          - name: ubu18-gcc6-runtime11-coverity
-            os: ubuntu-18.04
-            compiler: gcc-6
+          - name: ubu22-gcc10-runtime11-coverity
+            os: ubuntu-22.04
+            compiler: gcc-10
             clang-runtime: '11'
             coverity: true
 
-          - name: ubu18-gcc6-runtime8
-            os: ubuntu-18.04
-            compiler: gcc-6
-            clang-runtime: '8'
-
-          - name: ubu18-gcc8-runtime8
-            os: ubuntu-18.04
-            compiler: gcc-8
-            clang-runtime: '8'
-
-          - name: ubu18-gcc9-runtime8
-            os: ubuntu-18.04
-            compiler: gcc-9
-            clang-runtime: '8'
-
-          - name: ubu18-clang4-runtime8
-            os: ubuntu-18.04
-            compiler: 'clang-4.0'
-            clang-runtime: '8'
-
-          - name: ubu18-clang8-runtime8
-            os: ubuntu-18.04
-            compiler: clang-8
-            clang-runtime: '8'
-
-          - name: ubu18-clang9-runtime8
-            os: ubuntu-18.04
-            compiler: clang-9
-            clang-runtime: '8'
-
-          - name: ubu18-clang10-runtime8
-            os: ubuntu-18.04
-            compiler: clang-10
-            clang-runtime: '8'
-
-          - name: ubu18-gcc5-runtime9
-            os: ubuntu-18.04
-            compiler: gcc-5
-            clang-runtime: '9'
-
-          - name: ubu18-gcc8-runtime9
-            os: ubuntu-18.04
-            compiler: gcc-8
-            clang-runtime: '9'
-
-          - name: ubu18-gcc9-runtime9
-            os: ubuntu-18.04
-            compiler: gcc-9
-            clang-runtime: '9'
-
-          - name: ubu18-clang4-runtime9
-            os: ubuntu-18.04
-            compiler: 'clang-4.0'
-            clang-runtime: '9'
-
-          - name: ubu18-clang8-runtime9
-            os: ubuntu-18.04
-            compiler: clang-8
-            clang-runtime: '9'
-
-          - name: ubu18-clang9-runtime9
-            os: ubuntu-18.04
-            compiler: clang-9
-            clang-runtime: '9'
-
-          - name: ubu18-gcc5-runtime10
-            os: ubuntu-18.04
-            compiler: gcc-5
-            clang-runtime: '10'
-
-          - name: ubu18-gcc8-runtime10
-            os: ubuntu-18.04
-            compiler: gcc-8
-            clang-runtime: '10'
-
-          - name: ubu18-gcc9-runtime10
-            os: ubuntu-18.04
-            compiler: gcc-9
-            clang-runtime: '10'
-
-          - name: ubu18-clang4-runtime10
-            os: ubuntu-18.04
-            compiler: 'clang-4.0'
-            clang-runtime: '10'
-
-          - name: ubu18-clang8-runtime10
-            os: ubuntu-18.04
-            compiler: clang-8
-            clang-runtime: '10'
-
-          - name: ubu18-clang9-runtime10
-            os: ubuntu-18.04
-            compiler: clang-9
-            clang-runtime: '10'
-
-          - name: ubu18-gcc5-runtime11
-            os: ubuntu-18.04
-            compiler: gcc-5
+          - name: ubu22-gcc10-runtime11
+            os: ubuntu-22.04
+            compiler: gcc-10
             clang-runtime: '11'
 
-          - name: ubu18-gcc8-runtime11
-            os: ubuntu-18.04
-            compiler: gcc-8
+          - name: ubu22-gcc10-runtime19
+            os: ubuntu-22.04
+            compiler: gcc-10
+            clang-runtime: '19'
+
+          - name: ubu22-gcc11-runtime11
+            os: ubuntu-22.04
+            compiler: gcc-11
             clang-runtime: '11'
 
-          - name: ubu18-gcc9-runtime11
-            os: ubuntu-18.04
-            compiler: gcc-9
+          - name: ubu22-gcc11-runtime19
+            os: ubuntu-22.04
+            compiler: gcc-11
+            clang-runtime: '19'
+
+          - name: ubu22-clang12-runtime11
+            os: ubuntu-22.04
+            compiler: clang-12
             clang-runtime: '11'
 
-          - name: ubu18-clang4-runtime11
-            os: ubuntu-18.04
-            compiler: 'clang-4.0'
+          - name: ubu22-clang13-runtime11
+            os: ubuntu-22.04
+            compiler: clang-13
             clang-runtime: '11'
 
-          - name: ubu18-clang8-runtime11
-            os: ubuntu-18.04
-            compiler: clang-8
-            clang-runtime: '11'
-
-          - name: ubu18-clang9-runtime11
-            os: ubuntu-18.04
-            compiler: clang-9
-            clang-runtime: '11'
-
-          - name: ubu18-gcc5-runtime12
-            os: ubuntu-18.04
-            compiler: gcc-5
+          - name: ubu22-gcc10-runtime12
+            os: ubuntu-22.04
+            compiler: gcc-10
             clang-runtime: '12'
 
-          - name: ubu18-gcc8-runtime12
-            os: ubuntu-18.04
-            compiler: gcc-8
+          - name: ubu22-gcc11-runtime12
+            os: ubuntu-22.04
+            compiler: gcc-11
             clang-runtime: '12'
 
-          - name: ubu18-gcc9-runtime12
-            os: ubuntu-18.04
-            compiler: gcc-9
-            clang-runtime: '12'
-
-          - name: ubu18-clang4-runtime12
-            os: ubuntu-18.04
-            compiler: 'clang-4.0'
-            clang-runtime: '12'
-
-          - name: ubu18-clang8-runtime12
-            os: ubuntu-18.04
-            compiler: clang-8
-            clang-runtime: '12'
-
-          - name: ubu18-clang9-runtime12
-            os: ubuntu-18.04
-            compiler: clang-9
-            clang-runtime: '12'
-
-          - name: ubu18-clang9-runtime10-cuda
-            os: ubuntu-18.04
-            compiler: clang-9
-            clang-runtime: '10'
-            cuda: true
-
-          - name: ubu20-gcc7-runtime9
-            os: ubuntu-20.04
-            compiler: gcc-7
-            clang-runtime: '9'
-
-          - name: ubu20-gcc8-runtime9
-            os: ubuntu-20.04
-            compiler: gcc-8
-            clang-runtime: '9'
-
-          - name: ubu20-gcc9-runtime9
-            os: ubuntu-20.04
-            compiler: gcc-9
-            clang-runtime: '9'
-
-          - name: ubu20-clang6-runtime9
-            os: ubuntu-20.04
-            compiler: 'clang-6.0'
-            clang-runtime: '9'
-
-          - name: ubu20-clang8-runtime9
-            os: ubuntu-20.04
-            compiler: clang-8
-            clang-runtime: '9'
-
-          - name: ubu20-clang9-runtime9
-            os: ubuntu-20.04
-            compiler: clang-9
-            clang-runtime: '9'
-
-          - name: ubu20-gcc7-runtime10
-            os: ubuntu-20.04
-            compiler: gcc-7
-            clang-runtime: '10'
-
-          - name: ubu20-gcc8-runtime10
-            os: ubuntu-20.04
-            compiler: gcc-8
-            clang-runtime: '10'
-
-          - name: ubu20-gcc9-runtime10
-            os: ubuntu-20.04
-            compiler: gcc-9
-            clang-runtime: '10'
-
-          - name: ubu20-clang6-runtime10
-            os: ubuntu-20.04
-            compiler: 'clang-6.0'
-            clang-runtime: '10'
-
-          - name: ubu20-clang8-runtime10
-            os: ubuntu-20.04
-            compiler: clang-8
-            clang-runtime: '10'
-
-          - name: ubu20-clang9-runtime10
-            os: ubuntu-20.04
-            compiler: clang-9
-            clang-runtime: '10'
-
-          - name: ubu20-clang10-runtime10
-            os: ubuntu-20.04
-            compiler: clang-10
-            clang-runtime: '10'
-
-          - name: ubu20-gcc7-runtime11
-            os: ubuntu-20.04
-            compiler: gcc-7
-            clang-runtime: '11'
-
-          - name: ubu20-gcc8-runtime11
-            os: ubuntu-20.04
-            compiler: gcc-8
-            clang-runtime: '11'
-
-          - name: ubu20-gcc9-runtime11
-            os: ubuntu-20.04
-            compiler: gcc-9
-            clang-runtime: '11'
-
-          - name: ubu20-clang6-runtime11
-            os: ubuntu-20.04
-            compiler: 'clang-6.0'
-            clang-runtime: '11'
-
-          - name: ubu20-clang8-runtime11
-            os: ubuntu-20.04
-            compiler: clang-8
-            clang-runtime: '11'
-
-          - name: ubu20-clang9-runtime11
-            os: ubuntu-20.04
-            compiler: clang-9
-            clang-runtime: '11'
-
-          - name: ubu20-clang10-runtime11
-            os: ubuntu-20.04
-            compiler: clang-10
-            clang-runtime: '11'
-
-          - name: ubu20-clang11-runtime11
-            os: ubuntu-20.04
-            compiler: clang-11
-            clang-runtime: '11'
-
-          - name: ubu20-gcc7-runtime12
-            os: ubuntu-20.04
-            compiler: gcc-7
-            clang-runtime: '12'
-
-          - name: ubu20-gcc8-runtime12
-            os: ubuntu-20.04
-            compiler: gcc-8
-            clang-runtime: '12'
-
-          - name: ubu20-gcc9-runtime12
-            os: ubuntu-20.04
-            compiler: gcc-9
-            clang-runtime: '12'
-
-          - name: ubu20-clang6-runtime12
-            os: ubuntu-20.04
-            compiler: 'clang-6.0'
-            clang-runtime: '12'
-
-          - name: ubu20-clang8-runtime12
-            os: ubuntu-20.04
-            compiler: clang-8
-            clang-runtime: '12'
-
-          - name: ubu20-clang9-runtime12
-            os: ubuntu-20.04
-            compiler: clang-9
-            clang-runtime: '12'
-
-          - name: ubu20-clang10-runtime12
-            os: ubuntu-20.04
-            compiler: clang-10
-            clang-runtime: '12'
-
-          - name: ubu20-clang11-runtime12
-            os: ubuntu-20.04
-            compiler: clang-11
-            clang-runtime: '12'
-
-          - name: ubu20-clang12-runtime12
-            os: ubuntu-20.04
+          - name: ubu22-clang12-runtime12
+            os: ubuntu-22.04
             compiler: clang-12
             clang-runtime: '12'
 
+          - name: ubu22-clang13-runtime12
+            os: ubuntu-22.04
+            compiler: clang-13
+            clang-runtime: '12'
+
+          - name: ubu22-clang13-runtime13-cuda
+            os: ubuntu-22.04
+            compiler: clang-13
+            clang-runtime: '13'
+            cuda: true
+
+          - name: selfh-ubu22-clang16-runtime18-cuda
+            os: self-hosted #ubuntu-22.04
+            runs-on: cuda
+            compiler: clang-16
+            clang-runtime: '18'
+            cuda: true
+
+          - name: ubu22-clang13-runtime15
+            os: ubuntu-22.04
+            compiler: clang-13
+            clang-runtime: '15'
+
+          - name: ubu22-clang13-runtime16
+            os: ubuntu-22.04
+            compiler: clang-13
+            clang-runtime: '16'
+
+          - name: ubu22-clang13-runtime17
+            os: ubuntu-22.04
+            compiler: clang-13
+            clang-runtime: '17'
+
+          - name: ubu22-clang13-runtime18
+            os: ubuntu-22.04
+            compiler: clang-13
+            clang-runtime: '18'
+
+          - name: ubu22-gcc11-runtime11
+            os: ubuntu-22.04
+            compiler: gcc-11
+            clang-runtime: '11'
+
+          - name: ubu22-gcc12-runtime11
+            os: ubuntu-22.04
+            compiler: gcc-12
+            clang-runtime: '11'
+
+          - name: ubu22-clang12-runtime11
+            os: ubuntu-22.04
+            compiler: clang-12
+            clang-runtime: '11'
+
+          - name: ubu22-clang13-runtime11
+            os: ubuntu-22.04
+            compiler: clang-13
+            clang-runtime: '11'
+
+          - name: ubu22-clang14-runtime11
+            os: ubuntu-22.04
+            compiler: clang-14
+            clang-runtime: '11'
+
+          - name: ubu22-clang15-runtime11
+            os: ubuntu-22.04
+            compiler: clang-15
+            clang-runtime: '11'
+
+          - name: ubu22-clang16-runtime11
+            os: ubuntu-22.04
+            compiler: 'clang-16'
+            clang-runtime: '11'
+
+          - name: ubu22-gcc11-runtime12
+            os: ubuntu-22.04
+            compiler: gcc-11
+            clang-runtime: '12'
+
+          - name: ubu22-gcc12-runtime12
+            os: ubuntu-22.04
+            compiler: gcc-12
+            clang-runtime: '12'
+
+          - name: ubu22-clang12-runtime12
+            os: ubuntu-22.04
+            compiler: clang-12
+            clang-runtime: '12'
+
+          - name: ubu22-clang13-runtime12
+            os: ubuntu-22.04
+            compiler: clang-13
+            clang-runtime: '12'
+
+          - name: ubu22-clang14-runtime12
+            os: ubuntu-22.04
+            compiler: clang-14
+            clang-runtime: '12'
+
+          - name: ubu22-clang15-runtime12
+            os: ubuntu-22.04
+            compiler: clang-15
+            clang-runtime: '12'
+
+          - name: ubu22-clang16-runtime12
+            os: ubuntu-22.04
+            compiler: 'clang-16'
+            clang-runtime: '12'
+
+          - name: ubu22-gcc12-runtime13
+            os: ubuntu-22.04
+            compiler: gcc-12
+            clang-runtime: '13'
+
+          - name: ubu22-clang12-runtime13
+            os: ubuntu-22.04
+            compiler: clang-12
+            clang-runtime: '13'
+
+          - name: ubu22-clang13-runtime13
+            os: ubuntu-22.04
+            compiler: clang-13
+            clang-runtime: '13'
+
+          - name: ubu22-clang14-runtime13
+            os: ubuntu-22.04
+            compiler: clang-14
+            clang-runtime: '13'
+
+          - name: ubu22-clang15-runtime13
+            os: ubuntu-22.04
+            compiler: clang-15
+            clang-runtime: '13'
+
+          - name: ubu22-clang16-runtime13
+            os: ubuntu-22.04
+            compiler: clang-16
+            clang-runtime: '13'
+
+          - name: ubu22-gcc12-runtime14
+            os: ubuntu-22.04
+            compiler: gcc-12
+            clang-runtime: '14'
+
+          - name: ubu24-gcc13-runtime14
+            os: ubuntu-24.04
+            compiler: gcc-13
+            clang-runtime: '14'
+
+          - name: ubu24-gcc14-runtime14
+            os: ubuntu-24.04
+            compiler: gcc-14
+            clang-runtime: '14'
+
+          - name: ubu24-gcc14-runtime15
+            os: ubuntu-24.04
+            compiler: gcc-14
+            clang-runtime: '15'
+
+          - name: ubu24-gcc14-runtime16
+            os: ubuntu-24.04
+            compiler: gcc-14
+            clang-runtime: '16'
+
+          - name: ubu24-gcc14-runtime17
+            os: ubuntu-24.04
+            compiler: gcc-14
+            clang-runtime: '17'
+
+          - name: ubu22-clang12-runtime14
+            os: ubuntu-22.04
+            compiler: clang-12
+            clang-runtime: '14'
+
+          - name: ubu22-clang12-runtime15
+            os: ubuntu-22.04
+            compiler: clang-12
+            clang-runtime: '15'
+
+          - name: ubu22-clang12-runtime16
+            os: ubuntu-22.04
+            compiler: clang-12
+            clang-runtime: '16'
+
+          - name: ubu22-clang13-runtime14
+            os: ubuntu-22.04
+            compiler: clang-13
+            clang-runtime: '14'
+
+          - name: ubu24-clang14-runtime14
+            os: ubuntu-24.04
+            compiler: clang-14
+            clang-runtime: '14'
+
+          - name: ubu24-clang14-runtime15
+            os: ubuntu-24.04
+            compiler: clang-15
+            clang-runtime: '14'
+
+          - name: ubu22-clang14-runtime15
+            os: ubuntu-22.04
+            compiler: clang-14
+            clang-runtime: '15'
+
+          - name: ubu24-clang15-runtime15
+            os: ubuntu-24.04
+            compiler: clang-15
+            clang-runtime: '15'
+
+          - name: ubu24-clang15-runtime16
+            os: ubuntu-24.04
+            compiler: clang-15
+            clang-runtime: '16'
+
+          - name: ubuntu-clang15-runtime16-doc
+            os: ubuntu-latest
+            compiler: clang-15
+            clang-runtime: '16'
+            doc_build: true
+
+          - name: ubu24-clang16-runtime17
+            os: ubuntu-24.04
+            compiler: clang-16
+            clang-runtime: '17'
+
+          - name: ubu24-clang16-runtime17-shared-libs
+            os: ubuntu-24.04
+            compiler: clang-16
+            extra_cmake_options: '-DBUILD_SHARED_LIBS=On'
+            clang-runtime: '17'
+
+          - name: ubu22-clang16-runtime17-kokkos
+            os: ubuntu-22.04
+            compiler: clang-16
+            clang-runtime: '17'
+            extra_packages: 'libtrilinos-kokkos-dev ninja-build'
+            extra_cmake_options: '-G Ninja'
+
+          - name: ubu24-clang16-runtime18
+            os: ubuntu-24.04
+            compiler: clang-16
+            clang-runtime: '18'
+
+          - name: ubu24-clang17-runtime19
+            os: ubuntu-24.04
+            compiler: clang-17
+            clang-runtime: '19'
+
+          - name: ubu22-clang17-runtime20
+            os: ubuntu-22.04
+            compiler: clang-18
+            clang-runtime: '20'
+
+          - name: ubu24-arm-clang16-runtime17
+            os: ubuntu-24.04-arm
+            compiler: clang-16
+            clang-runtime: '17'
+
+          - name: ubu24-arm-clang16-runtime17-shared-libs
+            os: ubuntu-24.04-arm
+            compiler: clang-16
+            extra_cmake_options: '-DBUILD_SHARED_LIBS=On'
+            clang-runtime: '17'
+
+          - name: ubu24-arm-clang16-runtime17-kokkos
+            os: ubuntu-24.04-arm
+            compiler: clang-16
+            clang-runtime: '17'
+            extra_packages: 'libtrilinos-kokkos-dev ninja-build'
+            extra_cmake_options: '-G Ninja'
+
+          - name: ubu24-arm-clang16-runtime18
+            os: ubuntu-24.04-arm
+            compiler: clang-16
+            clang-runtime: '18'
+
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v5
       with:
-        python-version: 3.7
+        python-version: 3.11
     - name: Save PR Info
       if: ${{ matrix.coverage == true }}
       run: |
         mkdir -p ./pr
         echo ${{ github.event.number }} > ./pr/NR
         echo ${{ github.repository }} > ./pr/REPO
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v4
       if: ${{ matrix.coverage == true }}
       with:
         name: pr
         path: pr/
+        overwrite: true
     - uses: nelonoel/branch-name@v1.0.1
-    - name: Setup default Build Type
+    - name: Setup default Build Type on *nux (coverity)
+      if: ${{ (matrix.debug_build != true) && (runner.os != 'windows') }}
       run: |
         echo "BUILD_TYPE=Release" >> $GITHUB_ENV
-        echo "CODE_COVERAGE=0" >> $GITHUB_ENV
+        echo "CLAD_CODE_COVERAGE=0" >> $GITHUB_ENV
+    - name: Setup default Build Type on *nux (build_debug & asserts)
+      if: ${{ (matrix.debug_build == true) && (runner.os != 'windows') }}
+      run: |
+        echo "BUILD_TYPE=Debug" >> $GITHUB_ENV
+    - name: Setup default Build Type on Windows
+      if: runner.os == 'windows'
+      run: |
+        $env:BUILD_TYPE="Release"
+        $env:CLAD_CODE_COVERAGE="0"
+        echo "BUILD_TYPE=Release" >> $env:GITHUB_ENV
+        echo "CLAD_CODE_COVERAGE=0" >> $env:GITHUB_ENV
     - name: Download Coverity Build Tool - Linux
       if: ${{ (matrix.coverity == true) && (runner.os == 'Linux') }}
       run: |
@@ -434,15 +508,28 @@ jobs:
     - name: Setup Ubuntu apt sources
       if: runner.os == 'Linux'
       run: |
-        curl https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-        os_codename="`cat /etc/os-release | grep UBUNTU_CODENAME | cut -d = -f 2`"
-        echo "deb https://apt.llvm.org/${os_codename}/ llvm-toolchain-${os_codename}-${{ matrix.clang-runtime }} main" | sudo tee -a /etc/apt/sources.list
-        sudo apt update
-        if [[ '${{ matrix.clang-runtime }}' == '8' ]]; then
-          sudo apt install llvm-${{ matrix.clang-runtime }}-dev clang-${{ matrix.clang-runtime }} libclang-${{ matrix.clang-runtime }}-dev
-        else # ==7, >=9
-          sudo apt install llvm-${{ matrix.clang-runtime }}-dev llvm-${{ matrix.clang-runtime }}-tools clang-${{ matrix.clang-runtime }} libclang-${{ matrix.clang-runtime }}-dev
-        fi
+        export ARCHITECHURE=$(uname -m)
+        
+        if [[ "$ARCHITECHURE" == "x86_64" ]]; then
+          if ! sudo apt install -y llvm-${{ matrix.clang-runtime }}-dev ; then
+            curl https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+            os_codename="`cat /etc/os-release | grep UBUNTU_CODENAME | cut -d = -f 2`"
+            echo "deb https://apt.llvm.org/${os_codename}/ llvm-toolchain-${os_codename}-${{ matrix.clang-runtime }} main" | sudo tee -a /etc/apt/sources.list
+            sudo apt update
+          fi
+        else
+          curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/llvm-snapshot.gpg
+          sudo chmod a+r /etc/apt/keyrings/llvm-snapshot.gpg
+          echo   "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/llvm-snapshot.gpg] http://apt.llvm.org/"$(. /etc/os-release && echo "$VERSION_CODENAME")"/ llvm-toolchain-"$(. /etc/os-release && echo "$VERSION_CODENAME")" main" | sudo tee /etc/apt/sources.list.d/llvm-snapshot.list > /dev/null
+          echo   "deb-src [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/llvm-snapshot.gpg] http://apt.llvm.org/"$(. /etc/os-release && echo "$VERSION_CODENAME")"/ llvm-toolchain-"$(. /etc/os-release && echo "$VERSION_CODENAME")" main" | sudo tee -a /etc/apt/sources.list.d/llvm-snapshot.list > /dev/null
+          cat /etc/apt/sources.list.d/llvm-snapshot.list
+        fi        
+        sudo apt install -y llvm-${{ matrix.clang-runtime }}-dev \
+                         llvm-${{ matrix.clang-runtime }}-tools \
+                         clang-${{ matrix.clang-runtime }} \
+                         libclang-${{ matrix.clang-runtime }}-dev \
+                         ${{ matrix.extra_packages }}
+
     - name: Setup compiler on Linux
       if: runner.os == 'Linux'
       run: |
@@ -455,8 +542,7 @@ jobs:
           echo "CC=gcc-${vers}" >> $GITHUB_ENV
           echo "CXX=g++-${vers}" >> $GITHUB_ENV
         else
-          sudo apt install -y clang-${vers}
-          if [[ "$?" != "0" ]]; then
+          if ! sudo apt install -y clang-${vers}; then
             curl https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
             echo "deb https://apt.llvm.org/${os_codename}/ llvm-toolchain-${os_codename}-${vers} main" | sudo tee -a /etc/apt/sources.list
             sudo apt update
@@ -476,58 +562,43 @@ jobs:
         else
           echo "Unsupported compiler - fix YAML file"
         fi
+    - name: Setup compiler on Windows
+      if: runner.os == 'windows'
+      run: |
+        if ( "${{ matrix.compiler }}" -imatch "clang" )
+        {
+          $ver="${{ matrix.compiler }}".split("-")[1]
+          choco install llvm --version=$ver --no-progress -my
+          $env:PATH_TO_LLVM_BUILD="$env:ProgramFiles\LLVM"
+          echo "PATH_TO_LLVM_BUILD=$env:PATH_TO_LLVM_BUILD"
+          echo "PATH_TO_LLVM_BUILD=$env:PATH_TO_LLVM_BUILD" >> $env:GITHUB_ENV
+          clang --version
+          #
+          $env:CC="clang"
+          $env:CXX="clang++"
+          echo "CC=clang" >> $env:GITHUB_ENV
+          echo "CXX=clang++" >> $env:GITHUB_ENV
+        }
+        elseif ( "${{ matrix.compiler }}" -imatch "msvc" )
+        {
+          # MSVC is builtin in container image
+        }
+        else
+        {
+          echo "Unsupported compiler - fix YAML file"
+        }
+
     - name: Setup LLVM/Clang on macOS
       if: runner.os == 'macOS'
       run: |
-        # Update openssl on osx because the current one is deprecated by python.
-        curl -L https://bootstrap.pypa.io/get-pip.py | sudo python3
-        echo "/usr/local/opt/ccache/libexec" >> $GITHUB_PATH
-        PATH_TO_LLVM_BUILD=/usr/local/opt/llvm@${{ matrix.clang-runtime }}/
-        # Package llvm@5 is not supported on brew. We must install it from binary build.
-        if [[ '${{ matrix.clang-runtime }}' == '5.0' ]]; then
-          PATH_TO_LLVM_BUILD=/usr/local/opt/llvm@5/
+        # llvm <=@11 are deprecated or deleted.
+        # Install llvm from github releases.
+        if [[ ${{ matrix.clang-runtime }} -le 11 ]]; then
+          PATH_TO_LLVM_BUILD=/usr/local/opt/llvm@${{ matrix.clang-runtime }}/
           pushd /usr/local/opt
-          sudo curl -L https://releases.llvm.org/5.0.2/clang+llvm-5.0.2-x86_64-apple-darwin.tar.xz | sudo xz -d -c | sudo tar -x
+          q="0"
           sudo rm -fr /usr/local/clang*
-          sudo mv clang+llvm-5.0.2-x86_64-apple-darwin/ llvm@5/
-          # Use llvm/llvm@10/llvm@6 Filecheck
-          if [[ ! -f $PATH_TO_LLVM_BUILD/bin/FileCheck ]]; then
-            if [[ -f /usr/local/opt/llvm/bin/FileCheck ]]; then
-              sudo ln -s /usr/local/opt/llvm/bin/FileCheck $PATH_TO_LLVM_BUILD/bin/FileCheck
-            elif [[ -f /usr/local/opt/llvm\@10/bin/FileCheck ]]; then
-              sudo ln -s /usr/local/opt/llvm\@10/bin/FileCheck $PATH_TO_LLVM_BUILD/bin/FileCheck
-            elif [[ -f /usr/local/opt/llvm\@6/bin/FileCheck ]]; then
-              sudo ln -s /usr/local/opt/llvm\@6/bin/FileCheck $PATH_TO_LLVM_BUILD/bin/FileCheck
-            fi
-          fi
-          popd
-        fi
-        # Package llvm@6
-        if [[ '${{ matrix.clang-runtime }}' == '6.0' ]]; then
-          PATH_TO_LLVM_BUILD=/usr/local/opt/llvm@6/
-          pushd /usr/local/opt
-          sudo curl -L https://releases.llvm.org/6.0.0/clang+llvm-6.0.0-x86_64-apple-darwin.tar.xz | sudo xz -d -c | sudo tar -x
-          sudo rm -fr /usr/local/clang*
-          sudo mv clang+llvm-6.0.0-x86_64-apple-darwin/ llvm@6/
-          # Use llvm/llvm@10/llvm@6 Filecheck
-          if [[ ! -f $PATH_TO_LLVM_BUILD/bin/FileCheck ]]; then
-            if [[ -f /usr/local/opt/llvm/bin/FileCheck ]]; then
-              sudo ln -s /usr/local/opt/llvm/bin/FileCheck $PATH_TO_LLVM_BUILD/bin/FileCheck
-            elif [[ -f /usr/local/opt/llvm\@10/bin/FileCheck ]]; then
-              sudo ln -s /usr/local/opt/llvm\@10/bin/FileCheck $PATH_TO_LLVM_BUILD/bin/FileCheck
-            elif [[ -f /usr/local/opt/llvm\@6/bin/FileCheck ]]; then
-              sudo ln -s /usr/local/opt/llvm\@6/bin/FileCheck $PATH_TO_LLVM_BUILD/bin/FileCheck
-            fi
-          fi
-          popd
-        fi
-        # Package llvm@10 is not supported on brew. FIXME: Remove when official brew package is released.
-        if [[ '${{ matrix.clang-runtime }}' == '10' ]]; then
-          PATH_TO_LLVM_BUILD=/usr/local/opt/llvm@10/
-          pushd /usr/local/opt
-          sudo curl -L https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.0/clang+llvm-10.0.0-x86_64-apple-darwin.tar.xz | sudo xz -d -c | sudo tar -x
-          sudo rm -fr /usr/local/clang*
-          sudo mv clang+llvm-10.0.0-x86_64-apple-darwin/ llvm@10/
+          sudo mv clang+llvm-${{ matrix.clang-runtime }}.$q.$w-x86_64-apple-darwin/ llvm@${{ matrix.clang-runtime }}/
           # Use llvm/llvm@10/llvm@6 Filecheck
           if [[ ! -f $PATH_TO_LLVM_BUILD/bin/FileCheck ]]; then
             if [[ -f /usr/local/opt/llvm/bin/FileCheck ]]; then
@@ -541,74 +612,155 @@ jobs:
           popd
         fi
 
-        if [[ '${{ matrix.clang-runtime }}' != '5.0' && '${{ matrix.clang-runtime }}' != '6.0' && '${{ matrix.clang-runtime }}' != '10' ]]; then
-          brew install llvm@${{ matrix.clang-runtime }}
+        if [[ ${{ matrix.clang-runtime }} -gt 11 ]]; then
+          # If the version of clang is in brew then install it.
+          HAVE_LLVM=$(brew info --json llvm | jq -r '.[].aliases[],.[].versioned_formulae[]' | grep llvm@${{ matrix.clang-runtime }} || true)
+          if [[ -z "$HAVE_LLVM" ]]; then
+            brew update
+            HAVE_LLVM=$(brew info --json llvm | jq -r '.[].aliases[],.[].versioned_formulae[]' | grep llvm@${{ matrix.clang-runtime }} || true)
+          fi
+
+          if [[ -n "$HAVE_LLVM" ]]; then
+            brew install llvm@${{ matrix.clang-runtime }}
+            PATH_TO_LLVM_BUILD=$(brew --prefix llvm@${{ matrix.clang-runtime }})
+          else
+            # FIXME: Make this generic. Currently this is broken...
+            sudo curl -L https://github.com/llvm/llvm-project/releases/download/llvmorg-${{ matrix.clang-runtime }}.1.0/LLVM-${{ matrix.clang-runtime }}.1.0-macOS-ARM64.tar.xz | sudo xz -d -c | sudo tar -x
+            if [[ $(uname -p) == "arm" ]]; then
+              export PATH_TO_LLVM_BUILD=/opt/homebrew/llvm@${{ matrix.clang-runtime }}/
+            else
+              export PATH_TO_LLVM_BUILD=/usr/local/opt/llvm@${{ matrix.clang-runtime }}/
+            fi
+            sudo mv LLVM-${{ matrix.clang-runtime }}.1.0-macOS-ARM64 $PATH_TO_LLVM_BUILD
+            echo "PATH_TO_LLVM_BUILD=$PATH_TO_LLVM_BUILD"
+            ${PATH_TO_LLVM_BUILD}bin/clang --version
+          fi
+        else
+          # Remove the c++ headers that come with the llvm package from homebrew
+          # allowing clang to work with system's SDK.
+          sudo rm -fr /usr/local/opt/llvm*/include/c++
         fi
+
+        PATH_TO_LLVM_BUILD=$(brew --prefix llvm@${{ matrix.clang-runtime }})
 
         pip3 install lit # LLVM lit is not part of the llvm releases...
 
         # We need headers in correct place
-        for file in $(xcrun --show-sdk-path)/usr/include/*
-        do
-          if [ ! -f /usr/local/include/$(basename $file) ]; then
-            ln -s $file /usr/local/include/$(basename $file)
-          fi
-        done
+        #FIXME: ln solution fails with error message No such file or directory on osx arm, 
+        #Copying over files as a temporary solution
+        sudo cp -r -n $(xcrun --show-sdk-path)/usr/include/ /usr/local/include/
+        #for file in $(xcrun --show-sdk-path)/usr/include/*
+        #do
+        #  if [ ! -f /usr/local/include/$(basename $file) ]; then
+        #    echo ${file}
+        #    ln -s ${file} /usr/local/include/$(basename $file)
+        #  fi
+        #done
         # We need PATH_TO_LLVM_BUILD later
         echo "PATH_TO_LLVM_BUILD=$PATH_TO_LLVM_BUILD" >> $GITHUB_ENV
+
+    - name: Restore Cache LLVM/Clang runtime build directory (debug_build==true)
+      if: ${{ (matrix.debug_build == true) && (runner.os != 'windows') }}
+      uses: actions/cache/restore@v4
+      id: cache
+      with:
+        path: |
+          llvm-project
+        key: ${{ matrix.os }}-clang-${{ matrix.clang-runtime }}.x-${{ env.BUILD_TYPE }}
+    - name: Build LLVM/Cling on Unix if the cache is invalid (debug_build==true)
+      if: ${{ (matrix.debug_build == true) && (runner.os != 'windows') && (steps.cache.outputs.cache-hit != 'true') }}
+      run: |
+        os="${{ matrix.os }}"
+        git clone --depth=1 -b release/${{ matrix.clang-runtime }}.x https://github.com/llvm/llvm-project.git
+        cd llvm-project
+        # Build
+        mkdir build
+        cd build
+        export CPU_COUNT="$(nproc --all)"
+        cmake \
+              -DLLVM_ENABLE_PROJECTS="clang"        \
+              -DLLVM_TARGETS_TO_BUILD="host;NVPTX"  \
+              -DCMAKE_BUILD_TYPE=`[[ -z "$BUILD_TYPE" ]] && echo RelWithDebInfo || echo $BUILD_TYPE` \
+              -DLLVM_ENABLE_ASSERTIONS=ON           \
+              -DCLANG_ENABLE_STATIC_ANALYZER=OFF    \
+              -DCLANG_ENABLE_ARCMT=OFF              \
+              -DCLANG_ENABLE_FORMAT=OFF             \
+              -DCLANG_ENABLE_BOOTSTRAP=OFF          \
+              -DLLVM_ENABLE_TERMINFO=OFF            \
+              -DCLANG_INCLUDE_TESTS=OFF             \
+              -DCLANG_INCLUDE_DOCS=OFF              \
+              -DLLVM_INCLUDE_TESTS=OFF              \
+              -DLLVM_INCLUDE_DOCS=OFF               \
+              ../llvm
+        cmake --build . --target clang FileCheck llvm-config clang-repl --parallel ${CPU_COUNT}
+        cd ../../
+    - name: Save Cache LLVM/Clang runtime build directory (debug_build==true)
+      uses: actions/cache/save@v4
+      if: ${{ (matrix.debug_build == true) && (runner.os != 'windows') && (steps.cache.outputs.cache-hit != 'true') }}
+      with:
+        path: |
+          llvm-project
+        key: ${{ steps.cache.outputs.cache-primary-key }}
+    - name: Set LLVM/Cling build path on Unix (debug_build==true)
+      if: ${{ (matrix.debug_build == true) && (runner.os != 'windows') }}
+      run: |
+        export PATH_TO_LLVM_BUILD="$PWD/llvm-project/build"
+        echo "PATH_TO_LLVM_BUILD=$PATH_TO_LLVM_BUILD"
+        echo "PATH_TO_LLVM_BUILD=$PATH_TO_LLVM_BUILD" >> $GITHUB_ENV
+        pip3 install lit # LLVM lit is not part of the llvm releases...
+        vers="${compiler#*-}"
+        if [[ ! -f "$PATH_TO_LLVM_BUILD/bin/FileCheck" ]]; then
+          ln -s /usr/bin/FileCheck-$vers $PATH_TO_LLVM_BUILD/bin/FileCheck
+        fi
+      env:
+        compiler: ${{ matrix.compiler }}
+
     - name: Setup LLVM/Clang on Linux
-      if: runner.os == 'Linux'
+      if: ${{ (runner.os == 'Linux') && (matrix.debug_build != true) }}
       run: |
         UNIX_DISTRO=$(lsb_release -rs)
         PATH_TO_LLVM_BUILD=/usr/lib/llvm-${{ matrix.clang-runtime }}/
-        # Ubuntu 16.04 & 18.04 & 20.04 llvm/clang-6.0 package is broken - install it from binary build.
-        if [[ '${{ matrix.clang-runtime }}' == '6.0' ]]; then
-          # Install clang-6.0 to run the plugin with.
-          PATH_TO_LLVM_BUILD=/usr/lib/opt/llvm-${{ matrix.clang-runtime }}/
-          sudo mkdir -p /usr/lib/opt
-          pushd /usr/lib/opt
-          sudo curl -L https://releases.llvm.org/6.0.1/clang+llvm-6.0.1-x86_64-linux-gnu-ubuntu-${UNIX_DISTRO}.tar.xz | sudo xz -d -c | sudo tar -x
-          sudo rm -fr /usr/lib/clang*
-          sudo mv clang+llvm-6.0.1-x86_64-linux-gnu-ubuntu-${UNIX_DISTRO}/ llvm-6.0/
-          if [[ ! -f $PATH_TO_LLVM_BUILD/bin/FileCheck ]]; then
-            sudo apt install llvm-6.0-dev llvm-6.0-tools
-            sudo ln -s /usr/lib/llvm-6.0/bin/FileCheck $PATH_TO_LLVM_BUILD/bin/FileCheck
-          fi
-          popd
-        fi
-        # llvm-8-tools is broken as it depends on python2.7 we use FileCheck from llvm-7-tools
-        if [[ '${{ matrix.clang-runtime }}' == '8' ]]; then
-          if [[ ! -f $PATH_TO_LLVM_BUILD/bin/FileCheck ]]; then
-            sudo apt install llvm-9-dev llvm-9-tools
-            sudo ln -s /usr/lib/llvm-9/bin/FileCheck $PATH_TO_LLVM_BUILD/bin/FileCheck
-          fi
-        fi
         # Add -H to silence 'The directory '/home/..../pip/http' or its parent
         # directory is not owned by the current user and the cache has been disabled.
         pip3 install lit # LLVM lit is not part of the llvm releases...
         # We need PATH_TO_LLVM_BUILD later
         echo "PATH_TO_LLVM_BUILD=$PATH_TO_LLVM_BUILD" >> $GITHUB_ENV
+    - name: Setup LLVM/Clang on Windows
+      if: ${{ runner.os == 'windows' }}
+      run: |
+        C:\Miniconda\condabin\conda.bat install -y -c conda-forge "clangdev=${{ matrix.clang-runtime }}"
+        $env:PATH_TO_LLVM_BUILD="$env:CONDA\Library"
+        pip3 install lit # LLVM lit is not part of the llvm releases...
+        echo "Runtime LLVM/Clang: $env:PATH_TO_LLVM_BUILD"
+        echo "PATH_TO_LLVM_BUILD=$env:PATH_TO_LLVM_BUILD"
+        echo "PATH_TO_LLVM_BUILD=$env:PATH_TO_LLVM_BUILD" >> $env:GITHUB_ENV
     - name: Setup CUDA 8 on Linux
-      if: ${{ matrix.cuda == true }}
-      run: |     
-        wget --no-verbose https://developer.nvidia.com/compute/cuda/8.0/Prod2/local_installers/cuda_8.0.61_375.26_linux-run 
+      if: ${{ matrix.cuda == true && !matrix.os == 'self-hosted'}}
+      run: |
+        wget --no-verbose https://developer.nvidia.com/compute/cuda/8.0/Prod2/local_installers/cuda_8.0.61_375.26_linux-run
         wget --no-verbose https://developer.nvidia.com/compute/cuda/8.0/Prod2/patches/2/cuda_8.0.61.2_linux-run
         sh ./cuda_8.0.61_375.26_linux-run --tar mxvf
         sudo cp InstallUtils.pm /usr/lib/x86_64-linux-gnu/perl-base
         export $PERL5LIB
-        sudo sh cuda_8.0.61_375.26_linux-run --override --no-opengl-lib --silent --toolkit --kernel-source-path=/lib/modules/4.15.0-1113-azure/build 
-        sudo sh cuda_8.0.61.2_linux-run --silent --accept-eula 
-        export PATH=/usr/local/cuda-8.0/bin:${PATH} 
+        sudo sh cuda_8.0.61_375.26_linux-run --override --no-opengl-lib --silent --toolkit --kernel-source-path=/lib/modules/4.15.0-1113-azure/build
+        sudo sh cuda_8.0.61.2_linux-run --silent --accept-eula
+        export PATH=/usr/local/cuda-8.0/bin:${PATH}
         export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/local/cuda-8.0/lib64
         echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH" >> $GITHUB_ENV
         echo "PATH=$PATH" >> $GITHUB_ENV
     - name: Setup code coverage
       if: ${{ (matrix.coverage == true) }}
       run: |
-        sudo apt install lcov
-        echo "CODE_COVERAGE=1" >> $GITHUB_ENV
+        sudo apt install -y lcov
+        # Workaround ubuntu lcov-1.15-1 package bug
+        if sudo apt list lcov --installed | grep "1.15-1" ; then
+          wget https://launchpad.net/ubuntu/+source/lcov/1.15-2/+build/23784466/+files/lcov_1.15-2_all.deb
+          sudo apt install -y ./lcov_1.15-2_all.deb
+        fi
+        echo "CLAD_CODE_COVERAGE=1" >> $GITHUB_ENV
         echo "BUILD_TYPE=Debug" >> $GITHUB_ENV
-    - name: Display config
+    - name: Display config *nix
+      if: ${{ runner.os != 'windows' }}
       run: |
         cmake --version
         $CC --version
@@ -618,26 +770,63 @@ jobs:
         echo "Use Clang/LLVM in $PATH_TO_LLVM_BUILD"
         echo "Building clad in `[[ -z "$BUILD_TYPE" ]] && echo RelWithDebInfo || echo $BUILD_TYPE`"
         python3 --version
-    - name: Build Clad
-      if: ${{ matrix.coverity == false }}
+    - name: Display config Windows
+      if: ${{ runner.os == 'windows' }}
       run: |
-        mkdir obj && cd obj
-        cmake -DClang_DIR="$PATH_TO_LLVM_BUILD" \
-          -DLLVM_DIR="$PATH_TO_LLVM_BUILD" \
+        cmake --version
+        echo "CC=$env:CC"
+        if ( "$env:CC" -ne "" )
+        {
+          Start-Process -Wait -FilePath "$env:CC" -Verb RunAs -ArgumentList '--version'
+        }
+        echo "CXX=$env:CXX"
+        if ( "$env:CXX" -ne "" )
+        {
+          Start-Process -Wait -FilePath "$env:CXX" -Verb RunAs -ArgumentList '--version'
+        }
+        xz --version
+        tar --version
+        echo "Use Clang/LLVM in $env:PATH_TO_LLVM_BUILD"
+        echo "Building clad in $env:BUILD_TYPE"
+        python3 --version
+    - name: Build Clad on *nix
+      if: ${{ runner.os != 'windows' }}
+      run: |
+        rm -rf obj && mkdir obj && cd obj
+        cmake -DClang_DIR=${{ env.PATH_TO_LLVM_BUILD }}  \
+          -DLLVM_DIR=${{ env.PATH_TO_LLVM_BUILD }}       \
           -DCMAKE_BUILD_TYPE=$([[ -z "$BUILD_TYPE" ]] && echo RelWithDebInfo || echo $BUILD_TYPE) \
-          -DCODE_COVERAGE=${CODE_COVERAGE}  \
+          -DCLAD_CODE_COVERAGE=${{ env.CLAD_CODE_COVERAGE }}   \
           -DLLVM_EXTERNAL_LIT="`which lit`" \
+          -DLLVM_ENABLE_WERROR=On           \
           $GITHUB_WORKSPACE                 \
           ${{ matrix.extra_cmake_options }}
 
         cmake --build . -- -j4
+    - name: Build Clad on Windows
+      if: ${{ matrix.coverity == false && runner.os == 'windows' }}
+      run: |
+        mkdir obj
+        cd obj
+        if ( "$env:BUILD_TYPE" -eq "" )
+        {
+          $env:BUILD_TYPE="RelWithDebInfo"
+        }
+        if ( "$env:CLAD_CODE_COVERAGE" -eq "" )
+        {
+          $env:CLAD_CODE_COVERAGE="0"
+        }
+        ((Get-Content -path C:/Miniconda/Library/lib/cmake/llvm/LLVMConfig.cmake -Raw) -replace 'LLVM_ENABLE_DIA_SDK ON','LLVM_ENABLE_DIA_SDK OFF') | Set-Content -Path C:/Miniconda/Library/lib/cmake/llvm/LLVMConfig.cmake
+        $lit = @(which lit)
+        cmake -DClang_DIR="$env:PATH_TO_LLVM_BUILD" -DLLVM_DIR="$env:PATH_TO_LLVM_BUILD" -DCMAKE_BUILD_TYPE="$env:BUILD_TYPE" -DCLAD_CODE_COVERAGE="$env:CLAD_CODE_COVERAGE" -DCLAD_BUILD_STATIC_ONLY="ON" -DLLVM_EXTERNAL_LIT="$lit" "$env:GITHUB_WORKSPACE" ${{ matrix.extra_cmake_options }}
+        cmake --build . --config Release
     - name: Build Clad for Coverity Scan
       if: ${{ matrix.coverity == true }}
       run: |
         # FIXME: Ideally the check should be in the if: block of the action
         if [ "$BRANCH_NAME" == "coverity_scan" ]; then
-          if [[ "${{ matrix.compiler }}" == "gcc-6" ]]; then
-            mkdir obj && cd obj
+          if [[ "${{ matrix.compiler }}" == "gcc-8" ]]; then
+            rm -rf obj && mkdir obj && cd obj
             cmake -DClang_DIR="$PATH_TO_LLVM_BUILD" \
               -DLLVM_DIR="$PATH_TO_LLVM_BUILD" \
               -DCMAKE_BUILD_TYPE=$([[ -z "$BUILD_TYPE" ]] && echo RelWithDebInfo || echo $BUILD_TYPE) \
@@ -650,11 +839,20 @@ jobs:
         else
           echo "This action only runs on branch coverity_scan"
         fi
-    - name: Test Clad
-      if: ${{ matrix.coverity == false }}
+    - name: Test Clad on *nix
+      if: ${{ matrix.coverity == false && runner.os != 'windows' }}
       run: |
         cd obj
+        # Packages downloaded and unzipped require setting the SDKROOT.
+        if [[ "runner.os" == "macOS" ]]; then
+          export SDKROOT=`xcrun --show-sdk-path`
+        fi
         cmake --build . --target check-clad -- -j4
+    - name: Test Clad on Windows
+      if: ${{ matrix.coverity == false && runner.os == 'windows' }}
+      run: |
+        cd obj
+        #cmake --build . --target check-clad
     - name: Benchmark Clad
       if: ${{ matrix.benchmark }}
       run: |
@@ -664,7 +862,7 @@ jobs:
 
         # Get the performance for previous version. If it were a PR the master
         # or the previous hash
-        hash=$([[ -z "${{ github.event.pull_request }}" ]] && echo ${{ github.event.before }} || echo ${{ github.base_ref }})
+        hash=$([[ -z "${{ github.event.pull_request }}" ]] && echo ${{ github.event.before }} || echo ${{ github.event.pull_request.base.sha }})
         echo "Running git checkout '$hash'"
         git checkout $hash
         cd obj
@@ -672,21 +870,39 @@ jobs:
         cmake --build . --target benchmark-clad -j4
 
         # Compare:
-        cd benchmark
         pip3 install -r ./googlebenchmark-prefix/src/googlebenchmark/tools/requirements.txt
-        COMPARER='./googlebenchmark-prefix/src/googlebenchmark/tools/compare.py'
+        COMPARER="$(pwd)/googlebenchmark-prefix/src/googlebenchmark/tools/compare.py"
+        cd benchmark
         for baseline in *-$hash.json
         do
-          common=${baseline:0:-12}
-          pr_change=$(find . ! -name '*$hash.json'  -name "${common}*.json")
+          common=${baseline%$hash.json}
+          pr_change=$(find . ! -name "*$hash.json" -name "$common*.json")
 
           echo "Running 'python3 ${COMPARER} benchmarks '${baseline}' '${pr_change}''"
           python3 ${COMPARER} benchmarks ${baseline} ${pr_change}
         done
 
         cd ..
+    - name: Test build sphinx & doxygen documentation
+      if: ${{ (matrix.doc_build == true) }}
+      run: |
+        sudo apt-get install -y doxygen graphviz
+        pip install --upgrade pip
+        pip install -r requirements.txt
+        mkdir -p obj && cd obj
+        cmake \
+          -DClang_DIR="$PATH_TO_LLVM_BUILD" \
+          -DLLVM_DIR="$PATH_TO_LLVM_BUILD"  \
+          -DCLAD_INCLUDE_DOCS=ON            \
+          -DCLAD_ENABLE_DOXYGEN=ON          \
+          -DCLAD_ENABLE_SPHINX=ON           \
+          -DCMAKE_INSTALL_PREFIX=../inst    \
+          -DCMAKE_BUILD_TYPE=Debug          \
+          -DLLVM_EXTERNAL_LIT="`which lit`" \
+          ..
+        cmake --build . --target sphinx-clad doxygen-clad -- -j4
     - name: Failed job config
-      if: ${{ failure() }}
+      if: ${{ failure() && runner.os != 'windows' }}
       env:
         GITHUB_CONTEXT: ${{ toJson(github) }}
       run: |
@@ -707,28 +923,33 @@ jobs:
         cat obj/CMakeCache.txt
         cat obj/CMakeFiles/*.log
     - name: Setup tmate session
-      if: ${{ failure() }}
+      if: ${{ !cancelled() && runner.debug }}
       uses: mxschmitt/action-tmate@v3
       # When debugging increase to a suitable value!
-      timeout-minutes: ${{ github.event.pull_request && 1 || 20 }}
+      timeout-minutes: 30
     - name: Prepare code coverage report
       if: ${{ success() && (matrix.coverage == true) }}
       run: |
         # Create lcov report
         # capture coverage info
         vers="${CC#*-}"
-        lcov --directory . --capture --output-file coverage.info --gcov-tool /usr/bin/gcov-${vers}
+        lcov --directory . --capture --output-file coverage.info --gcov-tool /usr/bin/gcov-${vers} --ignore-errors gcov
         # filter out system and extra files.
         # To also not include test code in coverage add them with full path to the patterns: '*/tests/*'
-        lcov --remove coverage.info '/usr/*' "${HOME}"'/.cache/*' "$GITHUB_WORKSPACE"'/test/*' --output-file coverage.info
+        lcov --remove coverage.info '/usr/*' "${HOME}"'/.cache/*' \
+          "$GITHUB_WORKSPACE"'/test/*' "$GITHUB_WORKSPACE"'/unittests/*' \
+          --output-file coverage.info
         # output coverage data for debugging (optional)
         lcov --list coverage.info
 
     - name: Upload to codecov.io
       if: ${{ success() && (matrix.coverage == true) }}
-      uses: codecov/codecov-action@v1
+      uses: codecov/codecov-action@v4
       with:
         file: ./coverage.info
+        fail_ci_if_error: true
+        verbose: true
+        token: ${{ secrets.CODECOV_TOKEN }}
 
     - name: Upload report to coverity_scan
       if: ${{ success() && (matrix.coverity == true) }}

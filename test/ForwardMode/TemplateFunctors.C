@@ -1,6 +1,5 @@
-// RUN: %cladclang %s -I%S/../../include -oTemplateFunctors.out 2>&1 | FileCheck %s 
-// RUN: ./TemplateFunctors.out | FileCheck -check-prefix=CHECK-EXEC %s
-// CHECK-NOT: {{.*error|warning|note:.*}}
+// RUN: %cladclang %s -I%S/../../include -oTemplateFunctors.out 2>&1 | %filecheck %s
+// RUN: ./TemplateFunctors.out | %filecheck_exec %s
 
 #include "clad/Differentiator/Differentiator.h"
 

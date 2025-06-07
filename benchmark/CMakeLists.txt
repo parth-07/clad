@@ -1,12 +1,15 @@
 set(CTEST_BUILD_NAME ${ROOT_ARCHITECTURE}-${CMAKE_BUILD_TYPE})
 enable_testing()
 
-include(GoogleBenchmark)
-include(AddCladBenchmark)
-
 CB_ADD_GBENCHMARK(Simple Simple.cpp)
 CB_ADD_GBENCHMARK(AlgorithmicComplexity AlgorithmicComplexity.cpp)
+CB_ADD_GBENCHMARK(ArrayExpressionTemplates ArrayExpressionTemplates.cpp)
+if (CLAD_ENABLE_ENZYME_BACKEND)
+  CB_ADD_GBENCHMARK(EnzymeCladComparison EnzymeCladComparison.cpp)
+endif(CLAD_ENABLE_ENZYME_BACKEND)
+CB_ADD_GBENCHMARK(VectorModeComparison VectorModeComparison.cpp)
 CB_ADD_GBENCHMARK(MemoryComplexity MemoryComplexity.cpp)
+CB_ADD_GBENCHMARK(Hessians Hessians.cpp)
 
 set (CLAD_BENCHMARK_DEPS clad)
 get_property(_benchmark_names DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY TESTS)

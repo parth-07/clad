@@ -7,13 +7,13 @@
 //----------------------------------------------------------------------------//
 
 // To run the demo please type:
-// path/to/clang  -Xclang -add-plugin -Xclang clad -Xclang -load -Xclang \
-// path/to/libclad.so  -I../include/ -x c++ -std=c++11 Functor.cpp
+// path/to/clang++  -Xclang -add-plugin -Xclang clad -Xclang -load -Xclang \
+// path/to/libclad.so  -I../include/ -std=c++11 Functor.cpp
 //
 // A typical invocation would be:
-// ../../../../obj/Debug+Asserts/bin/clang  -Xclang -add-plugin -Xclang clad \
+// ../../../../obj/Debug+Asserts/bin/clang++  -Xclang -add-plugin -Xclang clad \
 // -Xclang -load -Xclang ../../../../obj/Debug+Asserts/lib/libclad.dylib     \
-// -I../include/ -x c++ -std=c++11 Functor.cpp
+// -I../include/ -std=c++11 Functor.cpp
 
 // Necessary for clad to work include
 #include "clad/Differentiator/Differentiator.h"
@@ -23,13 +23,9 @@ class Equation {
   double m_x, m_y;
 
   public:
-  Equation(double x, double y) : m_x(x), m_y(y) {}
-  double operator()(double i, double j) {
-    return m_x*i*j + m_y*i*j;
-  }
-  void setX(double x) {
-    m_x = x;
-  }
+    Equation(double x = 0, double y = 0) : m_x(x), m_y(y) {}
+    double operator()(double i, double j) { return m_x * i * j + m_y * i * j; }
+    void setX(double x) { m_x = x; }
 };
 
 int main() {

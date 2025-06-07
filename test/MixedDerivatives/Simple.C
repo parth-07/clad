@@ -1,7 +1,5 @@
-// RUN: %cladclang %s -I%S/../../include -oSimple.out -Xclang -verify 2>&1 | FileCheck %s
-// RUN: ./Simple.out | FileCheck -check-prefix=CHECK-EXEC %s
-
-//CHECK-NOT: {{.*error|warning|note:.*}}
+// RUN: %cladclang %s -I%S/../../include -oSimple.out -Xclang -verify 2>&1 | %filecheck %s
+// RUN: ./Simple.out | %filecheck_exec %s
 
 #include "clad/Differentiator/Differentiator.h"
 

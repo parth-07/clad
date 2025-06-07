@@ -1,6 +1,5 @@
-// RUN: %cladclang %s -lm -I%S/../../include -oAssignments.out 2>&1 | FileCheck %s
+// RUN: %cladclang %s -I%S/../../include -oAssignments.out 2>&1 | %filecheck %s
 // RUN: ./Assignments.out
-//CHECK-NOT: {{.*error|warning|note:.*}}
 
 #include "clad/Differentiator/Differentiator.h"
 #include <cmath>
@@ -102,7 +101,7 @@ int main() {
   clad::differentiate(f2, 1);
   clad::differentiate(f3, 0);
   clad::differentiate(f3, 1);
-  clad::differentiate(f4, 0);
+  clad::differentiate <clad::order::first> (f4, 0); // testing order template parameter
 }
 
 

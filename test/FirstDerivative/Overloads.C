@@ -1,6 +1,7 @@
-// RUN: %cladclang %s -I%S/../../include -lstdc++ -oOverloads.out 2>&1 | FileCheck %s
-// RUN: ./Overloads.out | FileCheck -check-prefix=CHECK-EXEC %s
-//CHECK-NOT: {{.*error|warning|note:.*}}
+// RUN: %cladclang %s -I%S/../../include -oOverloads.out 2>&1 | %filecheck %s
+// RUN: ./Overloads.out | %filecheck_exec %s
+// XFAIL: asserts
+// XFAIL: target={{i586.*}}
 
 #include "clad/Differentiator/Differentiator.h"
 

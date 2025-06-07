@@ -1,7 +1,7 @@
-// RUN: %cladclang %s -lm -I%S/../../include -oTFormula.out 2>&1 | FileCheck %s
-// RUN: ./TFormula.out | FileCheck -check-prefix=CHECK-EXEC %s
-
-//CHECK-NOT: {{.*error|warning|note:.*}}
+// RUN: %cladclang -Xclang -plugin-arg-clad -Xclang -disable-tbr %s -I%S/../../include -oInterface.out 2>&1 | %filecheck %s
+// RUN: ./Interface.out | %filecheck_exec %s
+// RUN: %cladclang %s -I%S/../../include -oInterface.out
+// RUN: ./Interface.out | %filecheck_exec %s
 
 #include "clad/Differentiator/Differentiator.h"
 
@@ -14,25 +14,16 @@ struct array_ref_interface {
   std::size_t size;
 };
 
-Double_t f(Double_t* x, Double_t* p) {
+Double_t f(const Double_t* x, Double_t* p) {
   return p[0] + x[0] * p[1];
 }
 
-void f_grad_1(Double_t* x, Double_t* p, clad::array_ref<Double_t> _d_p);
+void f_grad_1(const Double_t* x, Double_t* p, Double_t *_d_p);
 
-// CHECK: void f_grad_1(Double_t *x, Double_t *p, clad::array_ref<Double_t> _d_p) {
-// CHECK-NEXT:     Double_t _t0;
-// CHECK-NEXT:     Double_t _t1;
-// CHECK-NEXT:     _t1 = x[0];
-// CHECK-NEXT:     _t0 = p[1];
-// CHECK-NEXT:     double f_return = p[0] + _t1 * _t0;
-// CHECK-NEXT:     goto _label0;
-// CHECK-NEXT:   _label0:
+// CHECK: void f_grad_1(const Double_t *x, Double_t *p, Double_t *_d_p) {
 // CHECK-NEXT:     {
 // CHECK-NEXT:         _d_p[0] += 1;
-// CHECK-NEXT:         double _r0 = 1 * _t0;
-// CHECK-NEXT:         double _r1 = _t1 * 1;
-// CHECK-NEXT:         _d_p[1] += _r1;
+// CHECK-NEXT:         _d_p[1] += x[0] * 1;
 // CHECK-NEXT:     }
 // CHECK-NEXT: }
 
@@ -45,11 +36,11 @@ int main() {
 
   // We create a struct of "array_ref_interface" type and store its address in
   // a void pointer. When the grad function is called this void pointer is
-  // type casted to clad::array_ref to create a functionality that is similar
+  // type casted to Double_t ** to create a functionality that is similar
   // to reinterpret_cast.
   array_ref_interface ari = array_ref_interface{result, 2};
   void *arg = &ari;
-  f_grad_1(x, p, *(clad::array_ref<Double_t> *)arg);
+  f_grad_1(x, p, *(Double_t **)arg);
 
   printf("Result is = {%.2f, %.2f}\n", result[0], result[1]); // CHECK-EXEC: Result is = {1.00, 2.00}
 }

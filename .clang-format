@@ -3,11 +3,13 @@ BasedOnStyle: LLVM
 Language: Cpp
 Standard: Cpp11
 PointerAlignment: Left
+RemoveBracesLLVM: true
+QualifierAlignment: Left
 
 IncludeCategories:
   - Regex:           '^"[^/]+\"'
     Priority:        10
-  - Regex:           '^"cling/'
+  - Regex:           '^"clad/'
     Priority:        20
   - Regex:           '^"clang/'
     Priority:        30

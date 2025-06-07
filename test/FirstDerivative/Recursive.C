@@ -1,7 +1,5 @@
-// RUN: %cladclang %s -I%S/../../include -oBasicArithmeticAddSub.out 2>&1 | FileCheck %s
-// RUN: ./BasicArithmeticAddSub.out | FileCheck -check-prefix=CHECK-EXEC %s
-
-//CHECK-NOT: {{.*error|warning|note:.*}}
+// RUN: %cladclang %s -I%S/../../include -oRecursive.out 2>&1 | %filecheck %s
+// RUN: ./Recursive.out | %filecheck_exec %s
 
 #include "clad/Differentiator/Differentiator.h"
 

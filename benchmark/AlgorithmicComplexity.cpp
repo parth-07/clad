@@ -1,6 +1,5 @@
 #include "benchmark/benchmark.h"
 
-// FIXME: If we move this before benchmark.h we have tons of errors due to a bug
 #include "clad/Differentiator/Differentiator.h"
 
 #undef CLAD_NO_NUM_DIFF
@@ -12,7 +11,8 @@
 // FIXME: Make the benchmark work with a range of inputs. That's currently
 // problematic for reverse mode.
 
-// inline double gaus(double* x, double* p /*means*/, double sigma, int dim);
+// inline double gaus(const double* x, double* p /*means*/, double sigma, int
+// dim);
 static void BM_NumericGausP(benchmark::State& state) {
   using namespace numerical_diff;
   long double sum = 0;
@@ -64,11 +64,10 @@ static void BM_ReverseGausP(benchmark::State& state) {
   long double sum = 0;
   int dim = 5;
   double result[5] = {};
-  clad::array_ref<double> result_ref(result, dim);
   for (auto _ : state) {
-    dfdp_grad.execute(x, p, /*sigma*/ 2, dim, result_ref);
+    dfdp_grad.execute(x, p, /*sigma*/ 2, dim, result);
     for (int i = 0; i < dim; i++) {
-      benchmark::DoNotOptimize(sum += result_ref[i]);
+      benchmark::DoNotOptimize(sum += result[i]);
       result[i] = 0; // clear for the next benchmark iteration
     }
   }

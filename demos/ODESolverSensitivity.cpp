@@ -11,13 +11,13 @@
 //----------------------------------------------------------------------------//
 
 // To run the demo please type:
-// path/to/clang  -Xclang -add-plugin -Xclang clad -Xclang -load -Xclang \
-// path/to/libclad.so  -I../include/ -x c++ -lstdc++ -lm ODESolverSensitivity.cpp
+// path/to/clang++  -Xclang -add-plugin -Xclang clad -Xclang -load -Xclang \
+// path/to/libclad.so  -I../include/ ODESolverSensitivity.cpp
 //
 // A typical invocation would be:
-// ../../../../obj/Debug+Asserts/bin/clang  -Xclang -add-plugin -Xclang clad \
+// ../../../../obj/Debug+Asserts/bin/clang++  -Xclang -add-plugin -Xclang clad \
 // -Xclang -load -Xclang ../../../../obj/Debug+Asserts/lib/libclad.dylib     \
-// -I../include/ -x c++ -lstdc++ -lm ODESolverSensitivity.cpp
+// -I../include/ ODESolverSensitivity.cpp
 //
 // To plot the results install gnuplot and type:
 // gnuplot -e "plot 'sens.dat' using 1:2 with lines; pause -1"
@@ -84,7 +84,7 @@ int main() {
     double x = x0 + h * i;
     double db = bSensitivity(x);
 
-    out << x << "\t" << abs(db) << std::endl;
+    out << x << "\t" << std::abs(db) << std::endl;
   }
   out.close();
 

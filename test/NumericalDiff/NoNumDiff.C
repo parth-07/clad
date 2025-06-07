@@ -1,35 +1,26 @@
-// RUN: %cladclang %s -lm -I%S/../../include -oNoNumDiff.out 2>&1 | FileCheck -check-prefix=CHECK %s
-
-//CHECK-NOT: {{.*error|warning|note:.*}}
+// RUN: %cladclang %s -I%S/../../include -oNoNumDiff.out -Xclang -verify 2>&1 | FileCheck -check-prefix=CHECK %s
 
 #include "clad/Differentiator/Differentiator.h"
 
 #include <cmath>
 
-double func(double x) { return std::tanh(x); } 
+double func(double x) { return std::tgamma(x); } // expected-warning 2{{function 'tgamma' was not differentiated because clad failed to differentiate it and no suitable overload was found in namespace 'custom_derivatives'}}
+// expected-note@7 2{{fallback to numerical differentiation is disabled by the 'CLAD_NO_NUM_DIFF' macro}}
 
-//CHECK: warning: Numerical differentiation is diabled using the -DCLAD_NO_NUM_DIFF flag, this means that every try to numerically differentiate a function will fail! Remove the flag to revert to default behaviour.
-//CHECK: warning: Numerical differentiation is diabled using the -DCLAD_NO_NUM_DIFF flag, this means that every try to numerically differentiate a function will fail! Remove the flag to revert to default behaviour.
 //CHECK: double func_darg0(double x) {
 //CHECK-NEXT:     double _d_x = 1;
 //CHECK-NEXT:     return 0;
 //CHECK-NEXT: }
 
-//CHECK: void func_grad(double x, clad::array_ref<double> _d_x) {
-//CHECK-NEXT:     double _t0;
-//CHECK-NEXT:     _t0 = x;
-//CHECK-NEXT:     double func_return = std::tanh(x);
-//CHECK-NEXT:     goto _label0;
-//CHECK-NEXT:   _label0:
+//CHECK: void func_grad(double x, double *_d_x) {
 //CHECK-NEXT:     {
-//CHECK-NEXT:         double _grad0 = 0.;
-//CHECK-NEXT:         double _r0;
-//CHECK-NEXT:         * _d_x += _r0;
+//CHECK-NEXT:         double _r0 = 0.;
+//CHECK-NEXT:         *_d_x += _r0;
 //CHECK-NEXT:     }
 //CHECK-NEXT: }
 
 
 int main(){
-    clad::differentiate(func, "x");
-    clad::gradient(func);
+  clad::differentiate(func, "x");
+  clad::gradient(func);
 }

@@ -72,15 +72,8 @@ CLAD_ROOT = current_file_dir + "/../../.."
 with open(CLAD_ROOT + "/VERSION", "r") as f:
     version = f.read()
 
-# latex_elements = {
-#     "preamble": r"""
-#     \usepackage{physics}
-#     """,
-#     "extrapackages": r"""
-#     \usepackage{physics}
-#     """
-# }
 mathjax_path = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+# Add latex physics package
 mathjax3_config = {
     "loader": {"load": ["[tex]/physics"]},
     "tex": {"packages": {"[+]": ["physics"]}},
@@ -92,8 +85,8 @@ if os.environ.get("CLAD_BUILD_INTERNAL_DOCS"):
 
     CMAKE_CONFIGURE_COMMAND = (
         "mkdir {0}/build; cd {0}/build; cmake ../ "
-        "-DClang_DIR=/usr/lib/llvm-10 -DLLVM_DIR="
-        "/usr/lib/llvm-10 -DCLAD_ENABLE_DOXYGEN=ON "
+        "-DClang_DIR=/usr/lib/llvm-14 -DLLVM_DIR="
+        "/usr/lib/llvm-14 -DCLAD_ENABLE_DOXYGEN=ON "
         "-DCLAD_INCLUDE_DOCS=ON"
     ).format(CLAD_ROOT)
     subprocess.call(CMAKE_CONFIGURE_COMMAND, shell=True)

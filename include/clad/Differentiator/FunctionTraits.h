@@ -2,6 +2,7 @@
 #define FUNCTION_TRAITS
 
 #include "clad/Differentiator/ArrayRef.h"
+#include "clad/Differentiator/Matrix.h"
 
 #include <type_traits>
 
@@ -42,238 +43,291 @@ namespace clad {
   /// `type` to denote no function type exists.
   class NoFunction {};
 
+  template <typename... T> struct list {};
 
   // Trait class to deduce return type of function(both member and non-member) at commpile time
   // Only function pointer types are supported by this trait class
-  template <class F> 
-  struct return_type {};
-  template <class F> 
-  using return_type_t = typename return_type<F>::type;
+  template <class F> struct function_traits {};
+  template <class F>
+  using return_type_t = typename function_traits<F>::return_type;
+  template <class F>
+  using argument_types_t = typename function_traits<F>::argument_types;
 
   // specializations for non-member functions pointer types
-  template <class ReturnType, class... Args> 
-  struct return_type<ReturnType (*)(Args...)> {
-    using type = ReturnType;
+  template <class ReturnType, class... Args>
+  struct function_traits<ReturnType (*)(Args...)> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
-  template <class ReturnType, class... Args> 
-  struct return_type<ReturnType (*)(Args..., ...)> {
-    using type = ReturnType;
+  template <class ReturnType, class... Args>
+  struct function_traits<ReturnType (*)(Args..., ...)> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
 
   // specializations for member functions pointer types with no qualifiers
-  template <class ReturnType, class C, class... Args> 
-  struct return_type<ReturnType (C::*)(Args...)> { 
-    using type = ReturnType; 
+  template <class ReturnType, class C, class... Args>
+  struct function_traits<ReturnType (C::*)(Args...)> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
-  template <class ReturnType, class C, class... Args> 
-  struct return_type<ReturnType (C::*)(Args..., ...)> { 
-    using type = ReturnType; 
+  template <class ReturnType, class C, class... Args>
+  struct function_traits<ReturnType (C::*)(Args..., ...)> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
 
   // specializations for member functions pointer type with only cv-qualifiers
-  template <class ReturnType, class C, class... Args> 
-  struct return_type<ReturnType (C::*)(Args...) const> { 
-    using type = ReturnType; 
+  template <class ReturnType, class C, class... Args>
+  struct function_traits<ReturnType (C::*)(Args...) const> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
-  template <class ReturnType, class C, class... Args> 
-  struct return_type<ReturnType (C::*)(Args..., ...) const> { 
-    using type = ReturnType; 
+  template <class ReturnType, class C, class... Args>
+  struct function_traits<ReturnType (C::*)(Args..., ...) const> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
-  template <class ReturnType, class C, class... Args> 
-  struct return_type<ReturnType (C::*)(Args...) volatile> { 
-    using type = ReturnType; 
+  template <class ReturnType, class C, class... Args>
+  struct function_traits<ReturnType (C::*)(Args...) volatile> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
-  template <class ReturnType, class C, class... Args> 
-  struct return_type<ReturnType (C::*)(Args..., ...) volatile> { 
-    using type = ReturnType; 
+  template <class ReturnType, class C, class... Args>
+  struct function_traits<ReturnType (C::*)(Args..., ...) volatile> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
-  template <class ReturnType, class C, class... Args> 
-  struct return_type<ReturnType (C::*)(Args...) const volatile> { 
-    using type = ReturnType; 
+  template <class ReturnType, class C, class... Args>
+  struct function_traits<ReturnType (C::*)(Args...) const volatile> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
-  template <class ReturnType, class C, class... Args> 
-  struct return_type<ReturnType (C::*)(Args..., ...) const volatile> { 
-    using type = ReturnType; 
+  template <class ReturnType, class C, class... Args>
+  struct function_traits<ReturnType (C::*)(Args..., ...) const volatile> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
 
   // specializations for member functions pointer types with 
   // reference qualifiers and with and without cv-qualifiers
-  template <class ReturnType, class C, class... Args> 
-  struct return_type<ReturnType (C::*)(Args...) &> { 
-    using type = ReturnType; 
+  template <class ReturnType, class C, class... Args>
+  struct function_traits<ReturnType (C::*)(Args...)&> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
-  template <class ReturnType, class C, class... Args> 
-  struct return_type<ReturnType (C::*)(Args..., ...) &> { 
-    using type = ReturnType; 
+  template <class ReturnType, class C, class... Args>
+  struct function_traits<ReturnType (C::*)(Args..., ...)&> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
-  template <class ReturnType, class C, class... Args> 
-  struct return_type<ReturnType (C::*)(Args...) const &> { 
-    using type = ReturnType; 
+  template <class ReturnType, class C, class... Args>
+  struct function_traits<ReturnType (C::*)(Args...) const&> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
-  template <class ReturnType, class C, class... Args> 
-  struct return_type<ReturnType (C::*)(Args..., ...) const &> { 
-    using type = ReturnType; 
+  template <class ReturnType, class C, class... Args>
+  struct function_traits<ReturnType (C::*)(Args..., ...) const&> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
-  template <class ReturnType, class C, class... Args> 
-  struct return_type<ReturnType (C::*)(Args...) volatile &> { 
-    using type = ReturnType; 
+  template <class ReturnType, class C, class... Args>
+  struct function_traits<ReturnType (C::*)(Args...) volatile&> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
-  template <class ReturnType, class C, class... Args> 
-  struct return_type<ReturnType (C::*)(Args..., ...) volatile &> { 
-    using type = ReturnType; 
+  template <class ReturnType, class C, class... Args>
+  struct function_traits<ReturnType (C::*)(Args..., ...) volatile&> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
-  template <class ReturnType, class C, class... Args> 
-  struct return_type<ReturnType (C::*)(Args...) const volatile &> { 
-    using type = ReturnType; 
+  template <class ReturnType, class C, class... Args>
+  struct function_traits<ReturnType (C::*)(Args...) const volatile&> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
-  template <class ReturnType, class C, class... Args> 
-  struct return_type<ReturnType (C::*)(Args..., ...) const volatile &> { 
-    using type = ReturnType; 
+  template <class ReturnType, class C, class... Args>
+  struct function_traits<ReturnType (C::*)(Args..., ...) const volatile&> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
-  template <class ReturnType, class C, class... Args> 
-  struct return_type<ReturnType (C::*)(Args...) &&> { 
-    using type = ReturnType; 
+  template <class ReturnType, class C, class... Args>
+  struct function_traits<ReturnType (C::*)(Args...) &&> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
-  template <class ReturnType, class C, class... Args> 
-  struct return_type<ReturnType (C::*)(Args..., ...) &&> { 
-    using type = ReturnType; 
+  template <class ReturnType, class C, class... Args>
+  struct function_traits<ReturnType (C::*)(Args..., ...) &&> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
-  template <class ReturnType, class C, class... Args> 
-  struct return_type<ReturnType (C::*)(Args...) const &&> { 
-    using type = ReturnType; 
+  template <class ReturnType, class C, class... Args>
+  struct function_traits<ReturnType (C::*)(Args...) const&&> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
-  template <class ReturnType, class C, class... Args> 
-  struct return_type<ReturnType (C::*)(Args..., ...) const &&> { 
-    using type = ReturnType; 
+  template <class ReturnType, class C, class... Args>
+  struct function_traits<ReturnType (C::*)(Args..., ...) const&&> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
-  template <class ReturnType, class C, class... Args> 
-  struct return_type<ReturnType (C::*)(Args...) volatile &&> { 
-    using type = ReturnType; 
+  template <class ReturnType, class C, class... Args>
+  struct function_traits<ReturnType (C::*)(Args...) volatile&&> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
-  template <class ReturnType, class C, class... Args> 
-  struct return_type<ReturnType (C::*)(Args..., ...) volatile &&> { 
-    using type = ReturnType; 
+  template <class ReturnType, class C, class... Args>
+  struct function_traits<ReturnType (C::*)(Args..., ...) volatile&&> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
-  template <class ReturnType, class C, class... Args> 
-  struct return_type<ReturnType (C::*)(Args...) const volatile &&> { 
-    using type = ReturnType; 
+  template <class ReturnType, class C, class... Args>
+  struct function_traits<ReturnType (C::*)(Args...) const volatile&&> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
-  template <class ReturnType, class C, class... Args> 
-  struct return_type<ReturnType (C::*)(Args..., ...) const volatile &&> { 
-    using type = ReturnType; 
+  template <class ReturnType, class C, class... Args>
+  struct function_traits<ReturnType (C::*)(Args..., ...) const volatile&&> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
 
-  template<>
-  struct return_type<NoFunction*> {
-    using type = void;
+  template <> struct function_traits<NoFunction*> {
+    using return_type = void;
+    using argument_types = void;
   };
 
   // specializations for noexcept member functions
   #if __cpp_noexcept_function_type > 0
   template <class ReturnType, class C, class... Args>
-  struct return_type<ReturnType (C::*)(Args...) noexcept> {
-    using type = ReturnType;
+  struct function_traits<ReturnType (C::*)(Args...) noexcept> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
   template <class ReturnType, class C, class... Args>
-  struct return_type<ReturnType (C::*)(Args..., ...) noexcept> {
-    using type = ReturnType;
+  struct function_traits<ReturnType (C::*)(Args..., ...) noexcept> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
   template <class ReturnType, class C, class... Args>
-  struct return_type<ReturnType (C::*)(Args...) const noexcept> {
-    using type = ReturnType;
+  struct function_traits<ReturnType (C::*)(Args...) const noexcept> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
   template <class ReturnType, class C, class... Args>
-  struct return_type<ReturnType (C::*)(Args..., ...) const noexcept> {
-    using type = ReturnType;
+  struct function_traits<ReturnType (C::*)(Args..., ...) const noexcept> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
   template <class ReturnType, class C, class... Args>
-  struct return_type<ReturnType (C::*)(Args...) volatile noexcept> {
-    using type = ReturnType;
+  struct function_traits<ReturnType (C::*)(Args...) volatile noexcept> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
   template <class ReturnType, class C, class... Args>
-  struct return_type<ReturnType (C::*)(Args..., ...) volatile noexcept> {
-    using type = ReturnType;
+  struct function_traits<ReturnType (C::*)(Args..., ...) volatile noexcept> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
   template <class ReturnType, class C, class... Args>
-  struct return_type<ReturnType (C::*)(Args...) const volatile noexcept> {
-    using type = ReturnType;
+  struct function_traits<ReturnType (C::*)(Args...) const volatile noexcept> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
   template <class ReturnType, class C, class... Args>
-  struct return_type<ReturnType (C::*)(Args..., ...) const volatile noexcept> {
-    using type = ReturnType;
+  struct function_traits<ReturnType (C::*)(Args..., ...)
+                             const volatile noexcept> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
   template <class ReturnType, class C, class... Args>
-  struct return_type<ReturnType (C::*)(Args...)& noexcept> {
-    using type = ReturnType;
+  struct function_traits<ReturnType (C::*)(Args...) & noexcept> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
   template <class ReturnType, class C, class... Args>
-  struct return_type<ReturnType (C::*)(Args..., ...)& noexcept> {
-    using type = ReturnType;
+  struct function_traits<ReturnType (C::*)(Args..., ...) & noexcept> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
   template <class ReturnType, class C, class... Args>
-  struct return_type<ReturnType (C::*)(Args...) const& noexcept> {
-    using type = ReturnType;
+  struct function_traits<ReturnType (C::*)(Args...) const & noexcept> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
   template <class ReturnType, class C, class... Args>
-  struct return_type<ReturnType (C::*)(Args..., ...) const& noexcept> {
-    using type = ReturnType;
+  struct function_traits<ReturnType (C::*)(Args..., ...) const & noexcept> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
   template <class ReturnType, class C, class... Args>
-  struct return_type<ReturnType (C::*)(Args...) volatile& noexcept> {
-    using type = ReturnType;
+  struct function_traits<ReturnType (C::*)(Args...) volatile & noexcept> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
   template <class ReturnType, class C, class... Args>
-  struct return_type<ReturnType (C::*)(Args..., ...) volatile& noexcept> {
-    using type = ReturnType;
+  struct function_traits<ReturnType (C::*)(Args..., ...) volatile & noexcept> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
   template <class ReturnType, class C, class... Args>
-  struct return_type<ReturnType (C::*)(Args...) const volatile& noexcept> {
-    using type = ReturnType;
+  struct function_traits<ReturnType (C::*)(Args...) const volatile & noexcept> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
   template <class ReturnType, class C, class... Args>
-  struct return_type<ReturnType (C::*)(Args..., ...) const volatile& noexcept> {
-    using type = ReturnType;
+  struct function_traits<ReturnType (C::*)(Args..., ...) const volatile &
+                         noexcept> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
   template <class ReturnType, class C, class... Args>
-  struct return_type<ReturnType (C::*)(Args...)&& noexcept> {
-    using type = ReturnType;
+  struct function_traits<ReturnType (C::*)(Args...) && noexcept> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
   template <class ReturnType, class C, class... Args>
-  struct return_type<ReturnType (C::*)(Args..., ...)&& noexcept> {
-    using type = ReturnType;
+  struct function_traits<ReturnType (C::*)(Args..., ...) && noexcept> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
   template <class ReturnType, class C, class... Args>
-  struct return_type<ReturnType (C::*)(Args...) const&& noexcept> {
-    using type = ReturnType;
+  struct function_traits<ReturnType (C::*)(Args...) const && noexcept> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
   template <class ReturnType, class C, class... Args>
-  struct return_type<ReturnType (C::*)(Args..., ...) const&& noexcept> {
-    using type = ReturnType;
+  struct function_traits<ReturnType (C::*)(Args..., ...) const && noexcept> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
   template <class ReturnType, class C, class... Args>
-  struct return_type<ReturnType (C::*)(Args...) volatile&& noexcept> {
-    using type = ReturnType;
+  struct function_traits<ReturnType (C::*)(Args...) volatile && noexcept> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
   template <class ReturnType, class C, class... Args>
-  struct return_type<ReturnType (C::*)(Args..., ...) volatile&& noexcept> {
-    using type = ReturnType;
+  struct function_traits<ReturnType (C::*)(Args..., ...) volatile && noexcept> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
   template <class ReturnType, class C, class... Args>
-  struct return_type<ReturnType (C::*)(Args...) const volatile&& noexcept> {
-    using type = ReturnType;
+  struct function_traits<ReturnType (C::*)(Args...) const volatile &&
+                         noexcept> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
   template <class ReturnType, class C, class... Args>
-  struct return_type<ReturnType (C::*)(Args..., ...)
-                         const volatile&& noexcept> {
-    using type = ReturnType;
+  struct function_traits<ReturnType (C::*)(Args..., ...) const volatile &&
+                         noexcept> {
+    using return_type = ReturnType;
+    using argument_types = list<Args...>;
   };
 #endif
 
 #define REM_CTOR(...) __VA_ARGS__
 
   // Setup for DropArgs
-  template <typename... T> struct list {};
-
   struct dummy {};
 
   template <typename T> struct wrap {
@@ -315,60 +369,27 @@ namespace clad {
   template <std::size_t N, typename... T>
   using Drop_t = decltype(dropUsingIndex<T...>(MakeIndexSequence<N>{}));
 
-  template <std::size_t, typename T> struct DropArgs;
+  template <std::size_t N, typename... Args>
+  constexpr auto DropArgs(list<Args...>) -> Drop_t<N, Args...>;
 
   // Returns the Args in the function F that come after the Nth arg
   template <std::size_t N, typename F>
-  using DropArgs_t = typename DropArgs<N, F>::type;
+  using DropArgs_t = decltype(DropArgs<N>(argument_types_t<F>{}));
 
-  template <std::size_t N, typename R, typename... Args>
-  struct DropArgs<N, R (*)(Args...)> {
-    using type = Drop_t<N, Args...>;
-  };
+  template <typename... Args, std::size_t... Idx>
+  constexpr auto TakeNFirstArgs(IndexSequence<Idx...>)
+      -> list<typename std::tuple_element<Idx, std::tuple<Args...>>::type...>;
 
-  template <std::size_t N, typename R, typename... Args>
-  struct DropArgs<N, R (*)(Args..., ...)> {
-    using type = Drop_t<N, Args...>;
-  };
+  template <std::size_t N, typename... Args>
+  constexpr auto TakeNFirstArgs(list<Args...>)
+      -> decltype(TakeNFirstArgs<Args...>(MakeIndexSequence<N>{}));
 
-  /// These macro expansions are used to cover all possible cases of
-  /// qualifiers in member functions when declaring DropArgs. They need to be
-  /// read from the bottom to the top. Starting from the use of AddCON,
-  /// the call to which is used to pass the cases with and without C-style
-  /// varargs, then as the macro name AddCON says it adds cases of const
-  /// qualifier. The AddVOL and AddREF macro similarly add cases for volatile
-  /// qualifier and reference respectively. The AddNOEX adds cases for noexcept
-  /// qualifier only if it is supported and finally AddSPECS declares the
-  /// function with all the cases
-#define DropArgs_AddSPECS(var, con, vol, ref, noex)                            \
-  template <std::size_t N, typename R, typename C, typename... Args>           \
-  struct DropArgs<N, R (C::*)(Args... REM_CTOR var) con vol ref noex> {        \
-    using type = Drop_t<N, Args...>;                                           \
-  };
-
-#if __cpp_noexcept_function_type > 0
-#define DropArgs_AddNOEX(var, con, vol, ref)                                   \
-  DropArgs_AddSPECS(var, con, vol, ref, )                                      \
-      DropArgs_AddSPECS(var, con, vol, ref, noexcept)
-#else
-#define DropArgs_AddNOEX(var, con, vol, ref)                                   \
-  DropArgs_AddSPECS(var, con, vol, ref, )
-#endif
-
-#define DropArgs_AddREF(var, con, vol)                                         \
-  DropArgs_AddNOEX(var, con, vol, ) DropArgs_AddNOEX(var, con, vol, &)         \
-      DropArgs_AddNOEX(var, con, vol, &&)
-
-#define DropArgs_AddVOL(var, con)                                              \
-  DropArgs_AddREF(var, con, ) DropArgs_AddREF(var, con, volatile)
-
-#define DropArgs_AddCON(var) DropArgs_AddVOL(var, ) DropArgs_AddVOL(var, const)
-
-  DropArgs_AddCON(())
-      DropArgs_AddCON((, ...)); // Declares all the specializations
+  // Returns the first N arguments in the function F
+  template <size_t N, typename F>
+  using TakeNFirstArgs_t = decltype(TakeNFirstArgs<N>(argument_types_t<F>{}));
 
   template <class T, class R> struct OutputParamType {
-    using type = array_ref<R>;
+    using type = typename std::remove_pointer<R>::type*;
   };
 
   template <class T, class R>
@@ -462,7 +483,7 @@ namespace clad {
   // GradientDerivedEstFnTraits specializations for pure function pointer types
   template <class ReturnType, class... Args>
   struct GradientDerivedEstFnTraits<ReturnType (*)(Args...)> {
-    using type = void (*)(Args..., OutputParamType_t<Args, ReturnType>...,
+    using type = void (*)(Args..., OutputParamType_t<Args, Args>...,
                           double&);
   };
 
@@ -478,7 +499,7 @@ namespace clad {
 #define GradientDerivedEstFnTraits_AddSPECS(var, cv, vol, ref, noex)           \
   template <typename R, typename C, typename... Args>                          \
   struct GradientDerivedEstFnTraits<R (C::*)(Args...) cv vol ref noex> {       \
-    using type = void (C::*)(Args..., OutputParamType_t<Args, R>...,           \
+    using type = void (C::*)(Args..., OutputParamType_t<Args, Args>...,           \
                              double&) cv vol ref noex;                         \
   };
 
@@ -528,15 +549,25 @@ namespace clad {
     using type = NoFunction*;
   };
 
-  template <class... Args> struct SelectLast;
+  // OutputVecParamType is used to deduce the type of derivative arguments
+  // for vector forward mode.
+  template <class T, class R> struct OutputVecParamType {
+    using type = array_ref<typename std::remove_pointer<R>::type>;
+  };
 
-  template <class... Args>
-  using SelectLast_t = typename SelectLast<Args...>::type;
+  template <class T, class R>
+  using OutputVecParamType_t = typename OutputVecParamType<T, R>::type;
 
-  template <class T> struct SelectLast<T> { using type = T; };
+  /// Specialization for vector forward mode type.
+  template <class F, class = void> struct ExtractDerivedFnTraitsVecForwMode {};
 
-  template <class T, class... Args> struct SelectLast<T, Args...> {
-    using type = typename SelectLast<Args...>::type;
+  template <class F>
+  using ExtractDerivedFnTraitsVecForwMode_t =
+      typename ExtractDerivedFnTraitsVecForwMode<F>::type;
+
+  template <class ReturnType, class... Args>
+  struct ExtractDerivedFnTraitsVecForwMode<ReturnType (*)(Args...)> {
+    using type = void (*)(Args..., OutputVecParamType_t<Args, void>...);
   };
 
   template <class T, class = void> struct JacobianDerivedFnTraits {};
@@ -549,7 +580,7 @@ namespace clad {
   // JacobianDerivedFnTraits specializations for pure function pointer types
   template <class ReturnType, class... Args>
   struct JacobianDerivedFnTraits<ReturnType (*)(Args...)> {
-    using type = void (*)(Args..., SelectLast_t<Args...>);
+    using type = void (*)(Args..., OutputParamType_t<Args, void>...);
   };
 
   /// These macro expansions are used to cover all possible cases of
@@ -561,11 +592,12 @@ namespace clad {
   /// qualifier and reference respectively. The AddNOEX adds cases for noexcept
   /// qualifier only if it is supported and finally AddSPECS declares the
   /// function with all the cases
-#define JacobianDerivedFnTraits_AddSPECS(var, cv, vol, ref, noex)              \
-  template <typename R, typename C, typename... Args>                          \
-  struct JacobianDerivedFnTraits<R (C::*)(Args...) cv vol ref noex> {          \
-    using type = void (C::*)(Args..., SelectLast_t<Args...>) cv vol ref noex;  \
-  };
+#define JacobianDerivedFnTraits_AddSPECS(var, cv, vol, ref, noex)            \
+    template <typename R, typename C, typename... Args>                        \
+    struct JacobianDerivedFnTraits<R (C::*)(Args...) cv vol ref noex> {        \
+      using type = void (C::*)(                                                \
+          Args..., OutputParamType_t<Args, void>...) cv vol ref noex;          \
+    };
 
 #if __cpp_noexcept_function_type > 0
 #define JacobianDerivedFnTraits_AddNOEX(var, con, vol, ref)                    \
@@ -623,7 +655,7 @@ namespace clad {
   // HessianDerivedFnTraits specializations for pure function pointer types
   template <class ReturnType, class... Args>
   struct HessianDerivedFnTraits<ReturnType (*)(Args...)> {
-    using type = void (*)(Args..., array_ref<ReturnType>);
+    using type = void (*)(Args..., ReturnType*);
   };
 
   /// These macro expansions are used to cover all possible cases of
@@ -638,7 +670,7 @@ namespace clad {
 #define HessianDerivedFnTraits_AddSPECS(var, cv, vol, ref, noex)               \
   template <typename R, typename C, typename... Args>                          \
   struct HessianDerivedFnTraits<R (C::*)(Args...) cv vol ref noex> {           \
-    using type = void (C::*)(Args..., array_ref<R>) cv vol ref noex;           \
+    using type = void (C::*)(Args..., R*) cv vol ref noex;                     \
   };
 
 #if __cpp_noexcept_function_type > 0
@@ -722,17 +754,15 @@ namespace clad {
   /// Specialization for free function pointer type
   template <class F>
   struct ExtractDerivedFnTraitsForwMode<
-      F*,
-      typename std::enable_if<std::is_function<F>::value>::type> {
+      F*, typename std::enable_if<std::is_function<F>::value>::type> {
     using type = remove_reference_and_pointer_t<F>*;
   };
 
   /// Specialization for member function pointer type
   template <class F>
   struct ExtractDerivedFnTraitsForwMode<
-      F,
-      typename std::enable_if<
-          std::is_member_function_pointer<F>::value>::type> {
+      F, typename std::enable_if<
+             std::is_member_function_pointer<F>::value>::type> {
     using type = typename std::decay<F>::type;
   };
 
@@ -742,20 +772,19 @@ namespace clad {
   /// defines member typedef `type` as the type of `NoFunction*`.
   template <class F>
   struct ExtractDerivedFnTraitsForwMode<
-      F,
-      typename std::enable_if<
-          std::is_class<remove_reference_and_pointer_t<F>>::value &&
-          has_call_operator<F>::value>::type> {
+      F, typename std::enable_if<
+             std::is_class<remove_reference_and_pointer_t<F>>::value &&
+             has_call_operator<F>::value>::type> {
     using ClassType =
         typename std::decay<remove_reference_and_pointer_t<F>>::type;
     using type = decltype(&ClassType::operator());
   };
+
   template <class F>
   struct ExtractDerivedFnTraitsForwMode<
-      F,
-      typename std::enable_if<
-          std::is_class<remove_reference_and_pointer_t<F>>::value &&
-          !has_call_operator<F>::value>::type> {
+      F, typename std::enable_if<
+             std::is_class<remove_reference_and_pointer_t<F>>::value &&
+             !has_call_operator<F>::value>::type> {
     using type = NoFunction*;
   };
 

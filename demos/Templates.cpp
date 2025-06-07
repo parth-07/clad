@@ -7,13 +7,13 @@
 //----------------------------------------------------------------------------//
 
 // To run the demo please type:
-// path/to/clang  -Xclang -add-plugin -Xclang clad -Xclang -load -Xclang \
-// path/to/libclad.so  -I../include/ -x c++ -std=c++11 Templates.cpp
+// path/to/clang++  -Xclang -add-plugin -Xclang clad -Xclang -load -Xclang \
+// path/to/libclad.so  -I../include/ -std=c++11 Templates.cpp
 //
 // A typical invocation would be:
-// ../../../../obj/Debug+Asserts/bin/clang  -Xclang -add-plugin -Xclang clad \
+// ../../../../obj/Debug+Asserts/bin/clang++  -Xclang -add-plugin -Xclang clad \
 // -Xclang -load -Xclang ../../../../obj/Debug+Asserts/lib/libclad.dylib     \
-// -I../include/ -x c++ -std=c++11 Templates.cpp
+// -I../include/ -std=c++11 Templates.cpp
 
 // Necessary for clad to work include
 #include "clad/Differentiator/Differentiator.h"
@@ -22,7 +22,7 @@ template <class T> class Equation {
   T m_x, m_y;
 
 public:
-  Equation(T x, T y) : m_x(x), m_y(y) {}
+  Equation(T x = 0, T y = 0) : m_x(x), m_y(y) {}
   T operator()(T i, T j) { return m_x * i * i + m_y * j * j; }
 };
 
@@ -30,7 +30,7 @@ template <> class Equation<long double> {
   long double m_x, m_y;
 
 public:
-  Equation(long double x, long double y) : m_x(x), m_y(y) {}
+  Equation(long double x = 0, long double y = 0) : m_x(x), m_y(y) {}
   long double operator()(long double i, long double j) {
     return 2 * m_x * i * i + 2 * m_y * j * j;
   }

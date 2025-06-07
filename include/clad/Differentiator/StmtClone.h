@@ -8,6 +8,8 @@
 #ifndef CLAD_UTILS_STMTCLONE_H
 #define CLAD_UTILS_STMTCLONE_H
 
+#include "Compatibility.h"
+
 #include "clang/AST/StmtVisitor.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Basic/Version.h"
@@ -15,6 +17,7 @@
 #include "clang/Sema/Scope.h"
 
 #include "llvm/ADT/DenseMap.h"
+#include <unordered_map>
 
 namespace clang {
   class Stmt;
@@ -48,8 +51,12 @@ namespace utils {
     template<class StmtTy>
     StmtTy* Clone(const StmtTy* S);
 
-  // visitor part (not for public use)
-  // Stmt.def could be used if ABSTR_STMT is introduced
+    /// Cloning types is necessary since VariableArrayType
+    /// store a pointer to their size expression.
+    clang::QualType CloneType(clang::QualType T);
+
+    // visitor part (not for public use)
+    // Stmt.def could be used if ABSTR_STMT is introduced
 #define DECLARE_CLONE_FN(CLASS) clang::Stmt* Visit ## CLASS(clang::CLASS *Node);
     DECLARE_CLONE_FN(BinaryOperator)
     DECLARE_CLONE_FN(UnaryOperator)
@@ -97,6 +104,7 @@ namespace utils {
     DECLARE_CLONE_FN(ExtVectorElementExpr)
     DECLARE_CLONE_FN(UnaryExprOrTypeTraitExpr)
     DECLARE_CLONE_FN(CallExpr)
+    DECLARE_CLONE_FN(CUDAKernelCallExpr)
     DECLARE_CLONE_FN(ShuffleVectorExpr)
     DECLARE_CLONE_FN(ExprWithCleanups)
     DECLARE_CLONE_FN(CXXOperatorCallExpr)
@@ -105,6 +113,7 @@ namespace utils {
     DECLARE_CLONE_FN(CXXDynamicCastExpr)
     DECLARE_CLONE_FN(CXXReinterpretCastExpr)
     DECLARE_CLONE_FN(CXXConstCastExpr)
+    DECLARE_CLONE_FN(CXXDefaultArgExpr)
     DECLARE_CLONE_FN(CXXFunctionalCastExpr)
     DECLARE_CLONE_FN(CXXBoolLiteralExpr)
     DECLARE_CLONE_FN(CXXNullPtrLiteralExpr)
@@ -113,12 +122,12 @@ namespace utils {
     DECLARE_CLONE_FN(CXXConstructExpr)
     DECLARE_CLONE_FN(CXXTemporaryObjectExpr)
     DECLARE_CLONE_FN(MaterializeTemporaryExpr)
+    DECLARE_CLONE_FN(PseudoObjectExpr)
     DECLARE_CLONE_FN(SubstNonTypeTemplateParmExpr)
-    // `ConstantExpr` node is only available after clang 7.
-    #if CLANG_VERSION_MAJOR > 7
+    DECLARE_CLONE_FN(CXXScalarValueInitExpr)
     DECLARE_CLONE_FN(ConstantExpr)
-    #endif
-    
+    DECLARE_CLONE_FN(ValueStmt)
+
     clang::Stmt* VisitStmt(clang::Stmt*);
   };
 
@@ -145,13 +154,20 @@ namespace utils {
     public clang::RecursiveASTVisitor<ReferencesUpdater> {
   private:
     clang::Sema& m_Sema; // We don't own.
-    StmtClone* m_NodeCloner; // We don't own.
     clang::Scope* m_CurScope; // We don't own.
     const clang::FunctionDecl* m_Function; // We don't own.
+    const std::unordered_map<const clang::VarDecl*, clang::VarDecl*>&
+        m_DeclReplacements; // We don't own.
   public:
-    ReferencesUpdater(clang::Sema& SemaRef, StmtClone* C, clang::Scope* S,
-                      const clang::FunctionDecl* FD);
+    ReferencesUpdater(
+        clang::Sema& SemaRef, clang::Scope* S, const clang::FunctionDecl* FD,
+        const std::unordered_map<const clang::VarDecl*, clang::VarDecl*>&
+            DeclReplacements);
     bool VisitDeclRefExpr(clang::DeclRefExpr* DRE);
+    bool VisitStmt(clang::Stmt* S);
+    /// Used to update the size expression of QT
+    /// if QT is VariableArrayType.
+    void updateType(clang::QualType QT);
   };
 } // namespace utils
 } // namespace clad

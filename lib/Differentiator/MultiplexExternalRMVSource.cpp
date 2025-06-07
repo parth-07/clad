@@ -3,6 +3,10 @@
 
 using namespace clang;
 namespace clad {
+
+// Pin the vtable here.
+MultiplexExternalRMVSource::~MultiplexExternalRMVSource() {}
+
 // void MultiplexExternalRMVSource::MultiplexExternalRMVSource() {}
 void MultiplexExternalRMVSource::AddSource(ExternalRMVSource& source) {
   m_Sources.push_back(&source);
@@ -31,11 +35,10 @@ void MultiplexExternalRMVSource::ActOnEndOfDerive() {
   }
 }
 
-void MultiplexExternalRMVSource::ActAfterParsingDiffArgs(
-    const DiffRequest& request, DiffParams& args) {
-  for (auto source : m_Sources) {
-    source->ActAfterParsingDiffArgs(request, args);
-  }
+void MultiplexExternalRMVSource::ActAfterProcessingArraySubscriptExpr(
+    const clang::Expr* revArrSub) {
+  for (auto source : m_Sources)
+    source->ActAfterProcessingArraySubscriptExpr(revArrSub);
 }
 
 void MultiplexExternalRMVSource::ActBeforeCreatingDerivedFnParamTypes(
@@ -43,7 +46,7 @@ void MultiplexExternalRMVSource::ActBeforeCreatingDerivedFnParamTypes(
   for (auto source : m_Sources) {
     source->ActBeforeCreatingDerivedFnParamTypes(numExtraParams);
   }
-};
+}
 void MultiplexExternalRMVSource::ActAfterCreatingDerivedFnParamTypes(
     llvm::SmallVectorImpl<clang::QualType>& paramTypes) {
   for (auto source : m_Sources) {
@@ -110,9 +113,9 @@ void MultiplexExternalRMVSource::
 }
 
 void MultiplexExternalRMVSource::
-    ActBeforeFinalisingVisitBranchSingleStmtInIfVisitStmt() {
+    ActBeforeFinalizingVisitBranchSingleStmtInIfVisitStmt() {
   for (auto source : m_Sources) {
-    source->ActBeforeFinalisingVisitBranchSingleStmtInIfVisitStmt();
+    source->ActBeforeFinalizingVisitBranchSingleStmtInIfVisitStmt();
   }
 }
 
@@ -135,27 +138,27 @@ void MultiplexExternalRMVSource::
   }
 }
 
-void MultiplexExternalRMVSource::ActBeforeFinalisingVisitReturnStmt(
-    StmtDiff& ExprDiff, clang::Expr*& retDeclRefExpr) {
+void MultiplexExternalRMVSource::ActBeforeFinalizingVisitReturnStmt(
+    StmtDiff& retExprDiff) {
   for (auto source : m_Sources) {
-    source->ActBeforeFinalisingVisitReturnStmt(ExprDiff, retDeclRefExpr);
+    source->ActBeforeFinalizingVisitReturnStmt(retExprDiff);
   }
 }
 
 void MultiplexExternalRMVSource::ActBeforeFinalizingVisitCallExpr(
     const clang::CallExpr*& CE, clang::Expr*& OverloadedDerivedFn,
     llvm::SmallVectorImpl<clang::Expr*>& derivedCallArgs,
-    llvm::SmallVectorImpl<clang::VarDecl*>& ArgResultDecls, bool asGrad) {
+    llvm::SmallVectorImpl<clang::Expr*>& ArgResult, bool asGrad) {
   for (auto source : m_Sources) {
-    source->ActBeforeFinalizingVisitCallExpr(CE, OverloadedDerivedFn, derivedCallArgs,
-                                             ArgResultDecls, asGrad);
+    source->ActBeforeFinalizingVisitCallExpr(
+        CE, OverloadedDerivedFn, derivedCallArgs, ArgResult, asGrad);
   }
 }
 
-void MultiplexExternalRMVSource::ActBeforeFinalisingPostIncDecOp(
+void MultiplexExternalRMVSource::ActBeforeFinalizingPostIncDecOp(
     StmtDiff& diff) {
   for (auto source : m_Sources) {
-    source->ActBeforeFinalisingPostIncDecOp(diff);
+    source->ActBeforeFinalizingPostIncDecOp(diff);
   }
 }
 void MultiplexExternalRMVSource::ActAfterCloningLHSOfAssignOp(
@@ -165,10 +168,11 @@ void MultiplexExternalRMVSource::ActAfterCloningLHSOfAssignOp(
   }
 }
 
-void MultiplexExternalRMVSource::ActBeforeFinalisingAssignOp(
-    clang::Expr*& LCloned, clang::Expr*& oldValue) {
+void MultiplexExternalRMVSource::ActBeforeFinalizingAssignOp(
+    clang::Expr*& LCloned, clang::Expr*& oldValue, clang::Expr*& R,
+    clang::BinaryOperator::Opcode& opCode) {
   for (auto source : m_Sources) {
-    source->ActBeforeFinalisingAssignOp(LCloned, oldValue);
+    source->ActBeforeFinalizingAssignOp(LCloned, oldValue, R, opCode);
   }
 }
 
@@ -190,6 +194,14 @@ void MultiplexExternalRMVSource::ActBeforeFinalizingDifferentiateSingleExpr(
   for (auto source : m_Sources) {
     source->ActBeforeFinalizingDifferentiateSingleExpr(d);
   }
+}
+
+void MultiplexExternalRMVSource::ActBeforeDifferentiatingCallExpr(
+    llvm::SmallVectorImpl<clang::Expr*>& pullbackArgs,
+    llvm::SmallVectorImpl<clang::Stmt*>& ArgDecls, bool hasAssignee) {
+  for (auto source : m_Sources)
+    source->ActBeforeDifferentiatingCallExpr(pullbackArgs, ArgDecls,
+                                             hasAssignee);
 }
 
 void MultiplexExternalRMVSource::ActBeforeFinalizingVisitDeclStmt(

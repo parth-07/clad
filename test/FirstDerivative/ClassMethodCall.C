@@ -1,6 +1,5 @@
-// RUN: %cladclang %s -I%S/../../include -lstdc++ -oClassMethods.out 2>&1 | FileCheck %s
-// RUN: ./ClassMethods.out | FileCheck -check-prefix=CHECK-EXEC %s
-//CHECK-NOT: {{.*error|warning|note:.*}}
+// RUN: %cladclang %s -I%S/../../include -oClassMethods.out 2>&1 | %filecheck %s
+// RUN: ./ClassMethods.out | %filecheck_exec %s
 
 #include "clad/Differentiator/Differentiator.h"
 
@@ -15,7 +14,7 @@ public:
     return x;
   }
 
-  //CHECK:   int f_darg0(int x) __attribute__((always_inline)) {
+  //CHECK:{{[__attribute__((always_inline)) ]*}}int f_darg0(int x){{[ __attribute__((always_inline))]*}} {
   //CHECK-NEXT:       int _d_x = 1;
   //CHECK-NEXT:       A _d_this_obj;
   //CHECK-NEXT:       A *_d_this = &_d_this_obj;
@@ -73,7 +72,7 @@ public:
   }
 
   float vm_darg0(float x, float y);
-  //CHECK:   float vm_darg0(float x, float y) {
+  //CHECK:   float A::vm_darg0(float x, float y) {
   //CHECK-NEXT:       float _d_x = 1;
   //CHECK-NEXT:       float _d_y = 0;
   //CHECK-NEXT:       A _d_this_obj;
@@ -92,7 +91,7 @@ public:
   }
 
   float vm_darg0(float x, float y);
-  //CHECK:   float vm_darg0(float x, float y) override {
+  //CHECK:   float B::vm_darg0(float x, float y) {
   //CHECK-NEXT:       float _d_x = 1;
   //CHECK-NEXT:       float _d_y = 0;
   //CHECK-NEXT:       B _d_this_obj;
@@ -118,7 +117,7 @@ int main () {
   auto vm_darg0_B = clad::differentiate(&B::vm, 0);
   printf("Result is = %f\n", vm_darg0_B.execute(b, 2, 3)); // CHECK-EXEC: Result is = 4.0000
   printf("%s\n", vm_darg0_B.getCode());
-  //CHECK-EXEC:   float vm_darg0(float x, float y) override {
+  //CHECK-EXEC:   float B::vm_darg0(float x, float y) {
   //CHECK-EXEC-NEXT:       float _d_x = 1;
   //CHECK-EXEC-NEXT:       float _d_y = 0;
   //CHECK-EXEC-NEXT:       B _d_this_obj;

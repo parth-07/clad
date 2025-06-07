@@ -7,6 +7,7 @@
 //----------------------------------------------------------------------------//
 
 #include "ConstantFolder.h"
+#include "clad/Differentiator/Compatibility.h"
 
 #include "clang/AST/ASTContext.h"
 
@@ -47,6 +48,18 @@ namespace clad {
     assert (&C.getFloatTypeSemantics(QT) == &val.getSemantics() && "Mismatch");
     SourceLocation noLoc;
     return FloatingLiteral::Create(C, val, /*isexact*/true, QT, noLoc);
+  }
+
+  static Expr* synthesizeLiteral(QualType QT, ASTContext& C, bool val) {
+    assert(QT->isBooleanType() && "Not a boolean type.");
+    SourceLocation noLoc;
+    return new (C) CXXBoolLiteralExpr(val, QT, noLoc);
+  }
+
+  static Expr* synthesizeLiteral(QualType QT, ASTContext& C) {
+    assert(QT->isPointerType() && "Not a pointer type.");
+    SourceLocation noLoc;
+    return new (C) CXXNullPtrLiteralExpr(QT, noLoc);
   }
 
   Expr* ConstantFolder::trivialFold(Expr* E) {
@@ -126,18 +139,44 @@ namespace clad {
 
   Expr* ConstantFolder::synthesizeLiteral(QualType QT, ASTContext& C,
                                           uint64_t val) {
-    //SourceLocation noLoc;
+    // SourceLocation noLoc;
     Expr* Result = 0;
-    if (QT->isIntegralType(C)) {
+    QT = QT.getCanonicalType();
+    if (QT->isEnumeralType()) {
+      llvm::APInt APVal(C.getIntWidth(QT), val,
+                        QT->isSignedIntegerOrEnumerationType());
+      Result = clad::synthesizeLiteral(
+          dyn_cast<EnumType>(QT)->getDecl()->getIntegerType(), C, APVal);
+      SourceLocation noLoc;
+      Expr* cast = CXXStaticCastExpr::Create(
+          C, QT, CLAD_COMPAT_ExprValueKind_R_or_PR_Value,
+          clang::CastKind::CK_IntegralCast, Result, /*CXXCastPath=*/nullptr,
+          C.getTrivialTypeSourceInfo(QT, noLoc)
+              CLAD_COMPAT_CLANG12_CastExpr_DefaultFPO,
+          noLoc, noLoc, SourceRange());
+      Result = cast;
+    } else if (QT->isPointerType()) {
+      Result = clad::synthesizeLiteral(QT, C);
+    } else if (QT->isBooleanType()) {
+      Result = clad::synthesizeLiteral(QT, C, (bool)val);
+    } else if (QT->isIntegralType(C)) {
+      if (QT->isAnyCharacterType())
+        QT = C.IntTy;
+      if (const auto* BT = dyn_cast<BuiltinType>(QT.getTypePtr()))
+        if (BT->getKind() == BuiltinType::Short)
+          QT = C.IntTy;
       llvm::APInt APVal(C.getIntWidth(QT), val,
                          QT->isSignedIntegerOrEnumerationType());
       Result = clad::synthesizeLiteral(QT, C, APVal);
-    }
-    else {
+    } else if (QT->isRealFloatingType()) {
       llvm::APFloat APVal(C.getFloatTypeSemantics(QT), val);
       Result = clad::synthesizeLiteral(QT, C, APVal);
+    } else {
+      // FIXME: Handle other types, like Complex, Structs, typedefs, etc.
+      // typecasting may be needed right now
+      Result = ConstantFolder::synthesizeLiteral(C.IntTy, C, val);
     }
-    assert(Result && "Must not be zero.");
+    assert(Result && "Unsupported type for constant folding.");
     return Result;
   }
 } // end namespace clad

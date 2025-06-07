@@ -7,13 +7,13 @@
 //----------------------------------------------------------------------------//
 
 // To run the demo please type:
-// path/to/clang  -Xclang -add-plugin -Xclang clad -Xclang -load -Xclang \
-// path/to/libclad.so  -I../include/ -x c++ -std=c++11 FloatSum.cpp
+// path/to/clang++  -Xclang -add-plugin -Xclang clad -Xclang -load -Xclang \
+// path/to/libclad.so  -I../include/ -std=c++11 FloatSum.cpp
 //
 // A typical invocation would be:
-// ../../../../obj/Debug+Asserts/bin/clang  -Xclang -add-plugin -Xclang clad \
+// ../../../../obj/Debug+Asserts/bin/clang++  -Xclang -add-plugin -Xclang clad \
 // -Xclang -load -Xclang ../../../../obj/Debug+Asserts/lib/libclad.dylib     \
-// -I../include/ -x c++ -std=c++11 FloatSum.cpp
+// -I../include/ -std=c++11 FloatSum.cpp
 //
 // To plot the results install gnuplot and type:
 //
@@ -104,9 +104,9 @@ int main() {
 
     // Clear the final error
     finalError = 0;
-
+    unsigned int dn = 0;
     // First execute the derived function.
-    df.execute(x, n, &ret[0], &ret[1], finalError);
+    df.execute(x, n, &ret[0], &dn, finalError);
 
     double kahanResult = kahanSum(x, n);
     double vanillaResult = vanillaSum(x, n);

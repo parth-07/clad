@@ -1,7 +1,5 @@
-// RUN: %cladclang %s -I%S/../../include -oNonContinuous.out 2>&1 | FileCheck %s
-// RUN: ./NonContinuous.out | FileCheck -check-prefix=CHECK-EXEC %s
-
-//CHECK-NOT: {{.*error|warning|note:.*}}
+// RUN: %cladclang %s -I%S/../../include -oNonContinuous.out 2>&1 | %filecheck %s
+// RUN: ./NonContinuous.out | %filecheck_exec %s
 
 #include "clad/Differentiator/Differentiator.h"
 

@@ -3,6 +3,7 @@
 
 #include "clad/Differentiator/ParseDiffArgsTypes.h"
 #include "clad/Differentiator/ReverseModeVisitorDirectionKinds.h"
+#include "clad/Differentiator/ReverseModeVisitor.h"
 
 #include "clang/AST/Decl.h"
 #include "clang/AST/Expr.h"
@@ -13,10 +14,10 @@
 
 namespace clad {
 
-class ReverseModeVisitor;
-class DiffRequest;
+struct DiffRequest;
 class StmtDiff;
-class VarDeclDiff;
+
+template <typename T> class DeclDiff;
 
 using direction = rmv::direction;
 
@@ -34,6 +35,8 @@ class ExternalRMVSource {
 public:
   ExternalRMVSource() = default;
 
+  virtual ~ExternalRMVSource() = default;
+
   /// Initialise the external source with the ReverseModeVisitor object.
   virtual void InitialiseRMV(ReverseModeVisitor& RMV) {}
 
@@ -49,13 +52,9 @@ public:
   /// function.
   virtual void ActOnEndOfDerive() {}
 
-  /// This is called just after differentiation arguments are parsed
-  /// in `ReverseModeVisitor::Derive`.
-  ///
-  ///\param[in] request differentiation request
-  ///\param[in] args differentiation args
-  virtual void ActAfterParsingDiffArgs(const DiffRequest& request,
-                                       DiffParams& args) {}
+  /// This is called after processing array subscript expressions.
+  virtual void
+  ActAfterProcessingArraySubscriptExpr(const clang::Expr* revArrSub) {}
 
   /// This is called just before creating derived function parameter types.
   virtual void ActBeforeCreatingDerivedFnParamTypes(unsigned& numExtraParam) {}
@@ -102,7 +101,7 @@ public:
 
   /// This is called just before finalising processing of Single statement
   /// branch in `VisitBranch` lambda in
-  virtual void ActBeforeFinalisingVisitBranchSingleStmtInIfVisitStmt() {}
+  virtual void ActBeforeFinalizingVisitBranchSingleStmtInIfVisitStmt() {}
 
   /// This is called just before differentiating init statement of loops.
   virtual void ActBeforeDifferentiatingLoopInitStmt() {}
@@ -115,11 +114,9 @@ public:
   virtual void ActAfterProcessingSingleStmtBodyInVisitForLoop() {}
 
   /// This is called just before finalising `VisitReturnStmt`.
-  virtual void
-  ActBeforeFinalisingVisitReturnStmt(StmtDiff& ExprDiff,
-                                     clang::Expr*& retDeclRefExpr) {}
+  virtual void ActBeforeFinalizingVisitReturnStmt(StmtDiff& retExprDiff) {}
 
-  /// This ic called just before finalising `VisitCallExpr`.
+  /// This is called just before finalising `VisitCallExpr`.
   ///
   /// \param CE call expression that is being visited.
   /// \param CallArgs
@@ -127,19 +124,21 @@ public:
   virtual void ActBeforeFinalizingVisitCallExpr(
       const clang::CallExpr*& CE, clang::Expr*& OverloadedDerivedFn,
       llvm::SmallVectorImpl<clang::Expr*>& derivedCallArgs,
-      llvm::SmallVectorImpl<clang::VarDecl*>& ArgResultDecls, bool asGrad) {}
+      llvm::SmallVectorImpl<clang::Expr*>& ArgResult, bool asGrad) {}
 
   /// This is called just before finalising processing of post and pre
   /// increment and decrement operations.
-  virtual void ActBeforeFinalisingPostIncDecOp(StmtDiff& diff){};
+  virtual void ActBeforeFinalizingPostIncDecOp(StmtDiff& diff){};
 
   /// This is called just after cloning of LHS assignment operation.
   virtual void ActAfterCloningLHSOfAssignOp(clang::Expr*&, clang::Expr*&,
                                             clang::BinaryOperatorKind& opCode) {
   }
 
-  /// This is called just after finaising processing of assignment operator.
-  virtual void ActBeforeFinalisingAssignOp(clang::Expr*&, clang::Expr*&){};
+  /// This is called just after finalising processing of assignment operator.
+  virtual void ActBeforeFinalizingAssignOp(clang::Expr*&, clang::Expr*&,
+                                           clang::Expr*&,
+                                           clang::BinaryOperator::Opcode&){};
 
   /// This is called at that beginning of
   /// `ReverseModeVisitor::DifferentiateSingleStmt`.
@@ -152,6 +151,10 @@ public:
   /// This is called just before finalising
   /// `ReverseModeVisitor::DifferentiateSingleExpr`.
   virtual void ActBeforeFinalizingDifferentiateSingleExpr(const direction& d) {}
+
+  virtual void ActBeforeDifferentiatingCallExpr(
+      llvm::SmallVectorImpl<clang::Expr*>& pullbackArgs,
+      llvm::SmallVectorImpl<clang::Stmt*>& ArgDecls, bool hasAssignee) {}
 
   virtual void ActBeforeFinalizingVisitDeclStmt(
       llvm::SmallVectorImpl<clang::Decl*>& decls,

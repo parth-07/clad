@@ -6,7 +6,12 @@
 #define CLAD_PARSE_DIFF_ARGS_TYPES_H
 
 #include "clang/AST/Decl.h"
+
+#include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/StringRef.h"
+#include "llvm/Support/Compiler.h"
+#include "llvm/Support/raw_ostream.h"
 
 #include <cstddef>
 #include <utility>
@@ -28,16 +33,76 @@ namespace clad {
 
     std::size_t size() { return Finish - Start; }
 
-    bool isInInterval(std::size_t n) { return n >= Start && n <= Finish; }
+    bool isInInterval(std::size_t n) const { return n >= Start && n <= Finish; }
+    bool isValid() const { return Start != Finish; }
 
     bool operator==(const IndexInterval& rhs) const {
       return Start == rhs.Start && Finish == rhs.Finish;
     }
+    void print(llvm::raw_ostream& Out) const {
+      if (!isValid()) {
+        Out << "<invalid>";
+        return;
+      }
+      Out << '[' << Start << ':' << Finish << ']';
+    }
   };
 
-  using DiffParams = llvm::SmallVector<const clang::ValueDecl*, 16>;
   using IndexIntervalTable = llvm::SmallVector<IndexInterval, 16>;
+
+  /// `DiffInputVarInfo` is designed to store all the essential information about a
+  /// differentiation input variable. Please note that here input variable corresponds
+  /// to mathematical variable, not a programming one. 
+  // FIXME: 'DiffInputVarInfo' name is probably not accurate, since we can have multiple
+  // differentiation input variables for same parameter as well. 'DiffInputVarInfo' 
+  // name implicitly guides that there would be at most one `DiffInputVarInfo` object for
+  // one parameter, but that is not strictly true.
+  struct DiffInputVarInfo {
+    /// Source string specified by user that defines differentiation
+    /// specification for the input variable.
+    /// For example, if complete input string specified by user is:
+    /// 'u, v.first, arr[3]'
+    /// then `source` data member value for 2nd input variable should be
+    /// 'v.first'
+    std::string source;
+    /// Parameter associated with the input variable.
+    const clang::ValueDecl* param = nullptr;
+    /// array index range associated with the parameter.
+    IndexInterval paramIndexInterval;
+    /// Nested field information.
+    llvm::SmallVector<std::string, 4> fields;
+    // FIXME: Add support for differentiating with respect to array fields.
+    // llvm::SmallVector<IndexInterval> fieldIndexIntervals;
+
+    DiffInputVarInfo(const clang::ValueDecl* pParam = nullptr,
+                     IndexInterval pParamIndexInterval = {},
+                     llvm::SmallVector<std::string, 4> pFields = {})
+        : param(pParam), paramIndexInterval(pParamIndexInterval),
+          fields(pFields) {}
+
+    // FIXME: Move function definitions to ParseDiffArgTypes.cpp
+    bool operator==(const DiffInputVarInfo& rhs) const {
+      return param == rhs.param &&
+             paramIndexInterval == rhs.paramIndexInterval &&
+             fields == rhs.fields;
+    }
+    void print(llvm::raw_ostream& Out) const {
+      if (!source.empty())
+        Out << source;
+
+      if (param)
+        Out << param->getNameAsString();
+
+      if (paramIndexInterval.isValid())
+        paramIndexInterval.print(Out);
+    }
+    LLVM_DUMP_METHOD void dump() const { print(llvm::errs()); }
+  };
+
+  using DiffInputVarsInfo = llvm::SmallVector<DiffInputVarInfo, 16>;
+
+  using DiffParams = llvm::SmallVector<const clang::ValueDecl*, 16>;
   using DiffParamsWithIndices = std::pair<DiffParams, IndexIntervalTable>;
-} // namespace clad
+  } // namespace clad
 
 #endif

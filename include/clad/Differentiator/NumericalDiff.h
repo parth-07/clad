@@ -11,16 +11,6 @@
 #include <memory>
 #include <utility>
 
-extern "C" {
-#if defined(__APPLE__) || defined(_MSC_VER)
-void* malloc(size_t);
-void free(void* ptr);
-#else
-void* malloc(size_t) __THROW __attribute_malloc__ __wur;
-void free(void* ptr) __THROW;
-#endif
-}
-
 namespace numerical_diff {
 
   /// A class to keep track of the memory we allocate to make sure it is
@@ -83,7 +73,10 @@ namespace numerical_diff {
 
   /// A buffer manager to request for buffer space
   /// while forwarding reference/pointer args to the target function.
-  ManageBufferSpace bufferManager;
+  inline ManageBufferSpace& getBufferManager() {
+    static ManageBufferSpace bufMan;
+    return bufMan;
+  }
 
   /// The precision to do the numerical differentiation calculations in.
   using precision = double;
@@ -97,7 +90,7 @@ namespace numerical_diff {
   /// \param[in] \c h The h to make representable.
   ///
   /// \returns A value of h that does not result in catastrohic cancellation.
-  precision make_h_representable(precision x, precision h) {
+  inline precision make_h_representable(precision x, precision h) {
     precision xph = x + h;
     precision dx = xph - x;
 
@@ -114,7 +107,7 @@ namespace numerical_diff {
   /// \param[in] \c arg The input argument to adjust and get h for.
   ///
   /// \returns A calculated and adjusted h value.
-  precision get_h(precision arg) {
+  inline precision get_h(precision arg) {
     // First get a suitable h value, we do all of this in elevated precision
     // (default double). Maximum error in h = eps^4/5
     precision h = std::pow(11.25 * std::numeric_limits<precision>::epsilon(),
@@ -136,8 +129,8 @@ namespace numerical_diff {
   ///  belongs.
   /// \param[in] \c arrPos The position of the array element
   /// (-1 if parameter is scalar) to which the error belongs.
-  void printError(precision derivError, precision evalError, unsigned paramPos,
-                  int arrPos = -1) {
+  inline void printError(precision derivError, precision evalError,
+                         unsigned paramPos, int arrPos = -1) {
     if (arrPos != -1)
       printf("\nError Report for parameter at position %d and index %d:\n",
              paramPos, arrPos);
@@ -237,7 +230,7 @@ namespace numerical_diff {
     // this is required to make sure that we are retuning a deep copy
     // that is valid throughout the scope of the central_diff function.
     // Temp is system owned.
-    T* temp = bufferManager.make_buffer_space<T>(n);
+    T* temp = getBufferManager().make_buffer_space<T>(n);
     // deepcopy
     for (std::size_t j = 0; j < n; j++) {
       temp[j] = arg[j];
@@ -262,7 +255,7 @@ namespace numerical_diff {
   /// the input parameter pack.
   /// \param[in] \c args The arguments to the function to differentiate.
   template <typename F, std::size_t... Ints,
-            typename RetType = typename clad::return_type<F>::type,
+            typename RetType = typename clad::function_traits<F>::return_type,
             typename... Args>
   void central_difference_helper(
       F f, clad::tape_impl<clad::array_ref<RetType>>& _grad, bool printErrors,
@@ -328,8 +321,78 @@ namespace numerical_diff {
 
         // five-point stencil formula = (4f[x+h, x-h] - f[x+2h, x-2h])/3
         _grad[i][j] = 4.0 * xf1 / 3.0 - xf2 / 3.0;
-        bufferManager.free_buffer();
+        getBufferManager().free_buffer();
       }
+    }
+  }
+
+  /// A helper function to calculate the numerical derivative of a target
+  /// function.
+  ///
+  /// \param[in] \c f The target function to numerically differentiate.
+  /// \param[out] \c _grad The gradient array reference to which the gradients
+  /// will be written.
+  /// \param[in] \c printErrors A flag to decide if we want to print numerical
+  /// diff errors estimates.
+  /// \param[in] \c idxSeq The index sequence associated with
+  /// the input parameter pack.
+  /// \param[in] \c args The arguments to the function to differentiate.
+  template <typename F, std::size_t... Ints,
+            typename RetType = typename clad::function_traits<F>::return_type,
+            typename... Args>
+  void central_difference_helper(F f, RetType* _grad, bool printErrors,
+                                 clad::IndexSequence<Ints...> idxSeq,
+                                 Args&&... args) {
+
+    std::size_t argLen = sizeof...(Args);
+    // loop over all the args, selecting each arg to get the derivative with
+    // respect to.
+    for (std::size_t i = 0; i < argLen; i++) {
+      precision h = 0;
+      // calculate f[x+h, x-h]
+      // f(..., x+h,...)
+      precision xaf = f(updateIndexParamValue(std::forward<Args>(args), Ints, i,
+                                              /*multiplier=*/1, h)...);
+      precision xbf = f(updateIndexParamValue(std::forward<Args>(args), Ints, i,
+                                              /*multiplier=*/-1, h)...);
+      precision xf1 = (xaf - xbf) / (h + h);
+
+      // calculate f[x+2h, x-2h]
+      precision xaf2 =
+          f(updateIndexParamValue(std::forward<Args>(args), Ints, i,
+                                  /*multiplier=*/2, h)...);
+      precision xbf2 =
+          f(updateIndexParamValue(std::forward<Args>(args), Ints, i,
+                                  /*multiplier=*/-2, h)...);
+      precision xf2 = (xaf2 - xbf2) / (2 * h + 2 * h);
+
+      if (printErrors) {
+        // calculate f(x+3h) and f(x-3h)
+        precision xaf3 =
+            f(updateIndexParamValue(std::forward<Args>(args), Ints, i,
+                                    /*multiplier=*/3, h)...);
+        precision xbf3 =
+            f(updateIndexParamValue(std::forward<Args>(args), Ints, i,
+                                    /*multiplier=*/-3, h)...);
+        // Error in derivative due to the five-point stencil formula
+        // E(f'(x)) = f`````(x) * h^4 / 30 + O(h^5) (Taylor Approx) and
+        // f`````(x) = (f[x+3h, x-3h] - 4f[x+2h, x-2h] + 5f[x+h, x-h])/(2 *
+        // h^5) Formula courtesy of 'Abramowitz, Milton; Stegun, Irene A.
+        // (1970), Handbook of Mathematical Functions with Formulas, Graphs,
+        // and Mathematical Tables, Dover. Ninth printing. Table 25.2.`.
+        precision error =
+            ((xaf3 - xbf3) - 4 * (xaf2 - xbf2) + 5 * (xaf - xbf)) / (60 * h);
+        // This is the error in evaluation of all the function values.
+        precision evalError = std::numeric_limits<precision>::epsilon() *
+                              (std::fabs(xaf2) + std::fabs(xbf2) +
+                               8 * (std::fabs(xaf) + std::fabs(xbf))) /
+                              (12 * h);
+        // Finally print the error to standard ouput.
+        printError(std::fabs(error), evalError, i);
+      }
+
+      // five-point stencil formula = (4f[x+h, x-h] - f[x+2h, x-2h])/3
+      _grad[i] = 4.0 * xf1 / 3.0 - xf2 / 3.0;
     }
   }
 
@@ -345,11 +408,10 @@ namespace numerical_diff {
   /// \param[in] \c printErrors A flag to decide if we want to print numerical
   /// diff errors estimates.
   /// \param[in] \c args The arguments to the function to differentiate.
-  template <typename F, std::size_t... Ints,
-            typename RetType = typename clad::return_type<F>::type,
+  template <typename F, std::size_t... Ints, typename GradType,
             typename... Args>
-  void central_difference(F f, clad::tape_impl<clad::array_ref<RetType>>& _grad,
-                          bool printErrors, Args&&... args) {
+  void central_difference(F f, GradType& _grad, bool printErrors,
+                          Args&&... args) {
     return central_difference_helper(f, _grad, printErrors,
                                      clad::MakeIndexSequence<sizeof...(Args)>{},
                                      std::forward<Args>(args)...);

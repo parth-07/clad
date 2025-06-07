@@ -8,11 +8,16 @@
 #define CLAD_DERIVATIVE_BUILDER_H
 
 #include "Compatibility.h"
+
+#include "clad/Differentiator/DerivedFnCollector.h"
+#include "clad/Differentiator/DiffPlanner.h"
+
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/AST/StmtVisitor.h"
 #include "clang/Sema/Sema.h"
 
 #include <array>
+#include <memory>
 #include <stack>
 #include <unordered_map>
 
@@ -32,7 +37,6 @@ namespace clad {
   namespace utils {
     class StmtClone;
   }
-  struct DiffRequest;
   namespace plugin {
     class CladPlugin;
     clang::FunctionDecl* ProcessDiffRequest(CladPlugin& P,
@@ -51,13 +55,15 @@ namespace clad {
   // instead would lead to unnecessarily returning a nullptr in the overloaded
   // FD
   using DeclWithContext = std::pair<clang::FunctionDecl*, clang::Decl*>;
-  /// A tuple which consists of a FunctionDecl, it's potential enclosing context
-  /// and optionally it's overload FunctionDecl
-  using OverloadedDeclWithContext =
-      std::tuple<clang::FunctionDecl*, clang::Decl*, clang::FunctionDecl*>;
-
-  using VectorOutputs =
-      std::vector<std::unordered_map<const clang::ValueDecl*, clang::Expr*>>;
+  /// Stores derivative and the corresponding overload. If no overload exist
+  /// then `second` data member should be `nullptr`.
+  struct DerivativeAndOverload {
+    clang::Decl* derivative = nullptr;
+    clang::FunctionDecl* overload = nullptr;
+    DerivativeAndOverload(clang::Decl* p_derivative = nullptr,
+                          clang::FunctionDecl* p_overload = nullptr)
+        : derivative(p_derivative), overload(p_overload) {}
+  };
 
   static clang::SourceLocation noLoc{};
   class VisitorBase;
@@ -66,37 +72,43 @@ namespace clad {
   class DerivativeBuilder {
   private:
     friend class VisitorBase;
-    friend class ForwardModeVisitor;
+    friend class BaseForwardModeVisitor;
+    friend class PushForwardModeVisitor;
+    friend class VectorForwardModeVisitor;
+    friend class VectorPushForwardModeVisitor;
     friend class ReverseModeVisitor;
     friend class HessianModeVisitor;
     friend class JacobianModeVisitor;
-
+    friend class ReverseModeForwPassVisitor;
     clang::Sema& m_Sema;
     plugin::CladPlugin& m_CladPlugin;
     clang::ASTContext& m_Context;
+    DerivedFnCollector& m_DFC;
+    clad::DynamicGraph<DiffRequest>& m_DiffRequestGraph;
     std::unique_ptr<utils::StmtClone> m_NodeCloner;
     clang::NamespaceDecl* m_BuiltinDerivativesNSD;
     /// A reference to the model to use for error estimation (if any).
-    std::unique_ptr<FPErrorEstimationModel> m_EstModel = nullptr;
+    llvm::SmallVector<std::unique_ptr<FPErrorEstimationModel>, 4> m_EstModel;
     clang::NamespaceDecl* m_NumericalDiffNSD;
     /// A flag to keep track of whether error diagnostics are requested by user
     /// for numerical differentiation.
     bool m_PrintNumericalDiffErrorDiag = false;
     // A pointer to a the handler to be used for estimation requests.
-    std::unique_ptr<ErrorEstimationHandler> m_ErrorEstHandler;
+    llvm::SmallVector<std::unique_ptr<ErrorEstimationHandler>, 4>
+        m_ErrorEstHandler;
     DeclWithContext cloneFunction(const clang::FunctionDecl* FD,
-                                  clad::VisitorBase VB, clang::DeclContext* DC,
-                                  clang::Sema& m_Sema,
-                                  clang::ASTContext& m_Context,
+                                  clad::VisitorBase& VB, clang::DeclContext* DC,
                                   clang::SourceLocation& noLoc,
                                   clang::DeclarationNameInfo name,
                                   clang::QualType functionType);
     /// Looks for a suitable overload for a given function.
     ///
-    /// \param[in] DNI The identification information of the function overload
-    /// to be found.
+    /// \param[in] Name The identification information of the function
+    /// overload to be found.
     /// \param[in] CallArgs The call args to be used to resolve to the
     /// correct overload.
+    /// \param[in] callSite - The call expression which triggers the custom
+    ///            derivative call.
     /// \param[in] forCustomDerv A flag to keep track of which
     /// namespace we should look in for the overloads.
     /// \param[in] namespaceShouldExist A flag to enforce assertion failure
@@ -106,10 +118,10 @@ namespace clad {
     /// \returns The call expression if a suitable function overload was found,
     /// null otherwise.
     clang::Expr* BuildCallToCustomDerivativeOrNumericalDiff(
-        clang::DeclarationNameInfo DNI,
-        llvm::SmallVectorImpl<clang::Expr*>& CallArgs, clang::Scope* S,
-        clang::DeclContext* originalFnDC, bool forCustomDerv = true,
-        bool namespaceShouldExist = true);
+        const std::string& Name, llvm::SmallVectorImpl<clang::Expr*>& CallArgs,
+        clang::Scope* S, const clang::Expr* callSite, bool forCustomDerv = true,
+        bool namespaceShouldExist = true,
+        clang::Expr* CUDAExecConfig = nullptr);
     bool noOverloadExists(clang::Expr* UnresolvedLookup,
                           llvm::MutableArrayRef<clang::Expr*> ARargs);
     /// Shorthand to issues a warning or error.
@@ -124,14 +136,45 @@ namespace clad {
         stream << arg;
     }
 
+    /// Lookup the result of finding a custom derivative or numerical
+    /// differentiation function.
+    ///
+    /// \param[in] Name The name of the function to look up.
+    /// \param[in] originalFnDC The original function's DeclContext.
+    /// \param[in] SS The CXXScopeSpec to extend with the namespace of the
+    /// function.
+    /// \param[in] forCustomDerv A flag to keep track of which
+    /// namespace we should look in for the overloads.
+    /// \param[in] namespaceShouldExist A flag to enforce assertion failure
+    /// if the overload function namespace was not found. If false and
+    /// the function containing namespace was not found, nullptr is returned.
+    ///
+    /// \returns The lookup result of the custom derivative or numerical
+    /// differentiation function.
+    clang::LookupResult LookupCustomDerivativeOrNumericalDiff(
+        const std::string& Name, const clang::DeclContext* originalFnDC,
+        clang::CXXScopeSpec& SS, bool forCustomDerv = true,
+        bool namespaceShouldExist = true);
+
+    /// Looks up if the user has defined a custom derivative for the given
+    /// derivative function.
+    /// \param[in] D
+    /// \returns The custom derivative function if found, nullptr otherwise.
+    clang::FunctionDecl*
+    LookupCustomDerivativeDecl(const std::string& Name,
+                               const clang::DeclContext* originalFnDC,
+                               clang::QualType functionType);
+
   public:
-    DerivativeBuilder(clang::Sema& S, plugin::CladPlugin& P);
+    DerivativeBuilder(clang::Sema& S, plugin::CladPlugin& P,
+                      DerivedFnCollector& DFC,
+                      clad::DynamicGraph<DiffRequest>& DRG);
     ~DerivativeBuilder();
     /// Reset the model use for error estimation (if any).
     /// \param[in] estModel The error estimation model, can be either
     /// an in-built one (TaylorApprox) or one provided by the user.
     void
-    SetErrorEstimationModel(std::unique_ptr<FPErrorEstimationModel> estModel);
+    AddErrorEstimationModel(std::unique_ptr<FPErrorEstimationModel> estModel);
     /// Fuction to set the error diagnostic printing value for numerical
     /// differentiation.
     ///
@@ -153,7 +196,27 @@ namespace clad {
     ///\returns The differentiated function and potentially created enclosing
     /// context.
     ///
-    OverloadedDeclWithContext Derive(const DiffRequest& request);
+    DerivativeAndOverload Derive(const DiffRequest& request);
+    /// Find the derived function if present in the DerivedFnCollector.
+    ///
+    /// \param[in] request The request to find the derived function.
+    ///
+    /// \returns The derived function if found, nullptr otherwise.
+    clang::FunctionDecl* FindDerivedFunction(const DiffRequest& request);
+    /// Add edge from current request to the given request in the DiffRequest
+    /// graph.
+    ///
+    /// \param[in] request The request to add the edge to.
+    /// \param[in] alreadyDerived A flag to keep track of whether the request
+    /// is already derived or not.
+    void AddEdgeToGraph(const DiffRequest& request,
+                        bool alreadyDerived = false);
+
+    /// Handles processing of a diff request when an existing derivative is
+    /// being processed.
+    /// \param[in] Request The request to be processed.
+    /// \returns The derivative function if found, nullptr otherwise.
+    clang::FunctionDecl* HandleNestedDiffRequest(DiffRequest& request);
   };
 
 } // end namespace clad

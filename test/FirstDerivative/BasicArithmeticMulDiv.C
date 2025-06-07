@@ -1,7 +1,5 @@
 // RUN: %cladclang %s -I%S/../../include -oBasicArithmeticMulDiv.out 2>&1 | FileCheck  %s
-// RUN: ./BasicArithmeticMulDiv.out | FileCheck -check-prefix=CHECK-EXEC %s
-
-//CHECK-NOT: {{.*error|warning|note:.*}}
+// RUN: ./BasicArithmeticMulDiv.out | %filecheck_exec %s
 
 #include "clad/Differentiator/Differentiator.h"
 
@@ -62,6 +60,63 @@ float m_6(int x) {
 // CHECK: float m_6_darg0(int x) {
 // CHECK-NEXT: int _d_x = 1;
 // CHECK-NEXT: return 0.F * x + 3.F * _d_x;
+// CHECK-NEXT: }
+
+double m_7(double x) {
+  // returns (x+1)^2
+  return (++x, x * x);
+}
+// CHECK: double m_7_darg0(double x) {
+// CHECK-NEXT:   double _d_x = 1;
+// CHECK-NEXT:   return (++x , (_d_x * x + x * _d_x));
+// CHECK-NEXT: }
+
+double m_8(double x) {
+  // returns (x+1)^2
+  double temp = (++x, x * x);
+  return temp;
+}
+// CHECK: double m_8_darg0(double x) {
+// CHECK-NEXT:   double _d_x = 1;
+// CHECK-NEXT:   double _d_temp = (++x , (_d_x * x + x * _d_x));
+// CHECK-NEXT:   double temp = (x * x);
+// CHECK-NEXT:   return _d_temp;
+// CHECK-NEXT: }
+
+double m_9(double x) {
+  // returns (2x)^2
+  return (x*=2, x * x);
+}
+// CHECK: double m_9_darg0(double x) {
+// CHECK-NEXT:   double _d_x = 1;
+// CHECK-NEXT:   return (((_d_x = _d_x * 2 + x * 0) , (x *= 2)) , (_d_x * x + x * _d_x));
+// CHECK-NEXT: }
+
+double m_10(double x, bool flag) {
+  // if flag is true, return 4x^2, else return (x+1)^2
+  return flag ? (x*=2, x * x) : (x+=1, x * x);
+}
+// CHECK: double m_10_darg0(double x, bool flag) {
+// CHECK-NEXT:   double _d_x = 1;
+// CHECK-NEXT:   bool _d_flag = 0;
+// CHECK-NEXT:   return flag ? (((_d_x = _d_x * 2 + x * 0) , (x *= 2)) , (_d_x * x + x * _d_x)) : (((_d_x += 0) , (x += 1)) , (_d_x * x + x * _d_x));
+// CHECK-NEXT: }
+
+template<size_t N>
+double m_11(double x) {
+  const size_t maxN = 53;
+  const size_t m = maxN < N ? maxN : N;
+  return x*m;
+}
+
+// CHECK: double m_11_darg0(double x) {
+// CHECK-NEXT:   double _d_x = 1;
+// CHECK-NEXT:   const size_t _d_maxN = 0;
+// CHECK-NEXT:   const size_t maxN = 53;
+// CHECK-NEXT:   bool _t0 = maxN < {{64U|64UL|64ULL}};
+// CHECK-NEXT:   const size_t _d_m = _t0 ? _d_maxN : {{0U|0UL|0ULL}};
+// CHECK-NEXT:   const size_t m = _t0 ? maxN : {{64U|64UL|64ULL}};
+// CHECK-NEXT:   return _d_x * m + x * _d_m;
 // CHECK-NEXT: }
 
 int d_1(int x) {
@@ -146,6 +201,11 @@ int m_3_darg0(int x);
 int m_4_darg0(int x);
 double m_5_darg0(int x);
 float m_6_darg0(int x);
+double m_7_darg0(double x);
+double m_8_darg0(double x);
+double m_9_darg0(double x);
+double m_10_darg0(double x, bool flag);
+double m_11_darg0(double x);
 int d_1_darg0(int x);
 int d_2_darg0(int x);
 int d_3_darg0(int x);
@@ -172,6 +232,22 @@ int main () {
 
   clad::differentiate(m_6, 0);
   printf("Result is = %f\n", m_6_darg0(1)); // CHECK-EXEC: Result is = 3
+
+  clad::differentiate(m_7, 0);
+  printf("Result is = %f\n", m_7_darg0(1)); // CHECK-EXEC: Result is = 4
+
+  clad::differentiate(m_8, 0);
+  printf("Result is = %f\n", m_8_darg0(1)); // CHECK-EXEC: Result is = 4
+
+  clad::differentiate(m_9, 0);
+  printf("Result is = %f\n", m_9_darg0(1)); // CHECK-EXEC: Result is = 8
+
+  clad::differentiate(m_10, 0);
+  printf("Result is = %f\n", m_10_darg0(1, true)); // CHECK-EXEC: Result is = 8
+  printf("Result is = %f\n", m_10_darg0(1, false)); // CHECK-EXEC: Result is = 4
+
+  clad::differentiate(m_11<64>, 0);
+  printf("Result is = %f\n", m_11_darg0(1)); // CHECK-EXEC: Result is = 53
 
   clad::differentiate(d_1, 0);
   printf("Result is = %d\n", d_1_darg0(1)); // CHECK-EXEC: Result is = 0

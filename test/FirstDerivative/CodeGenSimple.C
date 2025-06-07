@@ -1,13 +1,11 @@
-// RUN: %cladclang %s -I%S/../../include -oCodeGenSimple.out -Xclang -verify 2>&1 | FileCheck %s
-// RUN: ./CodeGenSimple.out | FileCheck -check-prefix=CHECK-EXEC %s
-
-//CHECK-NOT: {{.*error|warning|note:.*}}
+// RUN: %cladclang %s -I%S/../../include -oCodeGenSimple.out 2>&1 | %filecheck %s
+// RUN: ./CodeGenSimple.out | %filecheck_exec %s
 
 #include "clad/Differentiator/Differentiator.h"
 extern "C" int printf(const char* fmt, ...);
 
 int f_1(int x) {
-   printf("I am being run!\n"); //expected-warning{{attempted to differentiate unsupported statement, no changes applied}} //expected-warning{{function 'printf' was not differentiated because clad failed to differentiate it and no suitable overload was found in namespace 'custom_derivatives', and function may not be eligible for numerical differentiation.}}
+   printf("I am being run!\n");
    return x * x;
 }
 // CHECK: int f_1_darg0(int x) {
@@ -33,9 +31,17 @@ extern "C" int printf(const char* fmt, ...);
 
 int f_1_darg0(int x);
 
+double sq_defined_later(double);
+
 int main() {
   int x = 4;
   clad::differentiate(f_1, 0);
+  auto df = clad::differentiate(sq_defined_later, "x");
   printf("Result is = %d\n", f_1_darg0(1)); // CHECK-EXEC: Result is = 2
+  printf("Result is = %f\n", df.execute(3)); // CHECK-EXEC: Result is = 6
   return 0;
+}
+
+double sq_defined_later(double x) {
+  return x * x;
 }

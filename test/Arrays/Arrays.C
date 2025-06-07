@@ -1,7 +1,7 @@
-// RUN: %cladclang %s -lm -lstdc++ -I%S/../../include -oArrays.out 2>&1 | FileCheck %s
-// RUN: ./Arrays.out | FileCheck -check-prefix=CHECK-EXEC %s
-
-//CHECK-NOT: {{.*error|warning|note:.*}}
+// RUN: %cladclang %s -I%S/../../include -oArrays.out 2>&1 | %filecheck %s
+// RUN: ./Arrays.out | %filecheck_exec %s
+// RUN: %cladclang -Xclang -plugin-arg-clad -Xclang -enable-tbr %s -I%S/../../include -oArrays.out
+// RUN: ./Arrays.out | %filecheck_exec %s
 
 #include "clad/Differentiator/Differentiator.h"
 #include <cmath>
@@ -89,51 +89,30 @@ double const_dot_product(double x, double y, double z) {
 //CHECK-NEXT:       return _d_vars[0] * consts[0] + vars[0] * _d_consts[0] + _d_vars[1] * consts[1] + vars[1] * _d_consts[1] + _d_vars[2] * consts[2] + vars[2] * _d_consts[2];
 //CHECK-NEXT:   }
 
-//CHECK:   void const_dot_product_grad(double x, double y, double z, clad::array_ref<double> _d_x, clad::array_ref<double> _d_y, clad::array_ref<double> _d_z) {
-//CHECK-NEXT:       clad::array<double> _d_vars(3UL);
-//CHECK-NEXT:       clad::array<double> _d_consts(3UL);
-//CHECK-NEXT:       double _t0;
-//CHECK-NEXT:       double _t1;
-//CHECK-NEXT:       double _t2;
-//CHECK-NEXT:       double _t3;
-//CHECK-NEXT:       double _t4;
-//CHECK-NEXT:       double _t5;
+//CHECK:   void const_dot_product_grad(double x, double y, double z, double *_d_x, double *_d_y, double *_d_z) {
+//CHECK-NEXT:       double _d_vars[3] = {0};
 //CHECK-NEXT:       double vars[3] = {x, y, z};
+//CHECK-NEXT:       double _d_consts[3] = {0};
 //CHECK-NEXT:       double consts[3] = {1, 2, 3};
-//CHECK-NEXT:       _t1 = vars[0];
-//CHECK-NEXT:       _t0 = consts[0];
-//CHECK-NEXT:       _t3 = vars[1];
-//CHECK-NEXT:       _t2 = consts[1];
-//CHECK-NEXT:       _t5 = vars[2];
-//CHECK-NEXT:       _t4 = consts[2];
-//CHECK-NEXT:       double const_dot_product_return = _t1 * _t0 + _t3 * _t2 + _t5 * _t4;
-//CHECK-NEXT:       goto _label0;
-//CHECK-NEXT:     _label0:
 //CHECK-NEXT:       {
-//CHECK-NEXT:           double _r0 = 1 * _t0;
-//CHECK-NEXT:           _d_vars[0] += _r0;
-//CHECK-NEXT:           double _r1 = _t1 * 1;
-//CHECK-NEXT:           _d_consts[0] += _r1;
-//CHECK-NEXT:           double _r2 = 1 * _t2;
-//CHECK-NEXT:           _d_vars[1] += _r2;
-//CHECK-NEXT:           double _r3 = _t3 * 1;
-//CHECK-NEXT:           _d_consts[1] += _r3;
-//CHECK-NEXT:           double _r4 = 1 * _t4;
-//CHECK-NEXT:           _d_vars[2] += _r4;
-//CHECK-NEXT:           double _r5 = _t5 * 1;
-//CHECK-NEXT:           _d_consts[2] += _r5;
+//CHECK-NEXT:           _d_vars[0] += 1 * consts[0];
+//CHECK-NEXT:           _d_consts[0] += vars[0] * 1;
+//CHECK-NEXT:           _d_vars[1] += 1 * consts[1];
+//CHECK-NEXT:           _d_consts[1] += vars[1] * 1;
+//CHECK-NEXT:           _d_vars[2] += 1 * consts[2];
+//CHECK-NEXT:           _d_consts[2] += vars[2] * 1;
 //CHECK-NEXT:       }
 //CHECK-NEXT:       {
-//CHECK-NEXT:           * _d_x += _d_vars[0];
-//CHECK-NEXT:           * _d_y += _d_vars[1];
-//CHECK-NEXT:           * _d_z += _d_vars[2];
+//CHECK-NEXT:           *_d_x += _d_vars[0];
+//CHECK-NEXT:           *_d_y += _d_vars[1];
+//CHECK-NEXT:           *_d_z += _d_vars[2];
 //CHECK-NEXT:       }
 //CHECK-NEXT:   }
 
 double const_matmul_sum(double a, double b, double c, double d) {
   double A[2][2] = {{a, b}, {c, d}};
   double B[2][2] = {{1, 2}, {3, 4}};
-  double C[2][2] = {{A[0][0] * B[0][0] + A[0][1] * B[1][0], 
+  double C[2][2] = {{A[0][0] * B[0][0] + A[0][1] * B[1][0],
                      A[0][0] * B[0][1] + A[0][1] * B[1][1]},
                     {A[1][0] * B[0][0] + A[1][1] * B[1][0],
                      A[1][0] * B[0][1] + A[1][1] * B[1][1]}};
@@ -155,7 +134,7 @@ double const_matmul_sum(double a, double b, double c, double d) {
 //:       return _d_C[0][0] + _d_C[0][1] + _d_C[1][0] + _d_C[1][1];
 //:   }
 
-//:   void const_matmul_sum_grad(double a, double b, double c, double d, clad::array_ref<double> _d_a, clad::array_ref<double> _d_b, clad::array_ref<double> _d_c, clad::array_ref<double> _d_d) {
+//:   void const_matmul_sum_grad(double a, double b, double c, double d, double *_d_a, double *_d_b, double *_d_c, double *_d_d) {
 //:       double _d_A[2][2] = {};
 //:       double _d_B[2][2] = {};
 //:       double _t0;
@@ -194,9 +173,6 @@ double const_matmul_sum(double a, double b, double c, double d) {
 //:       _t15 = A[1][1];
 //:       _t14 = B[1][1];
 //:       double C[2][2] = {{[{][{]}}_t1 * _t0 + _t3 * _t2, _t5 * _t4 + _t7 * _t6}, {_t9 * _t8 + _t11 * _t10, _t13 * _t12 + _t15 * _t14}};
-//:       double const_matmul_sum_return = C[0][0] + C[0][1] + C[1][0] + C[1][1];
-//:       goto _label0;
-//:     _label0:
 //:       {
 //:           _d_C[0][0] += 1;
 //:           _d_C[0][1] += 1;
@@ -238,12 +214,25 @@ double const_matmul_sum(double a, double b, double c, double d) {
 //:           _d_B[1][1] += _r15;
 //:       }
 //:       {
-//:           * _d_a += _d_A[0][0];
-//:           * _d_b += _d_A[0][1];
-//:           * _d_c += _d_A[1][0];
-//:           * _d_d += _d_A[1][1];
+//:           *_d_a += _d_A[0][0];
+//:           *_d_b += _d_A[0][1];
+//:           *_d_c += _d_A[1][0];
+//:           *_d_d += _d_A[1][1];
 //:       }
 //:   }
+
+void f25(double x, const double *y) { 
+  const_cast<double &>(*y) = 3 * x; 
+}
+
+// CHECK: void f25_grad(double x, const double *y, double *_d_x, double *_d_y) {
+// CHECK-NEXT:    const_cast<double &>(*y) = 3 * x;
+// CHECK-NEXT:    {
+// CHECK-NEXT:      double _r_d0 = *_d_y;
+// CHECK-NEXT:      *_d_y = 0.;
+// CHECK-NEXT:      *_d_x += 3 * _r_d0;
+// CHECK-NEXT:    }
+// CHECK-NEXT:  }
 
 int main () { // expected-no-diagnostics
   auto dsum = clad::differentiate(sum, 0);
@@ -262,11 +251,20 @@ int main () { // expected-no-diagnostics
 //  FIXME: Add multi index support to clad::array and clad::array_ref
 //  auto dcms = clad::differentiate(const_matmul_sum, 0);
 //  printf("%.2f\n", dcms.execute(11, 12, 13, 14)); // : 3.00
-  
+
 //  auto grad = clad::gradient(const_matmul_sum);
 //  double result2[4] = {};
 //  grad.execute(
 //      11, 12, 13, 14, &result2[0], &result2[1], &result2[2], &result2[3]);
 //  printf("{%.2f, %.2f, %.2f, %.2f}\n", result2[0], result2[1], result2[2], result2[3]); // : {3.00, 7.00, 3.00, 7.00}
+
+  auto const_output_test = clad::gradient(f25);
+  double const_output_test_result[2] = {0.0, 1.0};
+  const double y[1] = {4.0};
+  const_output_test.execute(3, y, &const_output_test_result[0],
+                            &const_output_test_result[1]);
+  printf("{%.2f, %.2f}\n", const_output_test_result[0],
+         const_output_test_result[1]); // CHECK-EXEC: {3.00, 0.00}
+
   return 0;
 }

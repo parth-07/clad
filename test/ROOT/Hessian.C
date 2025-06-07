@@ -1,8 +1,8 @@
-// RUN: %cladclang %s -lm -I%S/../../include -oHessian.out 2>&1 | FileCheck %s
-// RUN: ./Hessian.out | FileCheck -check-prefix=CHECK-EXEC %s
+// RUN: %cladclang -Xclang -plugin-arg-clad -Xclang -disable-tbr %s -I%S/../../include -oHessian.out 2>&1 | %filecheck %s
+// RUN: ./Hessian.out | %filecheck_exec %s
+// RUN: %cladclang %s -I%S/../../include -oHessian.out
+// RUN: ./Hessian.out | %filecheck_exec %s
 
-//CHECK-NOT: {{.*error|warning|note:.*}}
-// XFAIL:*
 #include "clad/Differentiator/Differentiator.h"
 #include <cmath>
 
@@ -14,7 +14,7 @@ namespace TMath {
   Double_t Sin(Double_t x) { return ::std::sin(x); }
 }
 
-Double_t TFormula_example(Double_t* x, Double_t* p) {
+Double_t TFormula_example(const Double_t* x, Double_t* p) {
   return x[0]*(p[0] + p[1] + p[2]) + TMath::Exp(-p[0]) + TMath::Abs(p[1]);
 }
 
@@ -22,10 +22,9 @@ int main() {
   Double_t x[] = { 3 };
   Double_t p[] = { -std::log(2), -1, 3 };
   Double_t matrix[9] = { 0 };
-  clad::array_ref<Double_t> matrix_ref(matrix, 9);
 
   auto hessian = clad::hessian(TFormula_example, "p[0:2]");
-  hessian.execute(x, p, matrix_ref);
+  hessian.execute(x, p, matrix);
 
   printf("Result is = {%.2f, %.2f, %.2f, %.2f,"
          " %.2f, %.2f, %.2f, %.2f, %.2f}\n",

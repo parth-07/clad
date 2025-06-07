@@ -1,8 +1,6 @@
-// RUN: %cladclang %s -I%S/../../include -fsyntax-only -Xclang -verify 2>&1 | FileCheck %s
+// RUN: %cladclang %s -I%S/../../include -fsyntax-only -Xclang -verify 2>&1 | %filecheck %s
 
 #include "clad/Differentiator/Differentiator.h"
-
-//CHECK-NOT: {{.*error|warning|note:.*}}
 
 extern "C" int printf(const char* fmt, ...);
 

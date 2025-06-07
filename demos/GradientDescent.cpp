@@ -8,13 +8,13 @@
 //----------------------------------------------------------------------------//
 
 // To run the demo please type:
-// path/to/clang  -Xclang -add-plugin -Xclang clad -Xclang -load -Xclang \
-// path/to/libclad.so  -I../include/ -x c++ -lstdc++ -lm GradientDescent.cpp
+// path/to/clang++  -Xclang -add-plugin -Xclang clad -Xclang -load -Xclang \
+// path/to/libclad.so  -I../include/ GradientDescent.cpp
 //
 // A typical invocation would be:
-// ../../../../obj/Debug+Asserts/bin/clang  -Xclang -add-plugin -Xclang clad \
+// ../../../../obj/Debug+Asserts/bin/clang++  -Xclang -add-plugin -Xclang clad \
 // -Xclang -load -Xclang ../../../../obj/Debug+Asserts/lib/libclad.dylib     \
-// -I../include/ -x c++ -lstdc++ -lm GradientDescent.cpp
+// -I../include/ GradientDescent.cpp
 //
 // To plot the results install gnuplot and type:
 // gnuplot -e "plot 'dataset_gd.dat' with points pt 7; replot 'out_gd.dat' \
@@ -110,8 +110,8 @@ std::vector<double> optimize(std::vector<double> theta, Dataset dt,
     std::cout << "Steps #" << currentStep << " Theta 0: " << theta[0]
               << " Theta 1: " << theta[1] << std::endl;
 
-    hasConverged = abs(diff[0] - theta[0]) <= eps &&
-                   abs(diff[1] - theta[1]) <= eps;
+    hasConverged = std::abs(diff[0] - theta[0]) <= eps &&
+                   std::abs(diff[1] - theta[1]) <= eps;
 
     diff = theta;
   } while (currentStep++ < maxSteps && !hasConverged);

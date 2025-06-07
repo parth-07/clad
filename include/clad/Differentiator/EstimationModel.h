@@ -28,25 +28,17 @@ namespace clad {
     std::unordered_map<const clang::VarDecl*, clang::Expr*> m_EstimateVar;
 
   public:
-    FPErrorEstimationModel(DerivativeBuilder& builder) : VisitorBase(builder) {}
-    virtual ~FPErrorEstimationModel();
+    // FIXME: Add a proper parameter for the DiffRequest here.
+    FPErrorEstimationModel(DerivativeBuilder& builder,
+                           const DiffRequest& request)
+        : VisitorBase(builder, request) {}
+    ~FPErrorEstimationModel() override;
 
     /// Clear the variable estimate map so that we can start afresh.
     void clearEstimationVariables() { m_EstimateVar.clear(); }
 
-    /// Check if a variable is registered for estimation.
-    ///
-    /// \param[in] VD The variable to check.
-    ///
-    /// \returns The delta expression of the variable if it is registered,
-    /// nullptr otherwise.
-    clang::Expr* IsVariableRegistered(const clang::VarDecl* VD);
-
-    /// Track the variable declaration and utilize it in error
-    /// estimation.
-    ///
-    /// \param[in] VD The declaration to track.
-    void AddVarToEstimate(clang::VarDecl* VD, clang::Expr* VDRef);
+    // FIXME: This is a dummy override needed because Derive is abstract.
+    DerivativeAndOverload Derive() override { return {}; }
 
     /// User overridden function to return the error expression of a
     /// specific estimation model. The error expression is returned in the form
@@ -55,7 +47,7 @@ namespace clad {
     ///
     /// \n \code
     /// clang::Expr*
-    /// AssignError(clad::StmtDiff* refExpr) {
+    /// AssignError(clad::StmtDiff* refExpr, const std::string& name) {
     ///   return BuildOp(BO_Mul, refExpr->getExpr_dx(), refExpr->getExpr());
     /// }
     /// \endcode
@@ -66,34 +58,11 @@ namespace clad {
     /// has to be assigned, this is a StmtDiff type hence one can use getExpr()
     /// to get the unmodified expression and getExpr_dx() to get the absolute
     /// derivative of the same.
+    /// \param [in] name Name of the variable being analysed.
     ///
     /// \returns The error expression of the input value.
-    virtual clang::Expr* AssignError(StmtDiff refExpr) = 0;
-
-    /// Initializes errors for '_delta_' statements.
-    /// This function returns the initial error assignment. Similar to
-    /// AssignError, however, this function is only called during declaration of
-    /// variables. This function is separate from AssignError to keep
-    /// implementation of different estimation models more flexible.
-    ///
-    /// The default definition is as follows:
-    /// \n \code
-    /// clang::Expr* SetError(clang::VarDecl* declStmt) {
-    ///      return nullptr;
-    /// }
-    /// \endcode
-    /// The above will return a 0 expression to be assigned to the '_delta_'
-    /// declaration of input decl.
-    ///
-    /// \param[in] decl The declaration to which the error has to be assigned.
-    ///
-    /// \returns The error expression for declaration statements.
-    virtual clang::Expr* SetError(clang::VarDecl* decl);
-
-    /// Calculate aggregate error from m_EstimateVar.
-    ///
-    /// \returns the final error estimation statement.
-    clang::Expr* CalculateAggregateError();
+    virtual clang::Expr* AssignError(StmtDiff refExpr,
+                                     const std::string& name) = 0;
 
     friend class ErrorEstimationHandler;
   };
@@ -106,10 +75,13 @@ namespace clad {
     /// custom model.
     /// \param[in] builder A build instance to pass to the custom model
     /// constructor.
+    /// \param[in] request The differentiation configuration passed to the
+    /// custom model
     /// \returns A reference to the custom class wrapped in the
     /// FPErrorEstimationModel class.
     virtual std::unique_ptr<FPErrorEstimationModel>
-    InstantiateCustomModel(DerivativeBuilder& builder) = 0;
+    InstantiateCustomModel(DerivativeBuilder& builder,
+                           const DiffRequest& request) = 0;
   };
 
   /// A class used to register custom plugins.
@@ -122,19 +94,22 @@ namespace clad {
     ///
     /// \param[in] builder The current instance of derivative builder.
     std::unique_ptr<FPErrorEstimationModel>
-    InstantiateCustomModel(DerivativeBuilder& builder) override {
-      return std::unique_ptr<FPErrorEstimationModel>(new CustomClass(builder));
+    InstantiateCustomModel(DerivativeBuilder& builder,
+                           const DiffRequest& request) override {
+      return std::unique_ptr<FPErrorEstimationModel>(
+          new CustomClass(builder, request));
     }
   };
 
   /// Example class for taylor series approximation based error estimation.
   class TaylorApprox : public FPErrorEstimationModel {
   public:
-    TaylorApprox(DerivativeBuilder& builder)
-        : FPErrorEstimationModel(builder) {}
+    TaylorApprox(DerivativeBuilder& builder, const DiffRequest& request)
+        : FPErrorEstimationModel(builder, request) {}
     // Return an expression of the following kind:
-    //  dfdx * delta_x * Em
-    clang::Expr* AssignError(StmtDiff refExpr) override;
+    // std::abs(dfdx * delta_x * Em)
+    clang::Expr* AssignError(StmtDiff refExpr,
+                             const std::string& name) override;
   };
 
   /// Register any custom error estimation model a user provides
