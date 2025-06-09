@@ -119,6 +119,24 @@ public:
   /// This will be particularly useful for pushforward and pullback functions.
   bool DeclarationOnly = false;
 
+  // --- Fields for Lambda Captures ---
+  /// Stores the original VarDecl* (for by-ref) or FieldDecl* (for by-value captures,
+  /// representing the lambda's member) of variables captured by a lambda.
+  /// Used by the pullback generator to map these to its new adjoint parameters.
+  llvm::SmallVector<const clang::NamedDecl*, 4> CapturedOriginalDecls;
+
+  /// Stores the QualTypes of the adjoints for captured variables that
+  /// need to be passed as new parameters to a lambda's pullback function.
+  llvm::SmallVector<clang::QualType, 4> CapturedAdjointTypes;
+
+  /// Stores the Expr* of the adjoints for captured variables from the outer scope.
+  /// These are the actual values/references to be passed to the pullback.
+  /// Note: Storing Expr* directly in DiffRequest might be tricky if scopes change;
+  /// this might be better handled by VisitCallExpr passing them more directly.
+  /// For now, adding as a placeholder for the information needed.
+  llvm::SmallVector<clang::Expr*, 4> CapturedAdjointExprs;
+  // --- End Fields for Lambda Captures ---
+
   /// Recomputes `DiffInputVarsInfo` using the current values of data members.
   ///
   /// Differentiation parameters info is computed by parsing the argument
@@ -150,7 +168,10 @@ public:
            EnableUsefulAnalysis == other.EnableUsefulAnalysis &&
            DVI == other.DVI && use_enzyme == other.use_enzyme &&
            DeclarationOnly == other.DeclarationOnly && Global == other.Global &&
-           CUDAGlobalArgsIndexes == other.CUDAGlobalArgsIndexes;
+           CUDAGlobalArgsIndexes == other.CUDAGlobalArgsIndexes &&
+           CapturedOriginalDecls == other.CapturedOriginalDecls &&
+           CapturedAdjointTypes == other.CapturedAdjointTypes &&
+           CapturedAdjointExprs == other.CapturedAdjointExprs;
   }
 
   const clang::FunctionDecl* operator->() const { return Function; }
@@ -164,6 +185,16 @@ public:
   }
   void print(llvm::raw_ostream& Out) const;
   LLVM_DUMP_METHOD void dump() const { print(llvm::errs()); }
+
+  // Helper to check if this request is for a lambda's call operator pullback
+  bool isLambdaPullback() const {
+    if (Mode == DiffMode::pullback && Function) {
+      if (const auto* MD = clang::dyn_cast<clang::CXXMethodDecl>(Function)) {
+        return MD->getParent()->isLambda();
+      }
+    }
+    return false;
+  }
 
   bool shouldBeRecorded(clang::Expr* E) const;
   bool shouldHaveAdjoint(const clang::VarDecl* VD) const;

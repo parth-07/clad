@@ -483,9 +483,9 @@ Expr* ReverseModeVisitor::getStdInitListSizeExpr(const Expr* E) {
         BuildDeclRef(const_cast<FunctionDecl*>(m_DiffReq.Function)));
     // FIXME: We should not use const_cast to get the decl context here.
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
-    auto* fdDeclContext = const_cast<DeclContext*>(m_DiffReq->getDeclContext());
+    auto* fdDeclContext = const_cast<DeclContext*>(m_DiffReq.Function->getDeclContext());
     enzymeParams.push_back(m_Sema.BuildParmVarDeclForTypedef(
-        fdDeclContext, noLoc, m_DiffReq->getType()));
+        fdDeclContext, noLoc, m_DiffReq.Function->getType()));
 
     // Add rest of the parameters/arguments
     for (unsigned i = 0; i < numParams; i++) {
@@ -1822,8 +1822,90 @@ Expr* ReverseModeVisitor::getStdInitListSizeExpr(const Expr* E) {
                               pullback);
 
     // Build the DiffRequest
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     DiffRequest pullbackRequest{};
     pullbackRequest.Function = FD;
+
+    // --- Handle Lambda Captures ---
+    const clang::CXXRecordDecl* lambdaClassRecord = nullptr;
+    if (MD && isLambdaCallOperator(MD)) {
+        lambdaClassRecord = MD->getParent();
+        if (lambdaClassRecord && lambdaClassRecord->isLambda() && lambdaClassRecord->getDefinition()) {
+
+            llvm::DenseMap<const clang::VarDecl*, clang::FieldDecl*> varToFieldMap;
+            // It's safer to get the LambdaExpr associated with the CXXRecordDecl (lambda class)
+            // rather than from the CXXMethodDecl (call operator), though often they lead to the same.
+            const clang::LambdaExpr* AssociatedLE = lambdaClassRecord->getLambdaExprFromDefinition();
+
+            if (AssociatedLE) {
+                 for(const auto& field_pair : AssociatedLE->getCaptureFields(m_Context)) {
+                    if (field_pair.CapturedDecl) {
+                        varToFieldMap[field_pair.CapturedDecl] = field_pair.CaptureField;
+                    }
+                }
+            }
+
+            for (const clang::LambdaCapture& Capture : lambdaClassRecord->captures()) {
+                if (Capture.capturesVariable()) {
+                    const VarDecl* OriginalCapturedVar = dyn_cast<VarDecl>(Capture.getCapturedVar());
+                    if (!OriginalCapturedVar) continue;
+
+                    if (m_Variables.count(OriginalCapturedVar)) {
+                        Expr* adjointExpr = m_Variables.at(OriginalCapturedVar);
+
+                        pullbackRequest.CapturedAdjointExprs.push_back(adjointExpr);
+                        pullbackRequest.CapturedAdjointTypes.push_back(adjointExpr->getType());
+
+                        if (Capture.getCaptureKind() == clang::LambdaCaptureKind::LCK_ByRef) {
+                            pullbackRequest.CapturedOriginalDecls.push_back(OriginalCapturedVar);
+                        } else if (Capture.getCaptureKind() == clang::LambdaCaptureKind::LCK_ByVal) {
+                            clang::FieldDecl* foundField = nullptr;
+                            if (varToFieldMap.count(OriginalCapturedVar)) {
+                                foundField = varToFieldMap.lookup(OriginalCapturedVar);
+                            } else {
+                                // Fallback heuristic if LambdaExpr or its capture_fields were not available/successful
+                                for (auto* Field : lambdaClassRecord->getDefinition()->fields()) {
+                                    if (Capture.isImplicitCapture() && Field->getDeclName() == OriginalCapturedVar->getDeclName() &&
+                                        m_Context.hasSameUnqualifiedType(Field->getType(), OriginalCapturedVar->getType())) {
+                                        foundField = Field;
+                                        break;
+                                    }
+                                    // TODO: Add more robust handling for init-captures if AssociatedLE is not available.
+                                }
+                            }
+
+                            if (foundField) {
+                                pullbackRequest.CapturedOriginalDecls.push_back(foundField);
+                            } else {
+                                diag(DiagnosticsEngine::Warning, Capture.getLocation(),
+                                     "Could not find corresponding FieldDecl for by-value lambda capture of '%0'. Adjoint propagation for this capture might be incorrect. Using original VarDecl as fallback.",
+                                     {OriginalCapturedVar->getNameAsString()});
+                                pullbackRequest.CapturedOriginalDecls.push_back(OriginalCapturedVar);
+                            }
+                        }
+                        // TODO: Handle LCK_ByCopy (C++20 init-capture) more robustly
+                    }
+                }
+                // TODO: Handle `this` capture (LCK_This)
+            }
+        }
+    }
+    // --- End Handle Lambda Captures ---
+
+    // Populate pullbackCallArgs with explicit parameters' adjoints and return value's adjoint
+    pullbackCallArgs = DerivedCallArgs; // Adjoints for explicit parameters of FD
+    if (pullback) // pullback here is df/d(return_value_of_FD)
+      pullbackCallArgs.insert(pullbackCallArgs.begin() + CE->getNumArgs() -
+                                  static_cast<int>(isMethodOperatorCall),
+                              pullback);
+
+    // Add captured variables' adjoints to pullbackCallArgs
+    // These correspond to the new parameters that will be added to the pullback signature
+    if (lambdaClassRecord && lambdaClassRecord->isLambda() && !pullbackRequest.CapturedAdjointExprs.empty()) {
+        for (clang::Expr* capturedAdjointExpr : pullbackRequest.CapturedAdjointExprs) {
+            pullbackCallArgs.push_back(capturedAdjointExpr);
+        }
+    }
 
     // If the function has a single arg and does not return a reference or take
     // arg by reference, we can request a derivative w.r.t. to this arg using
@@ -1836,6 +1918,7 @@ Expr* ReverseModeVisitor::getStdInitListSizeExpr(const Expr* E) {
     }
 
     pullbackRequest.BaseFunctionName = clad::utils::ComputeEffectiveFnName(FD);
+    // For lambdas, the mode is typically pullback for the call operator
     pullbackRequest.Mode = asGrad ? DiffMode::pullback : DiffMode::pushforward;
     bool hasDynamicNonDiffParams = false;
 
@@ -1868,19 +1951,35 @@ Expr* ReverseModeVisitor::getStdInitListSizeExpr(const Expr* E) {
     // at the same time to access the singleton objects.
     // No call context corresponds to second derivatives used in hessians,
     // which aren't scheduled statically yet.
+
+    // Prepare arguments for calling the pullback.
+    // If it's a member function (like a lambda call operator), baseExpr (the lambda object)
+    // will be the implicit 'this' or first argument for BuildCallExprToMemFn/BuildCallToCustomDerivativeOrNumericalDiff.
+    llvm::SmallVector<clang::Expr*, 16> finalPullbackCallArgs = pullbackCallArgs;
+    if (MD && MD->isInstance()) { // This includes lambda call operators
+        // For BuildCallExprToMemFn, baseExpr is the object.
+        // For BuildCallToCustomDerivativeOrNumericalDiff if it's a member, it expects baseExpr as first arg.
+        // So, we don't add baseExpr to finalPullbackCallArgs here if BuildCallExprToMemFn is used,
+        // but ensure it's passed to BuildCallToCustomDerivativeOrNumericalDiff if that path is taken.
+    }
+
     if (m_ExternalSource || !m_DiffReq.CallContext || hasDynamicNonDiffParams ||
         FD->getNameAsString() == "cudaMemcpy") {
       // Try to find it in builtin derivatives.
-      std::string customPullback = pullbackRequest.ComputeDerivativeName();
-      if (MD && MD->isInstance())
-        pullbackCallArgs.insert(pullbackCallArgs.begin(), baseExpr);
+      std::string customPullbackName = pullbackRequest.ComputeDerivativeName();
+
+      llvm::SmallVector<clang::Expr*, 16> buildCallArgs = finalPullbackCallArgs;
+      if (MD && MD->isInstance()) { // If it's a method, custom call builder might expect object as first arg
+          buildCallArgs.insert(buildCallArgs.begin(), baseExpr);
+      }
       OverloadedDerivedFn =
           m_Builder.BuildCallToCustomDerivativeOrNumericalDiff(
-              customPullback, pullbackCallArgs, getCurrentScope(), CE,
+              customPullbackName, buildCallArgs, getCurrentScope(), CE,
               /*forCustomDerv=*/true, /*namespaceShouldExist=*/true,
               CUDAExecConfig);
-      if (MD && MD->isInstance())
-        pullbackCallArgs.erase(pullbackCallArgs.begin());
+      // if (MD && MD->isInstance()) // If baseExpr was added, it's consumed by the call builder.
+      //   buildCallArgs.erase(buildCallArgs.begin()); // This line might be problematic if buildCallArgs is moved.
+
       if (auto* foundCE = cast_or_null<CallExpr>(OverloadedDerivedFn))
         pullbackFD = foundCE->getDirectCallee();
 
@@ -1888,7 +1987,7 @@ Expr* ReverseModeVisitor::getStdInitListSizeExpr(const Expr* E) {
       if (!pullbackFD) {
         if (m_ExternalSource) {
           m_ExternalSource->ActBeforeDifferentiatingCallExpr(
-              pullbackCallArgs, PreCallStmts, dfdx());
+              finalPullbackCallArgs, PreCallStmts, dfdx()); // Pass finalPullbackCallArgs
           pullbackFD =
               plugin::ProcessDiffRequest(m_CladPlugin, pullbackRequest);
         } else
@@ -1899,19 +1998,20 @@ Expr* ReverseModeVisitor::getStdInitListSizeExpr(const Expr* E) {
 
     if (pullbackFD) {
       auto* pullbackMD = dyn_cast<CXXMethodDecl>(pullbackFD);
-      Expr* baseE = baseDiff.getExpr();
-      if (pullbackMD && pullbackMD->isInstance()) {
+      Expr* baseE = baseDiff.getExpr(); // This is the lambda object for lambda calls
+      if (pullbackMD && pullbackMD->isInstance()) { // This will be true for lambda pullbacks
         OverloadedDerivedFn = BuildCallExprToMemFn(baseE, pullbackFD->getName(),
-                                                   pullbackCallArgs, Loc);
+                                                   finalPullbackCallArgs, Loc);
       } else {
-        if (baseE) {
-          baseE = BuildOp(UO_AddrOf, baseE);
-          pullbackCallArgs.insert(pullbackCallArgs.begin(), baseE);
+         // This path should ideally not be taken for lambda pullbacks if they are member functions.
+        llvm::SmallVector<clang::Expr*, 16> nonMemberCallArgs = finalPullbackCallArgs;
+        if (baseE) { // If there's a base expression but it's not a member call (unlikely for lambdas)
+          nonMemberCallArgs.insert(nonMemberCallArgs.begin(), BuildOp(UO_AddrOf, baseE));
         }
         OverloadedDerivedFn =
             m_Sema
                 .ActOnCallExpr(getCurrentScope(), BuildDeclRef(pullbackFD), Loc,
-                               pullbackCallArgs, Loc, CUDAExecConfig)
+                               nonMemberCallArgs, Loc, CUDAExecConfig)
                 .get();
       }
     } else if (!utils::HasAnyReferenceOrPointerArgument(FD) && !MD) {
@@ -1950,15 +2050,17 @@ Expr* ReverseModeVisitor::getStdInitListSizeExpr(const Expr* E) {
     Stmts& block = getCurrentBlock(direction::reverse);
     Stmts::iterator it = std::begin(block) + insertionPoint;
     // Insert PreCallStmts
-    it = block.insert(it, PreCallStmts.begin(), PreCallStmts.end());
-    it += PreCallStmts.size();
+    if (!PreCallStmts.empty()) { // Ensure PreCallStmts is not empty before inserting
+        it = block.insert(it, PreCallStmts.begin(), PreCallStmts.end());
+        it += PreCallStmts.size();
+    }
     if (!asGrad) {
-      if (utils::IsCladValueAndPushforwardType(fnDecl->getReturnType()))
+      if (fnDecl && utils::IsCladValueAndPushforwardType(fnDecl->getReturnType())) // Check fnDecl
         OverloadedDerivedFn = utils::BuildMemberExpr(
             m_Sema, getCurrentScope(), OverloadedDerivedFn, "pushforward");
       // If the derivative is called through _darg0 instead of _grad.
       Expr* d = BuildOp(BO_Mul, dfdx(), OverloadedDerivedFn);
-      Expr* addGrad = BuildOp(BO_AddAssign, Clone(CallArgDx[0]), d);
+      Expr* addGrad = BuildOp(BO_AddAssign, Clone(CallArgDx[0]), d); // Ensure CallArgDx[0] is valid
       it = block.insert(it, addGrad);
       it++;
     } else {
@@ -1967,7 +2069,9 @@ Expr* ReverseModeVisitor::getStdInitListSizeExpr(const Expr* E) {
       it++;
     }
     // Insert PostCallStmts
-    block.insert(it, PostCallStmts.begin(), PostCallStmts.end());
+    if (!PostCallStmts.empty()) { // Ensure PostCallStmts is not empty
+        block.insert(it, PostCallStmts.begin(), PostCallStmts.end());
+    }
 
     if (m_ExternalSource)
       m_ExternalSource->ActBeforeFinalizingVisitCallExpr(
@@ -3115,6 +3219,55 @@ Expr* ReverseModeVisitor::getStdInitListSizeExpr(const Expr* E) {
 
     return StmtDiff(DSClone);
   }
+
+StmtDiff ReverseModeVisitor::VisitLambdaExpr(const clang::LambdaExpr* LE) {
+    // Clone the lambda expression for the forward pass.
+    clang::LambdaExpr* ClonedLE = cast<clang::LambdaExpr>(Clone(LE));
+
+    // Analyze captures
+    // Note: This VisitLambdaExpr is for the definition site.
+    // The main logic for handling captures in terms of derivatives
+    // happens in VisitCallExpr when the lambda's operator() is called,
+    // as that's when the pullback is generated and needs info about captured adjoints.
+    // This loop is more for understanding/debugging or if specific actions
+    // were needed at the definition site itself (currently not the case for pullbacks).
+    for (const clang::LambdaCapture& Capture : LE->captures()) {
+        if (Capture.capturesVariable()) {
+            const clang::VarDecl* CapturedVar = dyn_cast<VarDecl>(Capture.getCapturedVar());
+            if (!CapturedVar) continue;
+
+            if (Capture.getCaptureKind() == clang::LambdaCaptureKind::LCK_ByRef) {
+                // (analysis/logging if needed)
+            } else if (Capture.getCaptureKind() == clang::LambdaCaptureKind::LCK_ByVal) {
+                // (analysis/logging if needed)
+                // The pullback of the lambda's call operator will need to handle this.
+                // TODO: The pullback generation for the lambda's call operator needs to:
+                // 1. Identify fields of the lambda object that are copies of captured independent/varied variables.
+                // 2. Ensure that the pullback function receives or can compute the adjoints for these fields.
+                // 3. Accumulate derivatives back to these "adjoint fields".
+                // 4. If the original captured variable (before copy) was an independent variable,
+                //    the accumulated derivative in the "adjoint field" needs to be propagated
+                //    back to the original variable's adjoint *outside* the lambda, after the lambda call.
+                //    This implies the pullback might need to return these accumulated values or have side effects.
+                // If the value captured by value is changed *inside* the lambda and its
+                // original value (at the time of capture) is needed for the lambda's reverse pass,
+                // this original value would need to be taped by the lambda's pullback mechanism.
+            }
+            // TODO: Consider LCK_ByCopy (C++20 init-capture with a new variable).
+            // This would be similar to LCK_ByVal but with a potentially different name.
+        }
+        // TODO: Handle `this` capture (LCK_This). The `this` pointer itself is not
+        // an lvalue that gets an adjoint in the same way. Derivatives w.r.t members
+        // accessed via `this` are handled by MemberExpr logic. The pullback needs to
+        // correctly handle member derivatives.
+    }
+
+    // The primary differentiation logic is handled when the lambda's call operator
+    // is invoked (VisitCallExpr -> pullback generation for the call operator).
+    // The VisitLambdaExpr itself mainly ensures the lambda structure is present
+    // in the forward pass and performs initial analysis of captures.
+    return StmtDiff(ClonedLE, nullptr);
+}
 
   StmtDiff
   ReverseModeVisitor::VisitImplicitCastExpr(const ImplicitCastExpr* ICE) {
@@ -4478,6 +4631,55 @@ Expr* ReverseModeVisitor::getStdInitListSizeExpr(const Expr* E) {
 
       params.push_back(dPVD);
     }
+
+    // --- Handle parameters for captured variable adjoints in lambda pullbacks ---
+    if (m_DiffReq.isLambdaPullback() && !m_DiffReq.CapturedOriginalDecls.empty()) {
+        // Determine the starting index for these new parameters in the m_Derivative's param list.
+        // It's after all params created above: original params, _d_return (if HasRet), _d_this (if HasThis),
+        // and then explicit param adjoints.
+        // The number of 'standard' derivative params (adjoints for explicit params, return, this)
+        // is (p_loop_counter - (s - HasThis - HasRet) which is count of params added in the previous loop.
+        // So, the captured adjoint params start at index:
+        // (s - HasThis - HasRet) [original params from FD]
+        // + (HasRet ? 1:0) [ret adjoint]
+        // + (HasThis ? 1:0) [this adjoint]
+        // + (count of explicit param adjoints already added, which is p_loop_counter - s_before_adjoint_loop)
+        // This simplifies to `p_loop_counter` if `p_loop_counter` is the total count of parameters added so far.
+
+        // Let's use params.size() before adding new capture params.
+        unsigned capturedAdjointParamIdx = params.size();
+
+        for (size_t i = 0; i < m_DiffReq.CapturedOriginalDecls.size(); ++i) {
+            const NamedDecl* originalCapturedDecl = m_DiffReq.CapturedOriginalDecls[i];
+            // The corresponding ParmVarDecl in m_Derivative (the pullback function)
+            // should already exist due to the modified GetDerivativeType.
+            assert(capturedAdjointParamIdx < m_Derivative->getNumParams() && "Mismatch in expected pullback parameters for captures");
+            ParmVarDecl* capturedAdjointPVD = m_Derivative->getParamDecl(capturedAdjointParamIdx);
+
+            // We need to map the original VarDecl (for by-ref) or FieldDecl (for by-value, representing lambda member)
+            // to this new adjoint parameter within the pullback's m_Variables.
+            if (const VarDecl* originalVar = dyn_cast<VarDecl>(originalCapturedDecl)) {
+                // This handles by-reference captures primarily.
+                // It also handles the case where CapturedOriginalDecls stored the original VarDecl
+                // for a by-value capture. The DeclRefExpr inside the lambda for a by-value capture
+                // will refer to a FieldDecl. This part needs to be robust.
+                // If the `originalVar` is what's directly referenced in the lambda body (e.g. by-ref capture), this is correct.
+                m_Variables[originalVar] = BuildDeclRef(capturedAdjointPVD);
+            } else if (const FieldDecl* capturedField = dyn_cast<FieldDecl>(originalCapturedDecl)) {
+                // This is for by-value captures where CapturedOriginalDecls stores the FieldDecl.
+                // A DeclRefExpr to this field inside the lambda will use this FieldDecl.
+                // Its adjoint is now represented by capturedAdjointPVD.
+                m_Variables[capturedField] = BuildDeclRef(capturedAdjointPVD);
+            }
+            // TODO: Add a name to the PVD for clarity, e.g., "_d_capture_name"
+            // This might require passing the original name or a synthesized one via DiffRequest.
+            // For now, they are unnamed or have default names.
+
+            params.push_back(capturedAdjointPVD); // Add to the list that m_Derivative will set.
+            capturedAdjointParamIdx++;
+        }
+    }
+    // --- End Handle Lambda Capture Parameters ---
   }
 
   Expr* ReverseModeVisitor::BuildCallToCustomForwPassFn(
@@ -4520,3 +4722,5 @@ Expr* ReverseModeVisitor::getStdInitListSizeExpr(const Expr* E) {
     return customForwPassCE;
   }
 } // end namespace clad
+
+[end of lib/Differentiator/ReverseModeVisitor.cpp]
