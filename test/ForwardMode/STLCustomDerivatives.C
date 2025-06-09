@@ -405,6 +405,38 @@ double fnTuple1(double x, double y) {
 //CHECK-NEXT:          return _d_v;
 //CHECK-NEXT:      }
 
+double fnSharedPtr1(double x) {
+    std::shared_ptr<double> ptr(new double(x));
+    return *ptr * 2;
+}
+
+// CHECK: double fnSharedPtr1_darg0(double x) {
+// CHECK-NEXT:     double _d_x = 1;
+// CHECK-NEXT:     {{.*}}ValueAndPushforward< ::std::shared_ptr<double>, ::std::shared_ptr<double> > _t0 = clad::custom_derivatives::class_functions::constructor_pushforward(clad::ConstructorPushforwardTag<std::shared_ptr<double> >(), new double(x), new double(_d_x));
+// CHECK-NEXT:     std::shared_ptr<double> _d_ptr(_t0.pushforward);
+// CHECK-NEXT:     std::shared_ptr<double> ptr(_t0.value);
+// CHECK-NEXT:     {{.*}}ValueAndPushforward<double &, double &> _t1 = clad::custom_derivatives::class_functions::operator_star_pushforward(&ptr, &_d_ptr);
+// CHECK-NEXT:     double &_t2 = _t1.value;
+// CHECK-NEXT:     return _t1.pushforward * 2 + _t2 * 0;
+// CHECK-NEXT: }
+
+double fnSharedPtr2(double x) {
+    std::shared_ptr<double> ptr(new double(x));
+    double* raw_ptr = ptr.get();
+    return *raw_ptr * 3;
+}
+
+// CHECK: double fnSharedPtr2_darg0(double x) {
+// CHECK-NEXT:     double _d_x = 1;
+// CHECK-NEXT:     {{.*}}ValueAndPushforward< ::std::shared_ptr<double>, ::std::shared_ptr<double> > _t0 = clad::custom_derivatives::class_functions::constructor_pushforward(clad::ConstructorPushforwardTag<std::shared_ptr<double> >(), new double(x), new double(_d_x));
+// CHECK-NEXT:     std::shared_ptr<double> _d_ptr(_t0.pushforward);
+// CHECK-NEXT:     std::shared_ptr<double> ptr(_t0.value);
+// CHECK-NEXT:     {{.*}}ValueAndPushforward<double *, double *> _t1 = clad::custom_derivatives::class_functions::get_pushforward(&ptr, &_d_ptr);
+// CHECK-NEXT:     double *_d_raw_ptr = _t1.pushforward;
+// CHECK-NEXT:     double *raw_ptr = _t1.value;
+// CHECK-NEXT:     return (*_d_raw_ptr) * 3 + (*raw_ptr) * 0;
+// CHECK-NEXT: }
+
 int main() {
     INIT_DIFFERENTIATE(fnVec1, "u");
     INIT_DIFFERENTIATE(fnVec2, "u");
@@ -416,6 +448,8 @@ int main() {
     INIT_DIFFERENTIATE(fnArr1, "x");
     INIT_DIFFERENTIATE(fnArr2, "x");
     INIT_DIFFERENTIATE(fnTuple1, "x");
+    INIT_DIFFERENTIATE(fnSharedPtr1, "x");
+    INIT_DIFFERENTIATE(fnSharedPtr2, "x");
 
     TEST_DIFFERENTIATE(fnVec1, 3, 5); // CHECK-EXEC: {10.00}
     TEST_DIFFERENTIATE(fnVec2, 3, 5); // CHECK-EXEC: {5.00}
@@ -427,4 +461,6 @@ int main() {
     TEST_DIFFERENTIATE(fnArr1, 3); // CHECK-EXEC: {3.00}
     TEST_DIFFERENTIATE(fnArr2, 3); // CHECK-EXEC: {108.00}
     TEST_DIFFERENTIATE(fnTuple1, 3, 4); // CHECK-EXEC: {2.00}
+    TEST_DIFFERENTIATE(fnSharedPtr1, 3); // CHECK-EXEC: {2.00}
+    TEST_DIFFERENTIATE(fnSharedPtr2, 3); // CHECK-EXEC: {3.00}
 }

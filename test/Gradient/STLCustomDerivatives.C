@@ -245,6 +245,59 @@ float fn18(Session const *session, float const *tensor_x, float *tensor_theory_p
    return out;
 }
 
+double fnSharedPtr1_grad(double d, double e) {
+  double *p = new double(d);
+  std::shared_ptr<double> sp(p);
+  *sp += 5 * e;
+  return *sp;
+}
+
+// CHECK: void fnSharedPtr1_grad_grad(double d, double e, double *_d_d, double *_d_e) {
+// CHECK-NEXT:     double *_d_p = new double(*_d_d);
+// CHECK-NEXT:     double *p = new double(d);
+// CHECK-NEXT:     clad::ValueAndAdjoint< {{.*}}, {{.*}} > _t0 = {{.*}}class_functions::constructor_reverse_forw(clad::ConstructorReverseForwTag<shared_ptr{{.*}}>{{.*}}, p, _d_p);
+// CHECK-NEXT:     std::shared_ptr{{.*}} sp(static_cast<std::shared_ptr{{.*}}>(_t0.value));
+// CHECK-NEXT:     std::shared_ptr{{.*}} _d_sp = static_cast<std::shared_ptr{{.*}}>(_t0.adjoint);
+// CHECK-NEXT:     {{.*}}ValueAndAdjoint<double &, double &> _t1 = {{.*}}class_functions::operator_star_reverse_forw(&sp, &_d_sp);
+// CHECK-NEXT:     double _t2 = _t1.value;
+// CHECK-NEXT:     _t1.value += 5 * e;
+// CHECK-NEXT:     {{.*}}ValueAndAdjoint<double &, double &> _t3 = {{.*}}class_functions::operator_star_reverse_forw(&sp, &_d_sp);
+// CHECK-NEXT:     {{.*}}class_functions::operator_star_pullback(&sp, 1, &_d_sp);
+// CHECK-NEXT:     {
+// CHECK-NEXT:         _t1.value = _t2;
+// CHECK-NEXT:         double _r_d0 = _t1.adjoint;
+// CHECK-NEXT:         *_d_e += 5 * _r_d0;
+// CHECK-NEXT:         {{.*}}class_functions::operator_star_pullback(&sp, 0., &_d_sp);
+// CHECK-NEXT:     }
+// CHECK:          *_d_d += *_d_p;
+// CHECK-NEXT: }
+
+double fnSharedPtr2_grad(double d, double e) {
+  std::shared_ptr<double> sp(new double(d));
+  double* raw_ptr = sp.get();
+  *raw_ptr += 5 * e;
+  return *raw_ptr;
+}
+
+// CHECK: void fnSharedPtr2_grad_grad(double d, double e, double *_d_d, double *_d_e) {
+// CHECK-NEXT:     clad::ValueAndAdjoint< {{.*}}, {{.*}} > _t0 = {{.*}}class_functions::constructor_reverse_forw(clad::ConstructorReverseForwTag<shared_ptr{{.*}}>{{.*}}, new double(d), new double(*_d_d));
+// CHECK-NEXT:     std::shared_ptr{{.*}} sp(static_cast<std::shared_ptr{{.*}}>(_t0.value));
+// CHECK-NEXT:     std::shared_ptr{{.*}} _d_sp = static_cast<std::shared_ptr{{.*}}>(_t0.adjoint);
+// CHECK-NEXT:     {{.*}}ValueAndAdjoint<double *, double *> _t1 = {{.*}}class_functions::get_reverse_forw(&sp, &_d_sp);
+// CHECK-NEXT:     double *_d_raw_ptr = _t1.adjoint;
+// CHECK-NEXT:     double *raw_ptr = _t1.value;
+// CHECK-NEXT:     double _t2 = *raw_ptr;
+// CHECK-NEXT:     *raw_ptr += 5 * e;
+// CHECK-NEXT:     {
+// CHECK-NEXT:         *raw_ptr = _t2;
+// CHECK-NEXT:         double _r_d0 = {{.*}};
+// CHECK-NEXT:         *_d_e += 5 * _r_d0;
+// CHECK-NEXT:         *_d_raw_ptr = 0.;
+// CHECK-NEXT:     }
+// CHECK-NEXT:     {{.*}}class_functions::get_pullback(&sp, {{.*}}, &_d_sp);
+// CHECK-NEXT:     {{.*}}
+// CHECK-NEXT: }
+
 int main() {
     double d_i, d_j;
     INIT_GRADIENT(fn1);
@@ -264,6 +317,8 @@ int main() {
     INIT_GRADIENT(fn15);
     INIT_GRADIENT(fn16);
     INIT_GRADIENT(fn17);
+    INIT_GRADIENT(fnSharedPtr1_grad);
+    INIT_GRADIENT(fnSharedPtr2_grad);
 
     TEST_GRADIENT(fn1, /*numOfDerivativeArgs=*/2, 3, 5, &d_i, &d_j);  // CHECK-EXEC: {1.00, 1.00}
     TEST_GRADIENT(fn2, /*numOfDerivativeArgs=*/2, 3, 5, &d_i, &d_j);  // CHECK-EXEC: {2.00, 1.00}
@@ -282,6 +337,8 @@ int main() {
     TEST_GRADIENT(fn15, /*NumOfDerivativeArgs=*/2, 3, 5, &d_i, &d_j);  // CHECK-EXEC: {1.00, 5.00}
     TEST_GRADIENT(fn16, /*NumOfDerivativeArgs=*/2, 3, 1, &d_i, &d_j);  // CHECK-EXEC: {48.00, 48.00}
     TEST_GRADIENT(fn17, /*numOfDerivativeArgs=*/2, 1, 1, &d_i, &d_j);  // CHECK-EXEC: {1.00, 3.00}
+    TEST_GRADIENT(fnSharedPtr1_grad, /*NumOfDerivativeArgs=*/2, 3, 5, &d_i, &d_j);  // CHECK-EXEC: {1.00, 5.00}
+    TEST_GRADIENT(fnSharedPtr2_grad, /*NumOfDerivativeArgs=*/2, 3, 5, &d_i, &d_j);  // CHECK-EXEC: {1.00, 5.00}
     auto d_fn18 = clad::gradient(fn18, "tensor_theory_params");
 }
 

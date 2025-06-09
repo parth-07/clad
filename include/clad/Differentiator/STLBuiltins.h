@@ -675,6 +675,60 @@ void operator_star_pullback(const ::std::unique_ptr<T>* u, U pullback,
   **d_u += pullback;
 }
 
+// std::shared_ptr<T> custom derivatives...
+
+// Reverse mode
+template <typename T, typename U>
+clad::ValueAndAdjoint<::std::shared_ptr<T>, ::std::shared_ptr<T>>
+constructor_reverse_forw(clad::ConstructorReverseForwTag<::std::shared_ptr<T>>,
+                         U* p, U* d_p) {
+  return {::std::shared_ptr<T>(p), ::std::shared_ptr<T>(d_p)};
+}
+
+template <typename T>
+clad::ValueAndAdjoint<T&, T&>
+operator_star_reverse_forw(::std::shared_ptr<T>* s, ::std::shared_ptr<T>* d_s) {
+  return {**s, **d_s};
+}
+
+template <typename T, typename U>
+void operator_star_pullback(const ::std::shared_ptr<T>* s, U pullback,
+                            ::std::shared_ptr<T>* d_s) {
+  **d_s += pullback;
+}
+
+template <typename T>
+clad::ValueAndAdjoint<T*, T*>
+get_reverse_forw(::std::shared_ptr<T>* s, ::std::shared_ptr<T>* d_s) {
+    return {s->get(), d_s->get()};
+}
+
+template <typename T, typename U>
+void get_pullback(const ::std::shared_ptr<T>* s, U pullback,
+                  ::std::shared_ptr<T>* d_s) {
+    *(d_s->get()) += pullback;
+}
+
+// Forward mode
+template <typename T, typename U>
+clad::ValueAndPushforward<::std::shared_ptr<T>, ::std::shared_ptr<T>>
+constructor_pushforward(clad::ConstructorPushforwardTag<::std::shared_ptr<T>>,
+                        U* p, U* d_p) {
+  return {::std::shared_ptr<T>(p), ::std::shared_ptr<T>(d_p)};
+}
+
+template <typename T>
+clad::ValueAndPushforward<T&, T&>
+operator_star_pushforward(::std::shared_ptr<T>* s, ::std::shared_ptr<T>* d_s) {
+  return {**s, **d_s};
+}
+
+template <typename T>
+clad::ValueAndPushforward<T*, T*>
+get_pushforward(::std::shared_ptr<T>* s, ::std::shared_ptr<T>* d_s) {
+    return {s->get(), d_s->get()};
+}
+
 } // namespace class_functions
 
 namespace std {
